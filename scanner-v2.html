@@ -23,11 +23,13 @@
     defer>
   </script>
 
+
   <style>
 
     * {
       box-sizing: border-box;
     }
+
 
     body {
       margin: 0;
@@ -37,17 +39,20 @@
       font-family: Arial, Helvetica, sans-serif;
     }
 
+
     .container {
       width: 100%;
       max-width: 650px;
       margin: 0 auto;
     }
 
+
     h1 {
       margin: 6px 0 4px;
       text-align: center;
       font-size: 27px;
     }
+
 
     .subtitle {
       margin-bottom: 17px;
@@ -56,6 +61,7 @@
       font-size: 14px;
     }
 
+
     .card {
       margin-bottom: 15px;
       padding: 16px;
@@ -63,9 +69,6 @@
       background: #242833;
     }
 
-    .store-card {
-      text-align: center;
-    }
 
     .small-label {
       color: #aeb4c0;
@@ -74,11 +77,18 @@
       letter-spacing: 1px;
     }
 
-    #store-name {
+
+    .big-value {
       margin-top: 5px;
       font-size: 25px;
       font-weight: bold;
     }
+
+
+    .center {
+      text-align: center;
+    }
+
 
     button {
       width: 100%;
@@ -93,117 +103,23 @@
       cursor: pointer;
     }
 
+
     button:disabled {
       opacity: 0.55;
       cursor: default;
     }
 
+
     button.secondary {
       background: #3b414d;
     }
 
-    button.danger {
-      background: #73323a;
-    }
 
-    #reader {
-      display: none;
-      overflow: hidden;
-      width: 100%;
-      min-height: 240px;
-      margin-bottom: 15px;
-      border-radius: 13px;
-      background: #000000;
-    }
-
-    #status {
-      padding: 15px;
-      border-radius: 12px;
-      background: #242833;
-      line-height: 1.45;
-      text-align: center;
-    }
-
-    .status-working {
-      background: #493c20 !important;
-    }
-
-    .status-success {
-      background: #173d25 !important;
-    }
-
-    .status-error {
-      background: #511e25 !important;
-    }
-
-    .status-warning {
-      background: #49381d !important;
-    }
-
-    #item-panel {
-      display: none;
-      margin-top: 16px;
-    }
-
-    .item-heading {
-      margin-bottom: 13px;
-      font-size: 22px;
-      font-weight: bold;
-      text-align: center;
-    }
-
-    .barcode-summary {
-      margin-bottom: 16px;
-      color: #d3d8df;
-      line-height: 1.55;
-      text-align: center;
-    }
-
-    .known-badge,
-    .new-badge,
-    .warning-badge {
-      display: inline-block;
-      margin-bottom: 11px;
-      padding: 6px 11px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: bold;
-    }
-
-    .known-badge {
-      background: #205c35;
-    }
-
-    .new-badge {
-      background: #33445e;
-    }
-
-    .warning-badge {
-      background: #78551f;
-    }
-
-    .form-card {
-      margin-top: 14px;
-      padding: 16px;
-      border-radius: 13px;
-      background: #242833;
-    }
-
-    .field {
-      margin-bottom: 17px;
-    }
-
-    .field:last-child {
-      margin-bottom: 0;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 6px;
-      color: #c9ced7;
+    button.small-button {
+      padding: 11px;
       font-size: 14px;
-      font-weight: bold;
     }
+
 
     input,
     textarea {
@@ -217,16 +133,191 @@
       font-size: 17px;
     }
 
+
     textarea {
       min-height: 80px;
       resize: vertical;
     }
+
 
     input:focus,
     textarea:focus {
       outline: 2px solid #8650c5;
       border-color: transparent;
     }
+
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #c9ced7;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+
+    .field {
+      margin-bottom: 17px;
+    }
+
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+
+    .hint {
+      margin-top: 6px;
+      color: #9fa6b1;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+
+    #store-setup-panel {
+      display: none;
+    }
+
+
+    #active-store-panel {
+      display: none;
+    }
+
+
+    #entry-tools-panel {
+      display: none;
+    }
+
+
+    #reader {
+      overflow: hidden;
+      width: 100%;
+      min-height: 240px;
+      margin-bottom: 15px;
+      border-radius: 13px;
+      background: #000000;
+    }
+
+
+    .manual-barcode-card {
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+
+    .manual-title {
+      margin-bottom: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+
+    .manual-row {
+      display: flex;
+      gap: 9px;
+    }
+
+
+    .manual-row input {
+      flex: 1;
+    }
+
+
+    .manual-row button {
+      width: auto;
+      min-width: 110px;
+      margin-top: 0;
+      padding: 12px 16px;
+    }
+
+
+    #status {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 12px;
+      background: #242833;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+
+    .status-working {
+      background: #493c20 !important;
+    }
+
+
+    .status-success {
+      background: #173d25 !important;
+    }
+
+
+    .status-error {
+      background: #511e25 !important;
+    }
+
+
+    .status-warning {
+      background: #49381d !important;
+    }
+
+
+    #item-panel {
+      display: none;
+      margin-top: 16px;
+    }
+
+
+    .item-heading {
+      margin-bottom: 13px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+
+    .barcode-summary {
+      margin-bottom: 16px;
+      color: #d3d8df;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+
+    .known-badge,
+    .new-badge,
+    .warning-badge {
+      display: inline-block;
+      margin-bottom: 11px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+
+    .known-badge {
+      background: #205c35;
+    }
+
+
+    .new-badge {
+      background: #33445e;
+    }
+
+
+    .warning-badge {
+      background: #78551f;
+    }
+
+
+    .form-card {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
 
     .readonly-value {
       padding: 11px 13px;
@@ -236,10 +327,12 @@
       line-height: 1.4;
     }
 
+
     .price-old {
       font-size: 20px;
       font-weight: bold;
     }
+
 
     .confirmation-row {
       display: flex;
@@ -251,6 +344,7 @@
       background: #191d25;
     }
 
+
     .confirmation-row input {
       width: 22px;
       height: 22px;
@@ -258,10 +352,12 @@
       flex: 0 0 auto;
     }
 
+
     .confirmation-row label {
       margin: 0;
       line-height: 1.4;
     }
+
 
     .calc-box {
       margin-top: 12px;
@@ -271,10 +367,12 @@
       line-height: 1.6;
     }
 
+
     .calc-main {
       font-size: 20px;
       font-weight: bold;
     }
+
 
     .comparison-card {
       margin-top: 14px;
@@ -283,11 +381,13 @@
       background: #202530;
     }
 
+
     .comparison-title {
       margin-bottom: 10px;
       font-size: 18px;
       font-weight: bold;
     }
+
 
     .comparison-intro {
       margin-bottom: 11px;
@@ -295,6 +395,7 @@
       font-size: 13px;
       line-height: 1.45;
     }
+
 
     .comparison-item {
       margin-top: 8px;
@@ -304,21 +405,26 @@
       line-height: 1.5;
     }
 
+
     .comparison-store {
       font-weight: bold;
     }
+
 
     .comparison-better {
       color: #75df91;
     }
 
+
     .comparison-worse {
       color: #ff9393;
     }
 
+
     .comparison-neutral {
       color: #d5d9e0;
     }
+
 
     .reuse-warning {
       margin-top: 13px;
@@ -329,6 +435,7 @@
       line-height: 1.5;
     }
 
+
     #success-panel {
       display: none;
       margin-top: 16px;
@@ -337,6 +444,7 @@
       background: #173d25;
     }
 
+
     .success-title {
       margin-bottom: 13px;
       font-size: 22px;
@@ -344,19 +452,23 @@
       text-align: center;
     }
 
+
     .success-grid {
       line-height: 1.75;
     }
+
 
     .success-label {
       color: #bde2c8;
       font-weight: bold;
     }
 
+
     #scan-next-button {
       display: none;
       margin-top: 16px;
     }
+
 
     .help {
       margin-top: 20px;
@@ -364,6 +476,21 @@
       font-size: 13px;
       line-height: 1.5;
       text-align: center;
+    }
+
+
+    @media (max-width: 480px) {
+
+      .manual-row {
+        display: block;
+      }
+
+
+      .manual-row button {
+        width: 100%;
+        margin-top: 9px;
+      }
+
     }
 
   </style>
@@ -375,27 +502,20 @@
 
 <div class="container">
 
+
   <h1>
     🛒 Obsidian Shopping Scanner
   </h1>
 
+
   <div class="subtitle">
-    Scan • confirm • compare • add
+    Choose store • scan/type barcode • review • compare • add
   </div>
 
 
-  <div class="card store-card">
-
-    <div class="small-label">
-      CURRENT STORE
-    </div>
-
-    <div id="store-name">
-      Not connected
-    </div>
-
-  </div>
-
+  <!-- =================================================
+       GOOGLE CONNECTION
+       ================================================= -->
 
   <button
     id="connect-button"
@@ -407,8 +527,164 @@
   </button>
 
 
-  <div id="reader"></div>
+  <!-- =================================================
+       STORE SELECTOR / INPUT
+       ================================================= -->
 
+  <div
+    id="store-setup-panel"
+    class="card">
+
+    <div class="small-label">
+      STEP 1 — CURRENT STORE
+    </div>
+
+
+    <div
+      style="
+        margin-top:8px;
+        margin-bottom:14px;
+        font-size:20px;
+        font-weight:bold;
+      ">
+
+      Where are you shopping?
+
+    </div>
+
+
+    <div class="field">
+
+      <label for="store-input">
+        Store
+      </label>
+
+
+      <input
+        id="store-input"
+        type="text"
+        list="known-stores"
+        autocomplete="off"
+        placeholder="Choose an existing store or type a new one"
+      >
+
+
+      <datalist id="known-stores">
+      </datalist>
+
+
+      <div class="hint">
+
+        Existing stores will appear as suggestions.
+        If this is a new supermarket, simply type its name.
+
+      </div>
+
+    </div>
+
+
+    <button
+      type="button"
+      onclick="confirmStore()">
+
+      USE THIS STORE
+
+    </button>
+
+  </div>
+
+
+  <!-- =================================================
+       ACTIVE STORE
+       ================================================= -->
+
+  <div
+    id="active-store-panel"
+    class="card center">
+
+    <div class="small-label">
+      CURRENT STORE
+    </div>
+
+
+    <div
+      id="store-name"
+      class="big-value">
+
+      —
+
+    </div>
+
+
+    <button
+      class="secondary small-button"
+      type="button"
+      onclick="changeStore()">
+
+      CHANGE STORE
+
+    </button>
+
+  </div>
+
+
+  <!-- =================================================
+       CAMERA + MANUAL BARCODE
+       ================================================= -->
+
+  <div id="entry-tools-panel">
+
+
+    <div id="reader">
+    </div>
+
+
+    <div class="manual-barcode-card">
+
+      <div class="manual-title">
+        ⌨️ Barcode won't scan?
+      </div>
+
+
+      <div class="hint"
+           style="margin-bottom:11px;">
+
+        Type or paste the barcode number manually.
+        It will use exactly the same product lookup as the camera.
+
+      </div>
+
+
+      <div class="manual-row">
+
+        <input
+          id="manual-barcode"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="Enter barcode"
+          onkeydown="manualBarcodeKeyDown(event)"
+        >
+
+
+        <button
+          type="button"
+          onclick="submitManualBarcode()">
+
+          LOOK UP
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =================================================
+       STATUS
+       ================================================= -->
 
   <div id="status">
     Connect Google Sheets to begin.
@@ -416,12 +692,14 @@
 
 
   <!-- =================================================
-       PRODUCT ENTRY PANEL
+       COMPLETE PRODUCT ENTRY FORM
        ================================================= -->
 
   <div id="item-panel">
 
+
     <div class="form-card">
+
 
       <div
         id="match-badge"
@@ -433,7 +711,7 @@
 
 
       <div class="item-heading">
-        Review Item
+        Review Product
       </div>
 
 
@@ -450,11 +728,14 @@
       </div>
 
 
+      <!-- PRODUCT -->
+
       <div class="field">
 
         <label for="product-name">
-          Product Name
+          Product
         </label>
+
 
         <input
           id="product-name"
@@ -464,6 +745,7 @@
           oninput="productNameChanged()"
         >
 
+
         <div class="confirmation-row">
 
           <input
@@ -471,9 +753,12 @@
             type="checkbox"
           >
 
+
           <label for="confirm-name">
-            I confirm that this is the correct product name
-            for the item in front of me.
+
+            I confirm that this product name matches
+            the item I am holding.
+
           </label>
 
         </div>
@@ -481,15 +766,18 @@
       </div>
 
 
+      <!-- BARCODE -->
+
       <div class="field">
 
         <label>
-          Previous Price at This Store
+          Barcode
         </label>
 
+
         <div
-          id="previous-price"
-          class="readonly-value price-old">
+          id="form-barcode"
+          class="readonly-value">
 
           —
 
@@ -498,11 +786,14 @@
       </div>
 
 
+      <!-- AMOUNT -->
+
       <div class="field">
 
         <label for="amount">
           Amount
         </label>
+
 
         <input
           id="amount"
@@ -514,25 +805,55 @@
           oninput="updateCalculations()"
         >
 
-        <div
-          style="
-            margin-top:6px;
-            color:#9fa6b1;
-            font-size:12px;
-          ">
 
-          Use pieces OR kilograms, just like in your Shopping List.
+        <div class="hint">
+
+          Same as your sheet: pieces OR kilograms.
+
+          Example:
+          <b>1</b> item or <b>1.375</b> kg.
 
         </div>
 
       </div>
 
 
+      <!-- LAST PRICE -->
+
+      <div class="field">
+
+        <label>
+          Last Unit Price
+        </label>
+
+
+        <div
+          id="previous-price"
+          class="readonly-value price-old">
+
+          —
+
+        </div>
+
+
+        <div class="hint">
+
+          This comes from your previous stored price
+          for this Barcode + Store combination.
+
+        </div>
+
+      </div>
+
+
+      <!-- TODAY PRICE -->
+
       <div class="field">
 
         <label for="today-price">
           Today's Unit Price
         </label>
+
 
         <input
           id="today-price"
@@ -547,11 +868,34 @@
       </div>
 
 
+      <!-- STORE -->
+
+      <div class="field">
+
+        <label>
+          Store
+        </label>
+
+
+        <div
+          id="form-store"
+          class="readonly-value">
+
+          —
+
+        </div>
+
+      </div>
+
+
+      <!-- NOTES -->
+
       <div class="field">
 
         <label for="notes">
           Notes
         </label>
+
 
         <textarea
           id="notes"
@@ -561,13 +905,17 @@
       </div>
 
 
+      <!-- CALCULATED FIELDS -->
+
       <div
         id="calculation-box"
         class="calc-box">
 
+
         <div>
           Line Total
         </div>
+
 
         <div
           id="line-total"
@@ -577,9 +925,10 @@
 
         </div>
 
+
         <div
           id="local-price-difference"
-          style="margin-top:6px;">
+          style="margin-top:7px;">
         </div>
 
       </div>
@@ -587,29 +936,37 @@
     </div>
 
 
-    <!-- =================================================
+    <!-- ===============================================
          CROSS-STORE COMPARISON
-         ================================================= -->
+         =============================================== -->
 
     <div class="comparison-card">
+
 
       <div class="comparison-title">
         🏪 Price Comparison
       </div>
 
+
       <div class="comparison-intro">
 
-        Comparisons use the latest prices currently stored
-        in your Products sheet.
+        This checks your Products database for the same
+        product at other stores.
 
-        When package sizes such as 900 g, 1 kg, 500 ml or
-        1 L are recognizable in the product name, prices
-        are normalized before comparing them.
+        <br><br>
+
+        If names contain package sizes such as
+        <b>900 g</b>, <b>1 kg</b>, <b>500 ml</b> or
+        <b>1 L</b>, the scanner attempts to normalize
+        prices before comparing them.
 
       </div>
 
+
       <div id="comparison-results">
-        Enter or confirm a product name to compare prices.
+
+        Confirm or enter the product name to compare prices.
+
       </div>
 
     </div>
@@ -630,7 +987,7 @@
       type="button"
       onclick="cancelCurrentItem()">
 
-      CANCEL / SCAN AGAIN
+      CANCEL / ENTER ANOTHER BARCODE
 
     </button>
 
@@ -643,10 +1000,12 @@
 
   <div id="success-panel">
 
+
     <div
       id="success-title"
       class="success-title">
     </div>
+
 
     <div
       id="success-details"
@@ -668,14 +1027,16 @@
 
   <div class="help">
 
-    The rear camera remains open during the shopping trip.
+    Set the store once for the trip.
 
     <br><br>
 
-    After each barcode is scanned, confirm the product,
-    enter today's price and amount, then add the item.
+    Then scan with the rear camera or enter barcodes manually.
+    Review the complete product information before anything
+    is added to Shopping List.
 
   </div>
+
 
 </div>
 
@@ -797,7 +1158,7 @@
     if (!SPREADSHEET_ID) {
 
       fail(
-        "This development scanner must be opened using a link containing the spreadsheet ID."
+        "This scanner must be opened using a link containing the spreadsheet ID."
       );
 
 
@@ -937,8 +1298,7 @@
     );
 
 
-    tokenClient
-      .requestAccessToken();
+    tokenClient.requestAccessToken();
   }
 
 
@@ -983,77 +1343,59 @@
     try {
 
       setStatus(
-        "Loading Shopping List and product database...",
+        "Loading your stores and product database...",
         "working"
       );
-
-
-      currentStore =
-        await readCurrentStore();
-
-
-      if (!currentStore) {
-
-        document
-          .getElementById(
-            "store-name"
-          )
-          .textContent =
-            "NOT SET";
-
-
-        button.disabled =
-          false;
-
-
-        button.textContent =
-          "RECONNECT GOOGLE SHEETS";
-
-
-        fail(
-          "No Current Store is set. Return to Shopping List and enter the store in M21."
-        );
-
-
-        return;
-      }
 
 
       productDatabase =
         await loadProductDatabase();
 
 
+      const sheetStore =
+        await readCurrentStore();
+
+
+      populateKnownStores(
+        sheetStore
+      );
+
+
       document
         .getElementById(
-          "store-name"
+          "connect-button"
         )
-        .textContent =
-          currentStore;
-
-
-      button.style.display =
-        "none";
+        .style
+        .display =
+          "none";
 
 
       document
         .getElementById(
-          "reader"
+          "store-setup-panel"
         )
         .style
         .display =
           "block";
 
 
+      if (
+        sheetStore
+      ) {
+
+        document
+          .getElementById(
+            "store-input"
+          )
+          .value =
+            sheetStore;
+      }
+
+
       setStatus(
-        "Connected. Starting rear camera..."
+        "Connected. Choose an existing store or type a new store name."
       );
 
-
-      if (!scannerStarted) {
-
-        await startRearCamera();
-
-      }
 
     } catch (error) {
 
@@ -1131,18 +1473,14 @@
 
 
   // ==================================================
-  // CURRENT STORE
+  // STORE MANAGEMENT
   // ==================================================
 
   async function readCurrentStore() {
 
-    const range =
-      `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`;
-
-
     const result =
       await sheetsGetValues(
-        range,
+        `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`,
         "FORMATTED_VALUE"
       );
 
@@ -1154,12 +1492,330 @@
   }
 
 
+  function populateKnownStores(
+    sheetStore
+  ) {
+
+    const stores =
+      new Map();
+
+
+    productDatabase
+      .forEach(
+        record => {
+
+          const store =
+            String(
+              record.store ||
+              ""
+            ).trim();
+
+
+          if (!store) {
+            return;
+          }
+
+
+          const key =
+            normalizeStore(
+              store
+            );
+
+
+          if (
+            !stores.has(
+              key
+            )
+          ) {
+
+            stores.set(
+              key,
+              store
+            );
+          }
+
+        }
+      );
+
+
+    if (
+      sheetStore
+    ) {
+
+      const key =
+        normalizeStore(
+          sheetStore
+        );
+
+
+      if (
+        !stores.has(
+          key
+        )
+      ) {
+
+        stores.set(
+          key,
+          sheetStore
+        );
+      }
+    }
+
+
+    const datalist =
+      document.getElementById(
+        "known-stores"
+      );
+
+
+    datalist.innerHTML =
+      "";
+
+
+    Array
+      .from(
+        stores.values()
+      )
+      .sort(
+        function(
+          a,
+          b
+        ) {
+
+          return a.localeCompare(
+            b
+          );
+        }
+      )
+      .forEach(
+        store => {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            store;
+
+
+          datalist.appendChild(
+            option
+          );
+        }
+      );
+  }
+
+
+  async function confirmStore() {
+
+    const store =
+      document
+        .getElementById(
+          "store-input"
+        )
+        .value
+        .trim();
+
+
+    if (!store) {
+
+      fail(
+        "Choose an existing store or type the new store name."
+      );
+
+
+      document
+        .getElementById(
+          "store-input"
+        )
+        .focus();
+
+
+      return;
+    }
+
+
+    try {
+
+      setStatus(
+        "Setting current store...",
+        "working"
+      );
+
+
+      await sheetsValuesBatchUpdate(
+
+        [
+
+          {
+
+            range:
+              `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`,
+
+            values:
+              [[store]]
+
+          }
+
+        ],
+
+        "RAW"
+      );
+
+
+      currentStore =
+        store;
+
+
+      document
+        .getElementById(
+          "store-name"
+        )
+        .textContent =
+          currentStore;
+
+
+      document
+        .getElementById(
+          "form-store"
+        )
+        .textContent =
+          currentStore;
+
+
+      document
+        .getElementById(
+          "store-setup-panel"
+        )
+        .style
+        .display =
+          "none";
+
+
+      document
+        .getElementById(
+          "active-store-panel"
+        )
+        .style
+        .display =
+          "block";
+
+
+      document
+        .getElementById(
+          "entry-tools-panel"
+        )
+        .style
+        .display =
+          "block";
+
+
+      setStatus(
+        "Store selected. Starting rear camera..."
+      );
+
+
+      if (
+        !scannerStarted
+      ) {
+
+        await startRearCamera();
+
+      } else {
+
+        resumeScanner();
+      }
+
+
+      document
+        .getElementById(
+          "manual-barcode"
+        )
+        .focus();
+
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  function changeStore() {
+
+    if (
+      processing ||
+      currentBarcode
+    ) {
+
+      const proceed =
+        window.confirm(
+          "You currently have a product open. Cancel it and change stores?"
+        );
+
+
+      if (!proceed) {
+        return;
+      }
+    }
+
+
+    resetCurrentItem();
+
+
+    pauseScanner();
+
+
+    document
+      .getElementById(
+        "entry-tools-panel"
+      )
+      .style
+      .display =
+        "none";
+
+
+    document
+      .getElementById(
+        "active-store-panel"
+      )
+      .style
+      .display =
+        "none";
+
+
+    document
+      .getElementById(
+        "store-setup-panel"
+      )
+      .style
+      .display =
+        "block";
+
+
+    document
+      .getElementById(
+        "store-input"
+      )
+      .value =
+        currentStore;
+
+
+    setStatus(
+      "Choose another existing store or type a new one."
+    );
+  }
+
+
   // ==================================================
   // LOAD PRODUCTS DATABASE
   // ==================================================
   //
-  // Expected Products columns:
-  //
+  // Products:
   // A = Barcode
   // B = Product
   // C = Last Price
@@ -1223,13 +1879,14 @@
       .filter(
         record =>
           record.barcode ||
-          record.product
+          record.product ||
+          record.store
       );
   }
 
 
   // ==================================================
-  // REAR CAMERA
+  // CAMERA
   // ==================================================
 
   async function startRearCamera() {
@@ -1374,42 +2031,21 @@
 
 
     setStatus(
-      "Rear camera ready. Point it at a barcode."
+      "Rear camera ready. Scan a barcode or type one manually below."
     );
   }
 
 
-  // ==================================================
-  // BARCODE DETECTED
-  // ==================================================
+  function pauseScanner() {
 
-  async function barcodeDetected(
-    decodedText
-  ) {
+    if (
+      !scannerStarted ||
+      scannerPaused ||
+      !scanner
+    ) {
 
-    if (processing) {
       return;
     }
-
-
-    const barcode =
-      String(
-        decodedText ||
-        ""
-      ).trim();
-
-
-    if (!barcode) {
-      return;
-    }
-
-
-    processing =
-      true;
-
-
-    currentBarcode =
-      barcode;
 
 
     try {
@@ -1424,9 +2060,175 @@
 
     } catch (error) {}
 
+  }
+
+
+  function resumeScanner() {
+
+    if (
+      !scannerStarted ||
+      !scanner
+    ) {
+
+      return;
+    }
+
+
+    try {
+
+      if (
+        scannerPaused
+      ) {
+
+        scanner.resume();
+
+
+        scannerPaused =
+          false;
+      }
+
+
+      setStatus(
+        "Ready. Scan a barcode or enter it manually."
+      );
+
+
+    } catch (error) {
+
+      fail(
+        "Camera could not resume. Reload this page."
+      );
+    }
+  }
+
+
+  // ==================================================
+  // CAMERA BARCODE
+  // ==================================================
+
+  async function barcodeDetected(
+    decodedText
+  ) {
+
+    const barcode =
+      String(
+        decodedText ||
+        ""
+      ).trim();
+
+
+    if (!barcode) {
+      return;
+    }
+
+
+    await beginBarcodeLookup(
+      barcode,
+      "camera"
+    );
+  }
+
+
+  // ==================================================
+  // MANUAL BARCODE
+  // ==================================================
+
+  function manualBarcodeKeyDown(
+    event
+  ) {
+
+    if (
+      event.key ===
+      "Enter"
+    ) {
+
+      event.preventDefault();
+
+
+      submitManualBarcode();
+    }
+  }
+
+
+  async function submitManualBarcode() {
+
+    const barcode =
+      document
+        .getElementById(
+          "manual-barcode"
+        )
+        .value
+        .trim();
+
+
+    if (!barcode) {
+
+      fail(
+        "Enter a barcode number first."
+      );
+
+
+      document
+        .getElementById(
+          "manual-barcode"
+        )
+        .focus();
+
+
+      return;
+    }
+
+
+    await beginBarcodeLookup(
+      barcode,
+      "manual"
+    );
+  }
+
+
+  // ==================================================
+  // COMMON BARCODE LOOKUP
+  // ==================================================
+
+  async function beginBarcodeLookup(
+    barcode,
+    source
+  ) {
+
+    if (
+      processing
+    ) {
+
+      return;
+    }
+
+
+    if (
+      !currentStore
+    ) {
+
+      fail(
+        "Choose the current store before entering products."
+      );
+
+
+      return;
+    }
+
+
+    processing =
+      true;
+
+
+    currentBarcode =
+      barcode;
+
+
+    pauseScanner();
+
 
     setStatus(
-      "Barcode detected. Looking up product information...",
+      "Barcode received. Looking up product information...",
       "working"
     );
 
@@ -1447,40 +2249,55 @@
       ) {
 
         throw new Error(
-          "The Current Store changed after opening the scanner. Reload this scanner before continuing."
+          "The store in Shopping List changed. Confirm the store again before continuing."
         );
       }
 
 
-      await prepareScannedProduct(
-        barcode
+      await prepareProductForm(
+        barcode,
+        source
       );
+
+
+      document
+        .getElementById(
+          "manual-barcode"
+        )
+        .value =
+          "";
 
 
       setStatus(
-        "Barcode found. Review the information below before adding it.",
+        "Review the product information below before adding it.",
         "success"
       );
 
+
     } catch (error) {
+
+      processing =
+        false;
+
+
+      currentBarcode =
+        "";
+
 
       handleApiError(
         error
       );
-
-
-      processing =
-        false;
     }
   }
 
 
   // ==================================================
-  // PREPARE PRODUCT FORM
+  // PREPARE COMPLETE PRODUCT FORM
   // ==================================================
 
-  async function prepareScannedProduct(
-    barcode
+  async function prepareProductForm(
+    barcode,
+    source
   ) {
 
     barcodeMatches =
@@ -1537,6 +2354,7 @@
       badgeClass =
         "known-badge";
 
+
     } else if (
       barcodeMatches.length ===
       1
@@ -1553,12 +2371,13 @@
       badgeClass =
         "warning-badge";
 
+
     } else if (
       barcodeMatches.length >
       1
     ) {
 
-      const names =
+      const distinctNames =
         [
           ...new Set(
             barcodeMatches
@@ -1574,17 +2393,12 @@
 
 
       if (
-        names.length ===
+        distinctNames.length ===
         1
       ) {
 
         suggestedProduct =
           barcodeMatches[0].product;
-
-      } else {
-
-        suggestedProduct =
-          "";
       }
 
 
@@ -1594,6 +2408,7 @@
 
       badgeClass =
         "warning-badge";
+
 
     } else {
 
@@ -1626,15 +2441,39 @@
       )
       .innerHTML =
 
-        "<b>Barcode:</b> " +
+        "<b>Entered by:</b> " +
+        escapeHtml(
+          source ===
+          "camera"
+            ? "Camera"
+            : "Manual entry"
+        ) +
+
+        "<br><b>Barcode:</b> " +
         escapeHtml(
           barcode
         ) +
 
-        "<br><b>Current store:</b> " +
+        "<br><b>Store:</b> " +
         escapeHtml(
           currentStore
         );
+
+
+    document
+      .getElementById(
+        "form-barcode"
+      )
+      .textContent =
+        barcode;
+
+
+    document
+      .getElementById(
+        "form-store"
+      )
+      .textContent =
+        currentStore;
 
 
     document
@@ -1728,8 +2567,7 @@
 
 
     if (
-      suggestedProduct ===
-      ""
+      suggestedProduct
     ) {
 
       setTimeout(
@@ -1737,7 +2575,7 @@
 
           document
             .getElementById(
-              "product-name"
+              "today-price"
             )
             .focus();
 
@@ -1753,7 +2591,7 @@
 
           document
             .getElementById(
-              "today-price"
+              "product-name"
             )
             .focus();
 
@@ -1766,7 +2604,7 @@
 
 
   // ==================================================
-  // BARCODE REUSE WARNING
+  // REUSED BARCODE INFORMATION
   // ==================================================
 
   function renderBarcodeReuseWarning() {
@@ -1777,7 +2615,7 @@
       );
 
 
-    const otherStoreMatches =
+    const otherMatches =
       barcodeMatches.filter(
         record =>
           normalizeStore(
@@ -1790,7 +2628,7 @@
 
 
     if (
-      otherStoreMatches.length ===
+      otherMatches.length ===
       0
     ) {
 
@@ -1806,52 +2644,59 @@
     }
 
 
-    const descriptions =
-      otherStoreMatches
-        .map(
-          record => {
+    const lines =
+      otherMatches.map(
+        record => {
 
-            const priceText =
-              isUsablePrice(
-                record.price
-              )
-                ? (
-                    " — " +
-                    formatMoney(
-                      record.price
-                    )
-                  )
-                : "";
+          let result =
 
-
-            return (
-              "<b>" +
-              escapeHtml(
-                record.store ||
-                "Unknown store"
-              ) +
-              "</b>: " +
-              escapeHtml(
-                record.product ||
-                "Unnamed product"
-              ) +
-              priceText
+            "<b>" +
+            escapeHtml(
+              record.store ||
+              "Unknown store"
+            ) +
+            "</b>: " +
+            escapeHtml(
+              record.product ||
+              "Unnamed product"
             );
+
+
+          if (
+            isUsablePrice(
+              record.price
+            )
+          ) {
+
+            result +=
+
+              " — " +
+              escapeHtml(
+                formatMoney(
+                  record.price
+                )
+              );
           }
-        );
+
+
+          return result;
+        }
+      );
 
 
     box.innerHTML =
 
-      "⚠️ <b>This barcode has been seen at another store.</b>" +
+      "⚠️ <b>This same barcode exists in records from another store.</b>" +
 
       "<br><br>" +
 
-      descriptions.join(
+      lines.join(
         "<br>"
       ) +
 
-      "<br><br>Please confirm that the product name shown below matches the item in your hand.";
+      "<br><br>" +
+
+      "Confirm the product name against the item in your hand before adding it.";
 
 
     box.style.display =
@@ -1891,38 +2736,42 @@
       );
 
 
-    const totalElement =
+    const total =
       document.getElementById(
         "line-total"
       );
 
 
-    const differenceElement =
+    const differenceBox =
       document.getElementById(
         "local-price-difference"
       );
 
 
     if (
-      amount !== null &&
-      todayPrice !== null
+      amount !==
+      null &&
+      todayPrice !==
+      null
     ) {
 
-      totalElement.textContent =
+      total.textContent =
         formatMoney(
           amount *
           todayPrice
         );
 
+
     } else {
 
-      totalElement.textContent =
+      total.textContent =
         "—";
     }
 
 
     if (
-      todayPrice !== null &&
+      todayPrice !==
+      null &&
       isUsablePrice(
         previousPriceAtStore
       )
@@ -1936,10 +2785,11 @@
 
 
       if (
-        difference < 0
+        difference <
+        -0.005
       ) {
 
-        differenceElement.innerHTML =
+        differenceBox.innerHTML =
 
           '<span class="comparison-better">' +
 
@@ -1951,19 +2801,21 @@
             )
           ) +
 
-          " cheaper than your previous price at " +
+          " cheaper than your previous " +
 
           escapeHtml(
             currentStore
           ) +
 
-          ".</span>";
+          " price.</span>";
+
 
       } else if (
-        difference > 0
+        difference >
+        0.005
       ) {
 
-        differenceElement.innerHTML =
+        differenceBox.innerHTML =
 
           '<span class="comparison-worse">' +
 
@@ -1973,32 +2825,34 @@
             )
           ) +
 
-          " more expensive than your previous price at " +
+          " more expensive than your previous " +
 
           escapeHtml(
             currentStore
           ) +
 
-          ".</span>";
+          " price.</span>";
+
 
       } else {
 
-        differenceElement.innerHTML =
+        differenceBox.innerHTML =
 
           '<span class="comparison-neutral">' +
 
-          "Same as your previous price at " +
+          "Same as your previous " +
 
           escapeHtml(
             currentStore
           ) +
 
-          ".</span>";
+          " price.</span>";
       }
+
 
     } else {
 
-      differenceElement.innerHTML =
+      differenceBox.innerHTML =
         "";
     }
 
@@ -2008,22 +2862,7 @@
 
 
   // ==================================================
-  // PACKAGE SIZE PARSING
-  // ==================================================
-  //
-  // Examples understood:
-  //
-  // 900 g
-  // 900g
-  // 1 kg
-  // 1.2 kg
-  // 500 ml
-  // 500ml
-  // 1 L
-  // 1.5 l
-  //
-  // The size is removed to derive a comparable family.
-  //
+  // PRODUCT SIZE PARSER
   // ==================================================
 
   function parseProductSize(
@@ -2046,9 +2885,6 @@
 
         family:
           "",
-
-        sizeValue:
-          null,
 
         baseQuantity:
           null,
@@ -2085,9 +2921,6 @@
             original
           ),
 
-        sizeValue:
-          null,
-
         baseQuantity:
           null,
 
@@ -2101,13 +2934,12 @@
     }
 
 
-    const numericValue =
+    const amount =
       Number(
-        match[1]
-          .replace(
-            ",",
-            "."
-          )
+        match[1].replace(
+          ",",
+          "."
+        )
       );
 
 
@@ -2138,12 +2970,13 @@
 
 
       baseQuantity =
-        numericValue *
+        amount *
         1000;
 
 
       displayUnit =
         "g";
+
 
     } else if (
       unit ===
@@ -2155,11 +2988,12 @@
 
 
       baseQuantity =
-        numericValue;
+        amount;
 
 
       displayUnit =
         "g";
+
 
     } else if (
       unit ===
@@ -2171,12 +3005,13 @@
 
 
       baseQuantity =
-        numericValue *
+        amount *
         1000;
 
 
       displayUnit =
         "ml";
+
 
     } else if (
       unit ===
@@ -2188,7 +3023,7 @@
 
 
       baseQuantity =
-        numericValue;
+        amount;
 
 
       displayUnit =
@@ -2197,11 +3032,10 @@
 
 
     const familyText =
-      original
-        .replace(
-          match[0],
-          " "
-        );
+      original.replace(
+        match[0],
+        " "
+      );
 
 
     return {
@@ -2213,9 +3047,6 @@
         normalizeProductFamily(
           familyText
         ),
-
-      sizeValue:
-        numericValue,
 
       baseQuantity:
         baseQuantity,
@@ -2229,10 +3060,6 @@
     };
   }
 
-
-  // ==================================================
-  // PRODUCT FAMILY NORMALIZATION
-  // ==================================================
 
   function normalizeProductFamily(
     value
@@ -2273,7 +3100,7 @@
 
 
   // ==================================================
-  // CROSS-STORE PRICE COMPARISON
+  // CROSS-STORE COMPARISON
   // ==================================================
 
   function renderPriceComparisons() {
@@ -2296,7 +3123,7 @@
     if (!currentName) {
 
       box.innerHTML =
-        "Enter or confirm a product name to compare prices.";
+        "Enter or confirm the product name to compare prices.";
 
 
       lastComparisonSummary =
@@ -2311,22 +3138,6 @@
       parseProductSize(
         currentName
       );
-
-
-    if (
-      !currentParsed.family
-    ) {
-
-      box.innerHTML =
-        "I could not determine a comparable product family from this name.";
-
-
-      lastComparisonSummary =
-        "";
-
-
-      return;
-    }
 
 
     const candidates =
@@ -2396,25 +3207,33 @@
       );
 
 
-    const comparisonEntries =
-      candidates
-        .map(
-          record =>
-            buildComparisonEntry(
-              currentParsed,
-              todayPrice,
-              record
-            )
+    const entries =
+      candidates.map(
+        record =>
+          buildComparisonEntry(
+            currentParsed,
+            todayPrice,
+            record
+          )
+      );
+
+
+    entries.sort(
+      function(
+        a,
+        b
+      ) {
+
+        return (
+          a.sortValue -
+          b.sortValue
         );
-
-
-    comparisonEntries.sort(
-      compareComparisonEntries
+      }
     );
 
 
     box.innerHTML =
-      comparisonEntries
+      entries
         .map(
           entry =>
             entry.html
@@ -2424,31 +3243,17 @@
         );
 
 
-    const comparableEntries =
-      comparisonEntries.filter(
+    const summaries =
+      entries.filter(
         entry =>
-          entry.numericComparison !==
-          null
+          entry.summary
       );
 
 
-    if (
-      comparableEntries.length >
-      0
-    ) {
-
-      const best =
-        comparableEntries[0];
-
-
-      lastComparisonSummary =
-        best.summary;
-
-    } else {
-
-      lastComparisonSummary =
-        "";
-    }
+    lastComparisonSummary =
+      summaries.length
+        ? summaries[0].summary
+        : "";
   }
 
 
@@ -2464,6 +3269,12 @@
       );
 
 
+    let sortValue =
+      Number(
+        record.price
+      );
+
+
     let normalizedText =
       "";
 
@@ -2476,48 +3287,29 @@
       "comparison-neutral";
 
 
-    let numericComparison =
-      null;
-
-
-    let sortValue =
-      Number(
-        record.price
-      );
-
-
     let summary =
       "";
 
 
-    // ------------------------------------------------
-    // Same measurable dimension + both sizes known
-    // ------------------------------------------------
-
     if (
       currentParsed.baseQuantity &&
       otherParsed.baseQuantity &&
-      currentParsed.dimension &&
       currentParsed.dimension ===
-        otherParsed.dimension
+      otherParsed.dimension
     ) {
 
-      const referenceAmount =
-        100;
-
-
-      const otherPerReference =
+      const otherPer100 =
         (
           Number(
             record.price
           ) /
           otherParsed.baseQuantity
         ) *
-        referenceAmount;
+        100;
 
 
       sortValue =
-        otherPerReference;
+        otherPer100;
 
 
       normalizedText =
@@ -2525,44 +3317,59 @@
         " (" +
 
         formatMoney(
-          otherPerReference
+          otherPer100
         ) +
 
         " / 100 " +
 
-        escapeHtml(
-          otherParsed.displayUnit
+        otherParsed.displayUnit +
+
+        ")";
+
+
+      summary =
+
+        record.store +
+
+        ": " +
+
+        formatMoney(
+          record.price
         ) +
+
+        " (" +
+
+        formatMoney(
+          otherPer100
+        ) +
+
+        " / 100 " +
+
+        otherParsed.displayUnit +
 
         ")";
 
 
       if (
-        todayPrice !== null &&
-        currentParsed.baseQuantity
+        todayPrice !==
+        null
       ) {
 
-        const currentPerReference =
+        const currentPer100 =
           (
             todayPrice /
             currentParsed.baseQuantity
           ) *
-          referenceAmount;
-
-
-        numericComparison =
-          otherPerReference -
-          currentPerReference;
+          100;
 
 
         const difference =
-          Math.abs(
-            numericComparison
-          );
+          otherPer100 -
+          currentPer100;
 
 
         if (
-          numericComparison <
+          difference <
           -0.005
         ) {
 
@@ -2572,14 +3379,14 @@
 
           comparisonText =
 
-            " • " +
-
             record.store +
 
             " was " +
 
             formatMoney(
-              difference
+              Math.abs(
+                difference
+              )
             ) +
 
             " cheaper per 100 " +
@@ -2588,7 +3395,7 @@
 
 
         } else if (
-          numericComparison >
+          difference >
           0.005
         ) {
 
@@ -2597,8 +3404,6 @@
 
 
           comparisonText =
-
-            " • " +
 
             record.store +
 
@@ -2616,40 +3421,14 @@
         } else {
 
           comparisonText =
-            " • essentially the same normalized price";
+            "Essentially the same normalized price.";
         }
-
-
-        summary =
-
-          record.store +
-
-          ": " +
-
-          formatMoney(
-            record.price
-          ) +
-
-          " (" +
-
-          formatMoney(
-            otherPerReference
-          ) +
-
-          " / 100 " +
-
-          otherParsed.displayUnit +
-
-          ")";
       }
+
 
     } else {
 
-      // ----------------------------------------------
-      // Exact same product text, no usable package size
-      // ----------------------------------------------
-
-      const exactName =
+      const sameExactName =
         normalizeProductIdentity(
           currentParsed.original
         ) ===
@@ -2658,27 +3437,32 @@
         );
 
 
+      summary =
+
+        record.store +
+
+        ": " +
+
+        formatMoney(
+          record.price
+        );
+
+
       if (
-        exactName &&
+        sameExactName &&
         todayPrice !==
         null
       ) {
 
-        numericComparison =
+        const difference =
           Number(
             record.price
           ) -
           todayPrice;
 
 
-        const difference =
-          Math.abs(
-            numericComparison
-          );
-
-
         if (
-          numericComparison <
+          difference <
           -0.005
         ) {
 
@@ -2688,21 +3472,21 @@
 
           comparisonText =
 
-            " • " +
-
             record.store +
 
             " was " +
 
             formatMoney(
-              difference
+              Math.abs(
+                difference
+              )
             ) +
 
-            " cheaper";
+            " cheaper.";
 
 
         } else if (
-          numericComparison >
+          difference >
           0.005
         ) {
 
@@ -2712,8 +3496,6 @@
 
           comparisonText =
 
-            " • " +
-
             record.store +
 
             " was " +
@@ -2722,30 +3504,20 @@
               difference
             ) +
 
-            " more expensive";
+            " more expensive.";
 
 
         } else {
 
           comparisonText =
-            " • same recorded price";
+            "Same recorded price.";
         }
 
-
-        summary =
-
-          record.store +
-
-          ": " +
-
-          formatMoney(
-            record.price
-          );
 
       } else {
 
         comparisonText =
-          " • package-size normalization unavailable";
+          "Package-size normalization unavailable.";
       }
     }
 
@@ -2754,37 +3526,45 @@
 
       '<div class="comparison-item">' +
 
-      '<div class="comparison-store">' +
-      escapeHtml(
-        record.store
-      ) +
-      "</div>" +
+        '<div class="comparison-store">' +
 
-      escapeHtml(
-        record.product
-      ) +
+          escapeHtml(
+            record.store
+          ) +
 
-      "<br>" +
+        "</div>" +
 
-      formatMoney(
-        record.price
-      ) +
+        escapeHtml(
+          record.product
+        ) +
 
-      normalizedText +
+        "<br>" +
 
-      (
-        comparisonText
-          ? (
-              '<div class="' +
-              comparisonClass +
-              '">' +
-              escapeHtml(
-                comparisonText
-              ) +
-              "</div>"
-            )
-          : ""
-      ) +
+        escapeHtml(
+          formatMoney(
+            record.price
+          )
+        ) +
+
+        escapeHtml(
+          normalizedText
+        ) +
+
+        (
+          comparisonText
+            ? (
+                '<div class="' +
+                comparisonClass +
+                '">' +
+
+                  escapeHtml(
+                    comparisonText
+                  ) +
+
+                "</div>"
+              )
+            : ""
+        ) +
 
       "</div>";
 
@@ -2797,9 +3577,6 @@
       sortValue:
         sortValue,
 
-      numericComparison:
-        numericComparison,
-
       summary:
         summary
 
@@ -2807,20 +3584,8 @@
   }
 
 
-  function compareComparisonEntries(
-    a,
-    b
-  ) {
-
-    return (
-      a.sortValue -
-      b.sortValue
-    );
-  }
-
-
   // ==================================================
-  // ADD REVIEWED ITEM
+  // VALIDATE AND ADD PRODUCT
   // ==================================================
 
   async function addReviewedItem() {
@@ -2866,7 +3631,7 @@
     if (!productName) {
 
       fail(
-        "Enter the product name before adding the item."
+        "Enter the product name."
       );
 
 
@@ -2884,7 +3649,7 @@
     if (!confirmed) {
 
       fail(
-        "Confirm that the product name matches the item in your hand."
+        "Confirm that the product name matches the item you are holding."
       );
 
 
@@ -2919,7 +3684,7 @@
     ) {
 
       fail(
-        "Enter Today's Unit Price before adding the item."
+        "Enter Today's Unit Price."
       );
 
 
@@ -2934,27 +3699,27 @@
     }
 
 
-    const addButton =
+    const button =
       document.getElementById(
         "add-item-button"
       );
 
 
-    addButton.disabled =
+    button.disabled =
       true;
 
 
-    addButton.textContent =
+    button.textContent =
       "ADDING...";
 
 
-    setStatus(
-      "Writing the complete item to Shopping List...",
-      "working"
-    );
-
-
     try {
+
+      setStatus(
+        "Writing the complete product to Shopping List...",
+        "working"
+      );
+
 
       const storeNow =
         await readCurrentStore();
@@ -2970,7 +3735,7 @@
       ) {
 
         throw new Error(
-          "The Current Store changed. Reload the scanner before adding this item."
+          "The Current Store changed. Confirm the store again."
         );
       }
 
@@ -3012,6 +3777,7 @@
         "success"
       );
 
+
     } catch (error) {
 
       handleApiError(
@@ -3019,18 +3785,31 @@
       );
 
 
-      addButton.disabled =
+      button.disabled =
         false;
 
 
-      addButton.textContent =
+      button.textContent =
         "ADD ITEM TO SHOPPING LIST";
     }
   }
 
 
   // ==================================================
-  // WRITE COMPLETE SHOPPING ROW
+  // WRITE ALL SHOPPING LIST FIELDS
+  // ==================================================
+  //
+  // A = Done                  existing checkbox
+  // B = Product               written here
+  // C = Barcode               written here
+  // D = Amount                written here
+  // E = Last Unit Price       previous stored value
+  // F = Today's Unit Price    written here
+  // G = Line Total            formula
+  // H = Store                 written here
+  // I = Price Delta           formula
+  // J = Notes                 written here
+  //
   // ==================================================
 
   async function writeCompleteShoppingItem(
@@ -3132,6 +3911,7 @@
 
       });
 
+
     } else {
 
       rawData.push({
@@ -3213,6 +3993,18 @@
         item.amount *
         item.todayPrice,
 
+      priceDifference:
+        isUsablePrice(
+          item.previousPrice
+        )
+          ? (
+              item.todayPrice -
+              Number(
+                item.previousPrice
+              )
+            )
+          : null,
+
       store:
         item.store,
 
@@ -3263,8 +4055,9 @@
           result.row
         ) +
 
-        " — barcode in " +
+        "<br>" +
 
+        "Barcode written to " +
         escapeHtml(
           result.barcodeCell
         );
@@ -3292,7 +4085,7 @@
       ) +
       "<br>" +
 
-      '<span class="success-label">Previous price:</span> ' +
+      '<span class="success-label">Last Unit Price:</span> ' +
       escapeHtml(
         isUsablePrice(
           result.previousPrice
@@ -3318,7 +4111,29 @@
           result.lineTotal
         )
       ) +
-      "<br>" +
+      "<br>";
+
+
+    if (
+      result.priceDifference !==
+      null
+    ) {
+
+      details +=
+
+        '<span class="success-label">Price Δ:</span> ' +
+
+        escapeHtml(
+          formatSignedMoney(
+            result.priceDifference
+          )
+        ) +
+
+        "<br>";
+    }
+
+
+    details +=
 
       '<span class="success-label">Store:</span> ' +
       escapeHtml(
@@ -3387,7 +4202,7 @@
 
 
   // ==================================================
-  // SCAN NEXT / CANCEL
+  // NEXT / CANCEL
   // ==================================================
 
   function scanNextItem() {
@@ -3396,6 +4211,13 @@
 
 
     resumeScanner();
+
+
+    document
+      .getElementById(
+        "manual-barcode"
+      )
+      .focus();
   }
 
 
@@ -3405,6 +4227,13 @@
 
 
     resumeScanner();
+
+
+    document
+      .getElementById(
+        "manual-barcode"
+      )
+      .focus();
   }
 
 
@@ -3467,30 +4296,20 @@
       )
       .checked =
         false;
-  }
 
 
-  function resumeScanner() {
-
-    setStatus(
-      "Point the rear camera at the next barcode."
-    );
-
-
-    try {
-
-      scanner.resume();
-
-
-      scannerPaused =
-        false;
-
-    } catch (error) {
-
-      fail(
-        "Camera could not resume. Reload this page."
+    const addButton =
+      document.getElementById(
+        "add-item-button"
       );
-    }
+
+
+    addButton.disabled =
+      false;
+
+
+    addButton.textContent =
+      "ADD ITEM TO SHOPPING LIST";
   }
 
 
@@ -3541,7 +4360,7 @@
 
 
   // ==================================================
-  // NEXT EMPTY SHOPPING ROW
+  // NEXT EMPTY ROW
   // ==================================================
 
   async function findNextEmptyShoppingRow(
@@ -3660,7 +4479,7 @@
 
 
   // ==================================================
-  // EXTEND SHOPPING SHEET
+  // GROW SHEET
   // ==================================================
 
   async function extendShoppingSheet(
@@ -3832,7 +4651,7 @@
 
 
   // ==================================================
-  // SHEETS API
+  // GOOGLE SHEETS API
   // ==================================================
 
   async function sheetsGetValues(
@@ -4020,7 +4839,7 @@
 
 
   // ==================================================
-  // NUMERIC HELPERS
+  // NUMBER HELPERS
   // ==================================================
 
   function normalizeNumericValue(
@@ -4118,8 +4937,38 @@
 
 
   // ==================================================
-  // DISPLAY HELPERS
+  // GENERAL HELPERS
   // ==================================================
+
+  function normalizeStore(
+    value
+  ) {
+
+    return String(
+      value ??
+      ""
+    )
+      .trim()
+      .toLowerCase();
+  }
+
+
+  function blank(
+    value
+  ) {
+
+    return (
+      value ===
+      undefined ||
+      value ===
+      null ||
+      String(
+        value
+      ).trim() ===
+      ""
+    );
+  }
+
 
   function formatMoney(
     value
@@ -4147,6 +4996,60 @@
         2
       )
     );
+  }
+
+
+  function formatSignedMoney(
+    value
+  ) {
+
+    const number =
+      Number(
+        value
+      );
+
+
+    if (
+      !Number.isFinite(
+        number
+      )
+    ) {
+
+      return "—";
+    }
+
+
+    if (
+      number >
+      0
+    ) {
+
+      return (
+        "+" +
+        formatMoney(
+          number
+        )
+      );
+    }
+
+
+    if (
+      number <
+      0
+    ) {
+
+      return (
+        "-" +
+        formatMoney(
+          Math.abs(
+            number
+          )
+        )
+      );
+    }
+
+
+    return "$0.00";
   }
 
 
@@ -4181,36 +5084,6 @@
         /\.?0+$/,
         ""
       );
-  }
-
-
-  function normalizeStore(
-    value
-  ) {
-
-    return String(
-      value ??
-      ""
-    )
-      .trim()
-      .toLowerCase();
-  }
-
-
-  function blank(
-    value
-  ) {
-
-    return (
-      value ===
-      undefined ||
-      value ===
-      null ||
-      String(
-        value
-      ).trim() ===
-      ""
-    );
   }
 
 
