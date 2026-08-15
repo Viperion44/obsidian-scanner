@@ -12,7 +12,13 @@
   <title>Obsidian Scanner</title>
 
   <script
-    src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
+    src="https://accounts.google.com/gsi/client"
+    defer>
+  </script>
+
+  <script
+    src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
+    defer>
   </script>
 
   <style>
@@ -68,6 +74,7 @@
     }
 
     #reader {
+      display: none;
       overflow: hidden;
       width: 100%;
       border-radius: 12px;
@@ -108,8 +115,7 @@
       font-size: 14px;
     }
 
-    #next-button {
-      display: none;
+    button {
       width: 100%;
       margin-top: 16px;
       padding: 17px;
@@ -119,6 +125,16 @@
       color: white;
       font-size: 18px;
       font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    #next-button {
+      display: none;
     }
 
     .help {
@@ -131,6 +147,7 @@
   </style>
 </head>
 
+
 <body>
 
 <div class="container">
@@ -142,34 +159,51 @@
   </div>
 
   <div class="store-box">
+
     <div class="store-label">
       CURRENT STORE
     </div>
 
     <div id="store-name">
-      Connecting...
+      Not connected
     </div>
+
   </div>
+
+  <button
+    id="connect-button"
+    type="button"
+    onclick="connectGoogle()">
+
+    CONNECT GOOGLE SHEETS
+
+  </button>
 
   <div id="reader"></div>
 
   <div id="status">
-    Connecting to Shopping List...
+    Connect Google Sheets to begin.
   </div>
 
   <button
     id="next-button"
     type="button"
     onclick="scanNext()">
+
     SCAN NEXT ITEM
+
   </button>
 
   <div class="help">
-    Each successful scan is sent directly to the next
-    available Shopping List row.
+
+    The scanner reads the Current Store from cell M21,
+    then places each barcode in the next empty Shopping List row.
+
     <br><br>
-    The scanner pauses after each product to prevent
-    accidental duplicate scans.
+
+    Google authorization is temporary and remains only
+    in this browser session.
+
   </div>
 
 </div>
@@ -177,33 +211,1457 @@
 
 <script>
 
+  // ==================================================
+  // CONFIGURATION
+  // ==================================================
+
+  const GOOGLE_CLIENT_ID =
+    "357419603703-8no49j1eunhv6g82kkb89tqa84ab7krl.apps.googleusercontent.com";
+
+  const SHEETS_SCOPE =
+    "https://www.googleapis.com/auth/spreadsheets";
+
+  const SHOPPING_SHEET =
+    "Shopping List";
+
+  const PRODUCTS_SHEET =
+    "Products";
+
+  const CURRENT_STORE_CELL =
+    "M21";
+
+  const SHOP_FIRST_ROW =
+    5;
+
+  const SHOP_GROWTH_CHUNK =
+    50;
+
+
   const params =
     new URLSearchParams(
       window.location.search
     );
 
-  const apiUrl =
-    params.get("api");
-
-  const token =
-    params.get("token");
-
-  const storeFromUrl =
-    params.get("store");
+  const SPREADSHEET_ID =
+    String(
+      params.get("sid") || ""
+    ).trim();
 
 
+  let tokenClient = null;
+  let accessToken = "";
   let scanner = null;
+  let scannerStarted = false;
   let processing = false;
+  let currentStore = "";
+
+
+  window.addEventListener(
+    "DOMContentLoaded",
+    initializePage
+  );
+
+
+  // ==================================================
+  // INITIALIZATION
+  // ==================================================
+
+  function initializePage() {
+
+    if (!SPREADSHEET_ID) {
+
+      fail(
+        "This scanner must be opened from the OPEN SCANNER link in Shopping List."
+      );
+
+      document
+        .getElementById(
+          "connect-button"
+        )
+        .disabled = true;
+
+      return;
+    }
+
+
+    if (
+      !window.google ||
+      !google.accounts ||
+      !google.accounts.oauth2
+    ) {
+
+      fail(
+        "Google authorization did not load. Reload this page."
+      );
+
+      return;
+    }
+
+
+    tokenClient =
+      google.accounts.oauth2.initTokenClient({
+
+        client_id:
+          GOOGLE_CLIENT_ID,
+
+        scope:
+          SHEETS_SCOPE,
+
+        include_granted_scopes:
+          true,
+
+        callback:
+          handleTokenResponse,
+
+        error_callback:
+          handleOAuthError
+
+      });
+  }
+
+
+  // ==================================================
+  // GOOGLE AUTH
+  // ==================================================
+
+  function connectGoogle() {
+
+    if (!tokenClient) {
+
+      fail(
+        "Google authorization is not ready yet. Reload the page."
+      );
+
+      return;
+    }
+
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "CONNECTING...";
+
+
+    tokenClient.requestAccessToken({
+
+      prompt:
+        accessToken
+          ? ""
+          : "consent"
+
+    });
+  }
+
+
+  async function handleTokenResponse(
+    response
+  ) {
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+
+    if (
+      !response ||
+      response.error
+    ) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "CONNECT GOOGLE SHEETS";
+
+      fail(
+        response?.error ||
+        "Authorization failed."
+      );
+
+      return;
+    }
+
+
+    accessToken =
+      response.access_token;
+
+
+    try {
+
+      currentStore =
+        await readCurrentStore();
+
+
+      if (!currentStore) {
+
+        document
+          .getElementById(
+            "store-name"
+          )
+          .textContent =
+            "NOT SET";
+
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "RECONNECT GOOGLE SHEETS";
+
+
+        fail(
+          "No Current Store is set. Return to Shopping List and enter the store in M21."
+        );
+
+        return;
+      }
+
+
+      document
+        .getElementById(
+          "store-name"
+        )
+        .textContent =
+          currentStore;
+
+
+      button.style.display =
+        "none";
+
+
+      document
+        .getElementById(
+          "reader"
+        )
+        .style
+        .display =
+          "block";
+
+
+      setStatus(
+        "Connected. Allow camera access, then point the rear camera at a barcode."
+      );
+
+
+      if (!scannerStarted) {
+        startScanner();
+      }
+
+    } catch (error) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "RECONNECT GOOGLE SHEETS";
+
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  function handleOAuthError(
+    error
+  ) {
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      "CONNECT GOOGLE SHEETS";
+
+    fail(
+      error?.type ||
+      "Google authorization failed."
+    );
+  }
+
+
+  // ==================================================
+  // CURRENT STORE
+  // ==================================================
+
+  async function readCurrentStore() {
+
+    const range =
+      `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`;
+
+
+    const result =
+      await sheetsGetValues(
+        range,
+        "FORMATTED_VALUE"
+      );
+
+
+    return String(
+      result.values?.[0]?.[0] ??
+      ""
+    ).trim();
+  }
+
+
+  // ==================================================
+  // CAMERA
+  // ==================================================
+
+  function startScanner() {
+
+    if (!window.Html5QrcodeScanner) {
+
+      fail(
+        "Barcode scanner library did not load. Reload the page."
+      );
+
+      return;
+    }
+
+
+    scanner =
+      new Html5QrcodeScanner(
+
+        "reader",
+
+        {
+
+          fps:
+            12,
+
+          qrbox:
+            function(
+              width,
+              height
+            ) {
+
+              return {
+
+                width:
+                  Math.floor(
+                    width * 0.88
+                  ),
+
+                height:
+                  Math.min(
+                    170,
+                    Math.floor(
+                      height * 0.35
+                    )
+                  )
+
+              };
+            },
+
+          rememberLastUsedCamera:
+            true,
+
+          showTorchButtonIfSupported:
+            true,
+
+          showZoomSliderIfSupported:
+            true,
+
+          formatsToSupport: [
+
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.ITF,
+            Html5QrcodeSupportedFormats.CODABAR,
+            Html5QrcodeSupportedFormats.DATA_MATRIX,
+            Html5QrcodeSupportedFormats.QR_CODE
+
+          ]
+
+        },
+
+        false
+      );
+
+
+    scanner.render(
+      barcodeDetected,
+      function() {}
+    );
+
+
+    scannerStarted =
+      true;
+  }
+
+
+  // ==================================================
+  // BARCODE DETECTED
+  // ==================================================
+
+  async function barcodeDetected(
+    decodedText
+  ) {
+
+    if (processing) {
+      return;
+    }
+
+
+    const barcode =
+      String(
+        decodedText ||
+        ""
+      ).trim();
+
+
+    if (!barcode) {
+      return;
+    }
+
+
+    processing =
+      true;
+
+
+    try {
+      scanner.pause(true);
+    } catch (error) {}
+
+
+    document
+      .getElementById(
+        "next-button"
+      )
+      .style
+      .display =
+        "none";
+
+
+    setStatus(
+
+      "⏳ Adding barcode <b>" +
+      escapeHtml(
+        barcode
+      ) +
+      "</b>...",
+
+      "working"
+    );
+
+
+    try {
+
+      const result =
+        await addBarcodeToShoppingList(
+          barcode
+        );
+
+
+      showScanSuccess(
+        result
+      );
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+
+
+      const button =
+        document.getElementById(
+          "next-button"
+        );
+
+
+      button.textContent =
+        "TRY AGAIN";
+
+      button.style.display =
+        "block";
+    }
+  }
+
+
+  // ==================================================
+  // ADD BARCODE
+  // ==================================================
+
+  async function addBarcodeToShoppingList(
+    barcode
+  ) {
+
+    const storeNow =
+      await readCurrentStore();
+
+
+    if (!storeNow) {
+
+      throw new Error(
+        "No Current Store is set in M21."
+      );
+    }
+
+
+    if (
+      normalizeStore(
+        storeNow
+      ) !==
+      normalizeStore(
+        currentStore
+      )
+    ) {
+
+      throw new Error(
+        "The Current Store changed after opening the scanner. Reload the scanner."
+      );
+    }
+
+
+    const sheetInfo =
+      await getShoppingSheetInfo();
+
+
+    const targetRow =
+      await findNextEmptyShoppingRow(
+        sheetInfo
+      );
+
+
+    const lookup =
+      await lookupProduct(
+        barcode,
+        storeNow
+      );
+
+
+    const rawData = [
+
+      {
+        range:
+          `'${SHOPPING_SHEET}'!C${targetRow}`,
+
+        values:
+          [[barcode]]
+      },
+
+      {
+        range:
+          `'${SHOPPING_SHEET}'!H${targetRow}`,
+
+        values:
+          [[lookup.store]]
+      }
+
+    ];
+
+
+    if (lookup.product) {
+
+      rawData.push({
+
+        range:
+          `'${SHOPPING_SHEET}'!B${targetRow}`,
+
+        values:
+          [[lookup.product]]
+
+      });
+    }
+
+
+    if (
+      lookup.lastPrice !== "" &&
+      lookup.lastPrice !== null &&
+      lookup.lastPrice !== undefined
+    ) {
+
+      rawData.push({
+
+        range:
+          `'${SHOPPING_SHEET}'!E${targetRow}`,
+
+        values:
+          [[lookup.lastPrice]]
+
+      });
+    }
+
+
+    await sheetsValuesBatchUpdate(
+      rawData,
+      "RAW"
+    );
+
+
+    await sheetsValuesBatchUpdate(
+
+      [
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!G${targetRow}`,
+
+          values:
+            [[
+              `=IF(OR(D${targetRow}="",F${targetRow}=""),"",D${targetRow}*F${targetRow})`
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!I${targetRow}`,
+
+          values:
+            [[
+              `=IF(OR(E${targetRow}="",F${targetRow}=""),"",F${targetRow}-E${targetRow})`
+            ]]
+        }
+
+      ],
+
+      "USER_ENTERED"
+
+    );
+
+
+    return {
+
+      row:
+        targetRow,
+
+      barcode:
+        barcode,
+
+      store:
+        lookup.store,
+
+      product:
+        lookup.product,
+
+      lastPrice:
+        lookup.lastPrice,
+
+      note:
+        lookup.note
+
+    };
+  }
+
+
+  // ==================================================
+  // SHOPPING SHEET INFO
+  // ==================================================
+
+  async function getShoppingSheetInfo() {
+
+    const data =
+      await sheetsRequest(
+        "?fields=sheets(properties(sheetId,title,gridProperties(rowCount)))"
+      );
+
+
+    const sheet =
+      (
+        data.sheets ||
+        []
+      )
+      .find(
+        item =>
+          item.properties?.title ===
+          SHOPPING_SHEET
+      );
+
+
+    if (!sheet) {
+
+      throw new Error(
+        `Could not find the "${SHOPPING_SHEET}" sheet.`
+      );
+    }
+
+
+    return {
+
+      sheetId:
+        sheet.properties.sheetId,
+
+      rowCount:
+        sheet.properties.gridProperties.rowCount
+
+    };
+  }
+
+
+  // ==================================================
+  // NEXT EMPTY ROW
+  // ==================================================
+
+  async function findNextEmptyShoppingRow(
+    sheetInfo
+  ) {
+
+    const range =
+      `'${SHOPPING_SHEET}'!A${SHOP_FIRST_ROW}:J${sheetInfo.rowCount}`;
+
+
+    const result =
+      await sheetsGetValues(
+        range,
+        "FORMATTED_VALUE"
+      );
+
+
+    const rows =
+      result.values ||
+      [];
+
+
+    for (
+      let rowNumber =
+        SHOP_FIRST_ROW;
+
+      rowNumber <=
+        sheetInfo.rowCount;
+
+      rowNumber++
+    ) {
+
+      const values =
+        rows[
+          rowNumber -
+          SHOP_FIRST_ROW
+        ] ||
+        [];
+
+
+      if (
+        isShoppingRowEmpty(
+          values
+        )
+      ) {
+
+        return rowNumber;
+      }
+    }
+
+
+    await extendShoppingSheet(
+      sheetInfo.sheetId,
+      sheetInfo.rowCount,
+      SHOP_GROWTH_CHUNK
+    );
+
+
+    return (
+      sheetInfo.rowCount +
+      1
+    );
+  }
+
+
+  function isShoppingRowEmpty(
+    row
+  ) {
+
+    const done =
+      String(
+        row[0] ??
+        ""
+      )
+      .trim()
+      .toUpperCase() ===
+      "TRUE";
+
+
+    return (
+
+      !done &&
+
+      blank(
+        row[1]
+      ) &&
+
+      blank(
+        row[2]
+      ) &&
+
+      blank(
+        row[3]
+      ) &&
+
+      blank(
+        row[5]
+      ) &&
+
+      blank(
+        row[7]
+      ) &&
+
+      blank(
+        row[9]
+      )
+
+    );
+  }
+
+
+  // ==================================================
+  // EXTEND SHEET IF NECESSARY
+  // ==================================================
+
+  async function extendShoppingSheet(
+    sheetId,
+    oldRowCount,
+    amount
+  ) {
+
+    const sourceStartRow =
+      Math.max(
+        SHOP_FIRST_ROW - 1,
+        oldRowCount - 1
+      );
+
+
+    await sheetsRequest(
+
+      ":batchUpdate",
+
+      {
+
+        method:
+          "POST",
+
+        body:
+          JSON.stringify({
+
+            requests: [
+
+              {
+                appendDimension: {
+
+                  sheetId:
+                    sheetId,
+
+                  dimension:
+                    "ROWS",
+
+                  length:
+                    amount
+                }
+              },
+
+              {
+                copyPaste: {
+
+                  source: {
+
+                    sheetId:
+                      sheetId,
+
+                    startRowIndex:
+                      sourceStartRow,
+
+                    endRowIndex:
+                      sourceStartRow + 1,
+
+                    startColumnIndex:
+                      0,
+
+                    endColumnIndex:
+                      10
+
+                  },
+
+                  destination: {
+
+                    sheetId:
+                      sheetId,
+
+                    startRowIndex:
+                      oldRowCount,
+
+                    endRowIndex:
+                      oldRowCount + amount,
+
+                    startColumnIndex:
+                      0,
+
+                    endColumnIndex:
+                      10
+
+                  },
+
+                  pasteType:
+                    "PASTE_FORMAT",
+
+                  pasteOrientation:
+                    "NORMAL"
+                }
+              },
+
+              {
+                copyPaste: {
+
+                  source: {
+
+                    sheetId:
+                      sheetId,
+
+                    startRowIndex:
+                      sourceStartRow,
+
+                    endRowIndex:
+                      sourceStartRow + 1,
+
+                    startColumnIndex:
+                      0,
+
+                    endColumnIndex:
+                      1
+
+                  },
+
+                  destination: {
+
+                    sheetId:
+                      sheetId,
+
+                    startRowIndex:
+                      oldRowCount,
+
+                    endRowIndex:
+                      oldRowCount + amount,
+
+                    startColumnIndex:
+                      0,
+
+                    endColumnIndex:
+                      1
+
+                  },
+
+                  pasteType:
+                    "PASTE_DATA_VALIDATION",
+
+                  pasteOrientation:
+                    "NORMAL"
+                }
+              }
+
+            ]
+
+          })
+
+      }
+    );
+  }
+
+
+  // ==================================================
+  // PRODUCT LOOKUP
+  // ==================================================
+
+  async function lookupProduct(
+    barcode,
+    store
+  ) {
+
+    const range =
+      `'${PRODUCTS_SHEET}'!A5:D`;
+
+
+    const result =
+      await sheetsGetValues(
+        range,
+        "UNFORMATTED_VALUE"
+      );
+
+
+    const rows =
+      result.values ||
+      [];
+
+
+    const matches =
+      rows.filter(
+        row =>
+          String(
+            row[0] ??
+            ""
+          ).trim() ===
+          String(
+            barcode
+          ).trim()
+      );
+
+
+    if (
+      matches.length ===
+      0
+    ) {
+
+      return {
+
+        product:
+          "",
+
+        lastPrice:
+          "",
+
+        store:
+          store,
+
+        note:
+          "New barcode"
+
+      };
+    }
+
+
+    const exact =
+      matches.find(
+        row =>
+          normalizeStore(
+            row[3]
+          ) ===
+          normalizeStore(
+            store
+          )
+      );
+
+
+    if (exact) {
+
+      return {
+
+        product:
+          String(
+            exact[1] ??
+            ""
+          ).trim(),
+
+        lastPrice:
+          exact[2] ??
+          "",
+
+        store:
+          String(
+            exact[3] ??
+            store
+          ).trim() ||
+          store,
+
+        note:
+          ""
+
+      };
+    }
+
+
+    if (
+      matches.length ===
+      1
+    ) {
+
+      return {
+
+        product:
+          String(
+            matches[0][1] ??
+            ""
+          ).trim(),
+
+        lastPrice:
+          "",
+
+        store:
+          store,
+
+        note:
+          "Known barcode, new store combination"
+
+      };
+    }
+
+
+    return {
+
+      product:
+        "",
+
+      lastPrice:
+        "",
+
+      store:
+        store,
+
+      note:
+        "Barcode exists at multiple stores; enter Product manually"
+
+    };
+  }
+
+
+  // ==================================================
+  // SHEETS API
+  // ==================================================
+
+  async function sheetsGetValues(
+    range,
+    valueRenderOption
+  ) {
+
+    const encodedRange =
+      encodeURIComponent(
+        range
+      );
+
+
+    return sheetsRequest(
+
+      `/values/${encodedRange}?valueRenderOption=${encodeURIComponent(
+        valueRenderOption
+      )}`
+
+    );
+  }
+
+
+  async function sheetsValuesBatchUpdate(
+    data,
+    valueInputOption
+  ) {
+
+    return sheetsRequest(
+
+      "/values:batchUpdate",
+
+      {
+
+        method:
+          "POST",
+
+        body:
+          JSON.stringify({
+
+            valueInputOption:
+              valueInputOption,
+
+            data:
+              data
+
+          })
+
+      }
+
+    );
+  }
+
+
+  async function sheetsRequest(
+    path,
+    options = {}
+  ) {
+
+    if (!accessToken) {
+
+      throw new Error(
+        "Google authorization has expired. Reconnect Google Sheets."
+      );
+    }
+
+
+    const url =
+      `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
+        SPREADSHEET_ID
+      )}${path}`;
+
+
+    const headers =
+      new Headers(
+        options.headers ||
+        {}
+      );
+
+
+    headers.set(
+      "Authorization",
+      `Bearer ${accessToken}`
+    );
+
+
+    if (options.body) {
+
+      headers.set(
+        "Content-Type",
+        "application/json"
+      );
+    }
+
+
+    const response =
+      await fetch(
+
+        url,
+
+        {
+          ...options,
+          headers:
+            headers
+        }
+
+      );
+
+
+    if (
+      response.status ===
+      401
+    ) {
+
+      accessToken =
+        "";
+
+
+      const button =
+        document.getElementById(
+          "connect-button"
+        );
+
+
+      button.style.display =
+        "block";
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "RECONNECT GOOGLE SHEETS";
+
+
+      throw new Error(
+        "Google authorization expired. Tap RECONNECT GOOGLE SHEETS."
+      );
+    }
+
+
+    let payload =
+      null;
+
+
+    try {
+
+      payload =
+        await response.json();
+
+    } catch (error) {
+
+      payload =
+        null;
+    }
+
+
+    if (!response.ok) {
+
+      const message =
+
+        payload?.error?.message ||
+
+        `Google Sheets API returned HTTP ${response.status}.`;
+
+
+      throw new Error(
+        message
+      );
+    }
+
+
+    return (
+      payload ||
+      {}
+    );
+  }
+
+
+  // ==================================================
+  // SUCCESS / NEXT
+  // ==================================================
+
+  function showScanSuccess(
+    result
+  ) {
+
+    if (navigator.vibrate) {
+      navigator.vibrate(100);
+    }
+
+
+    const productText =
+
+      result.product
+
+        ? escapeHtml(
+            result.product
+          )
+
+        : "New / unidentified product";
+
+
+    const priceText =
+
+      result.lastPrice !== "" &&
+      result.lastPrice !== null &&
+      result.lastPrice !== undefined
+
+        ? (
+            "<br>Last price: <b>" +
+            escapeHtml(
+              formatPrice(
+                result.lastPrice
+              )
+            ) +
+            "</b>"
+          )
+
+        : "";
+
+
+    const noteText =
+
+      result.note
+
+        ? (
+            "<br><br>⚠️ " +
+            escapeHtml(
+              result.note
+            )
+          )
+
+        : "";
+
+
+    setStatus(
+
+      "✅ Added to row <b>" +
+      result.row +
+      "</b>" +
+
+      '<div class="product">' +
+      productText +
+      "</div>" +
+
+      '<div class="details">' +
+
+      "Barcode: " +
+      escapeHtml(
+        result.barcode
+      ) +
+
+      "<br>Store: " +
+      escapeHtml(
+        result.store
+      ) +
+
+      priceText +
+
+      noteText +
+
+      "</div>",
+
+      "success"
+    );
+
+
+    const button =
+      document.getElementById(
+        "next-button"
+      );
+
+
+    button.textContent =
+      "SCAN NEXT ITEM";
+
+    button.style.display =
+      "block";
+  }
+
+
+  function scanNext() {
+
+    const button =
+      document.getElementById(
+        "next-button"
+      );
+
+
+    button.style.display =
+      "none";
+
+    button.textContent =
+      "SCAN NEXT ITEM";
+
+
+    processing =
+      false;
+
+
+    setStatus(
+      "Point the camera at the next barcode."
+    );
+
+
+    try {
+      scanner.resume();
+    } catch (error) {
+
+      fail(
+        "Camera could not resume. Reload this page."
+      );
+    }
+  }
+
+
+  // ==================================================
+  // UI HELPERS
+  // ==================================================
+
+  function handleApiError(
+    error
+  ) {
+
+    fail(
+      error?.message ||
+      String(
+        error ||
+        "Unknown error"
+      )
+    );
+  }
 
 
   function setStatus(
     message,
     className = ""
   ) {
+
     const status =
       document.getElementById(
         "status"
       );
+
 
     status.className =
       className;
@@ -213,9 +1671,89 @@
   }
 
 
-  function escapeHtml(value) {
+  function fail(
+    message
+  ) {
+
+    setStatus(
+
+      "❌ " +
+      escapeHtml(
+        message
+      ),
+
+      "error"
+
+    );
+  }
+
+
+  function normalizeStore(
+    value
+  ) {
+
     return String(
-      value ?? ""
+      value ??
+      ""
+    )
+      .trim()
+      .toLowerCase();
+  }
+
+
+  function blank(
+    value
+  ) {
+
+    return (
+      value === undefined ||
+      value === null ||
+      String(
+        value
+      ).trim() === ""
+    );
+  }
+
+
+  function formatPrice(
+    value
+  ) {
+
+    const number =
+      Number(
+        value
+      );
+
+
+    if (
+      Number.isFinite(
+        number
+      )
+    ) {
+
+      return (
+        "$" +
+        number.toFixed(
+          2
+        )
+      );
+    }
+
+
+    return String(
+      value ??
+      ""
+    );
+  }
+
+
+  function escapeHtml(
+    value
+  ) {
+
+    return String(
+      value ??
+      ""
     )
       .replace(
         /&/g,
@@ -237,514 +1775,6 @@
         /'/g,
         "&#039;"
       );
-  }
-
-
-  function fail(message) {
-    document
-      .getElementById(
-        "store-name"
-      )
-      .textContent =
-        "ERROR";
-
-    setStatus(
-      "❌ " +
-        escapeHtml(
-          message
-        ),
-      "error"
-    );
-  }
-
-
-  if (
-    !apiUrl ||
-    !token
-  ) {
-
-    fail(
-      "This scanner must be opened from the Shopping List scanner link."
-    );
-
-  } else {
-
-    document
-      .getElementById(
-        "store-name"
-      )
-      .textContent =
-        storeFromUrl ||
-        "Loading...";
-
-    initializeScanner();
-  }
-
-
-  function initializeScanner() {
-
-    setStatus(
-      "Allow camera access, then point the rear camera at a barcode."
-    );
-
-
-    scanner =
-      new Html5QrcodeScanner(
-        "reader",
-        {
-          fps: 12,
-
-          qrbox: function(
-            width,
-            height
-          ) {
-
-            return {
-              width:
-                Math.floor(
-                  width * 0.88
-                ),
-
-              height:
-                Math.min(
-                  170,
-                  Math.floor(
-                    height * 0.35
-                  )
-                )
-            };
-          },
-
-          rememberLastUsedCamera:
-            true,
-
-          showTorchButtonIfSupported:
-            true,
-
-          showZoomSliderIfSupported:
-            true,
-
-          formatsToSupport: [
-
-            Html5QrcodeSupportedFormats
-              .EAN_13,
-
-            Html5QrcodeSupportedFormats
-              .EAN_8,
-
-            Html5QrcodeSupportedFormats
-              .UPC_A,
-
-            Html5QrcodeSupportedFormats
-              .UPC_E,
-
-            Html5QrcodeSupportedFormats
-              .CODE_128,
-
-            Html5QrcodeSupportedFormats
-              .CODE_39,
-
-            Html5QrcodeSupportedFormats
-              .ITF,
-
-            Html5QrcodeSupportedFormats
-              .CODABAR,
-
-            Html5QrcodeSupportedFormats
-              .DATA_MATRIX,
-
-            Html5QrcodeSupportedFormats
-              .QR_CODE
-          ]
-        },
-        false
-      );
-
-
-    scanner.render(
-      barcodeDetected,
-      function() {}
-    );
-  }
-
-
-  function barcodeDetected(
-    decodedText
-  ) {
-
-    if (processing) {
-      return;
-    }
-
-
-    processing =
-      true;
-
-
-    try {
-      scanner.pause(
-        true
-      );
-    } catch (error) {
-      // Processing flag still prevents duplicates.
-    }
-
-
-    document
-      .getElementById(
-        "next-button"
-      )
-      .style
-      .display =
-        "none";
-
-
-    setStatus(
-      "⏳ Adding barcode <b>" +
-        escapeHtml(
-          decodedText
-        ) +
-        "</b>...",
-      "working"
-    );
-
-
-    sendBarcode(
-      decodedText
-    );
-  }
-
-
-  function sendBarcode(barcode) {
-
-    const callbackName =
-      "obsidianCallback_" +
-      Date.now() +
-      "_" +
-      Math.floor(
-        Math.random() *
-        1000000
-      );
-
-
-    const script =
-      document.createElement(
-        "script"
-      );
-
-
-    let completed =
-      false;
-
-
-    const timeout =
-      setTimeout(
-        function() {
-
-          if (completed) {
-            return;
-          }
-
-
-          completed =
-            true;
-
-
-          cleanup();
-
-
-          scanFailed(
-            "The Shopping List did not respond. Try again."
-          );
-
-        },
-        15000
-      );
-
-
-    window[
-      callbackName
-    ] =
-      function(result) {
-
-        if (completed) {
-          return;
-        }
-
-
-        completed =
-          true;
-
-
-        clearTimeout(
-          timeout
-        );
-
-
-        cleanup();
-
-
-        if (
-          !result ||
-          result.success !== true
-        ) {
-
-          scanFailed(
-            result &&
-            result.error
-
-              ? result.error
-
-              : "The barcode could not be added."
-          );
-
-
-          return;
-        }
-
-
-        scanSucceeded(
-          result
-        );
-      };
-
-
-    function cleanup() {
-
-      try {
-        delete window[
-          callbackName
-        ];
-      } catch (error) {}
-
-
-      if (
-        script.parentNode
-      ) {
-        script.parentNode
-          .removeChild(
-            script
-          );
-      }
-    }
-
-
-    const requestUrl =
-      apiUrl +
-
-      "?action=scan" +
-
-      "&token=" +
-      encodeURIComponent(
-        token
-      ) +
-
-      "&barcode=" +
-      encodeURIComponent(
-        barcode
-      ) +
-
-      "&callback=" +
-      encodeURIComponent(
-        callbackName
-      ) +
-
-      "&_=" +
-      Date.now();
-
-
-    script.src =
-      requestUrl;
-
-
-    script.onerror =
-      function() {
-
-        if (completed) {
-          return;
-        }
-
-
-        completed =
-          true;
-
-
-        clearTimeout(
-          timeout
-        );
-
-
-        cleanup();
-
-
-        scanFailed(
-          "Unable to contact the Shopping List."
-        );
-      };
-
-
-    document.body.appendChild(
-      script
-    );
-  }
-
-
-  function scanSucceeded(
-    result
-  ) {
-
-    if (
-      navigator.vibrate
-    ) {
-      navigator.vibrate(
-        100
-      );
-    }
-
-
-    document
-      .getElementById(
-        "store-name"
-      )
-      .textContent =
-        result.store ||
-        storeFromUrl ||
-        "";
-
-
-    const product =
-      result.product
-
-        ? escapeHtml(
-            result.product
-          )
-
-        : "New / unidentified product";
-
-
-    const lastPrice =
-      result.lastPrice
-
-        ? (
-            "<br>Last price: <b>" +
-            escapeHtml(
-              result.lastPrice
-            ) +
-            "</b>"
-          )
-
-        : "";
-
-
-    setStatus(
-
-      "✅ Added to row <b>" +
-        result.row +
-        "</b>" +
-
-      "<div class=\"product\">" +
-        product +
-      "</div>" +
-
-      "<div class=\"details\">" +
-
-        "Barcode: " +
-        escapeHtml(
-          result.barcode
-        ) +
-
-        "<br>Store: " +
-        escapeHtml(
-          result.store
-        ) +
-
-        lastPrice +
-
-      "</div>",
-
-      "success"
-    );
-
-
-    const button =
-      document.getElementById(
-        "next-button"
-      );
-
-
-    button.textContent =
-      "SCAN NEXT ITEM";
-
-
-    button.style.display =
-      "block";
-  }
-
-
-  function scanFailed(
-    message
-  ) {
-
-    setStatus(
-      "❌ " +
-        escapeHtml(
-          message
-        ),
-      "error"
-    );
-
-
-    const button =
-      document.getElementById(
-        "next-button"
-      );
-
-
-    button.textContent =
-      "TRY AGAIN";
-
-
-    button.style.display =
-      "block";
-  }
-
-
-  function scanNext() {
-
-    const button =
-      document.getElementById(
-        "next-button"
-      );
-
-
-    button.style.display =
-      "none";
-
-
-    button.textContent =
-      "SCAN NEXT ITEM";
-
-
-    processing =
-      false;
-
-
-    setStatus(
-      "Point the camera at the next barcode."
-    );
-
-
-    try {
-
-      scanner.resume();
-
-    } catch (error) {
-
-      setStatus(
-        "Camera could not resume. Reload this page.",
-        "error"
-      );
-    }
   }
 
 </script>
