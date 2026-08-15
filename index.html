@@ -152,11 +152,14 @@
 
 <div class="container">
 
-  <h1>🛒 Obsidian Scanner</h1>
+  <h1>
+    🛒 Obsidian Scanner
+  </h1>
 
   <div class="subtitle">
     Scan directly into Shopping List
   </div>
+
 
   <div class="store-box">
 
@@ -170,6 +173,7 @@
 
   </div>
 
+
   <button
     id="connect-button"
     type="button"
@@ -179,11 +183,14 @@
 
   </button>
 
+
   <div id="reader"></div>
+
 
   <div id="status">
     Connect Google Sheets to begin.
   </div>
+
 
   <button
     id="next-button"
@@ -193,6 +200,7 @@
     SCAN NEXT ITEM
 
   </button>
+
 
   <div class="help">
 
@@ -218,20 +226,26 @@
   const GOOGLE_CLIENT_ID =
     "357419603703-8no49j1eunhv6g82kkb89tqa84ab7krl.apps.googleusercontent.com";
 
+
   const SHEETS_SCOPE =
     "https://www.googleapis.com/auth/spreadsheets";
+
 
   const SHOPPING_SHEET =
     "Shopping List";
 
+
   const PRODUCTS_SHEET =
     "Products";
+
 
   const CURRENT_STORE_CELL =
     "M21";
 
+
   const SHOP_FIRST_ROW =
     5;
+
 
   const SHOP_GROWTH_CHUNK =
     50;
@@ -242,18 +256,35 @@
       window.location.search
     );
 
+
   const SPREADSHEET_ID =
     String(
       params.get("sid") || ""
     ).trim();
 
 
-  let tokenClient = null;
-  let accessToken = "";
-  let scanner = null;
-  let scannerStarted = false;
-  let processing = false;
-  let currentStore = "";
+  let tokenClient =
+    null;
+
+
+  let accessToken =
+    "";
+
+
+  let scanner =
+    null;
+
+
+  let scannerStarted =
+    false;
+
+
+  let processing =
+    false;
+
+
+  let currentStore =
+    "";
 
 
   window.addEventListener(
@@ -274,54 +305,108 @@
         "This scanner must be opened from the OPEN SCANNER link in Shopping List."
       );
 
+
       document
         .getElementById(
           "connect-button"
         )
-        .disabled = true;
+        .disabled =
+          true;
+
 
       return;
     }
 
 
-    if (
-      !window.google ||
-      !google.accounts ||
-      !google.accounts.oauth2
-    ) {
+    waitForGoogleIdentity();
+  }
 
-      fail(
-        "Google authorization did not load. Reload this page."
+
+  function waitForGoogleIdentity() {
+
+    let attempts =
+      0;
+
+
+    const timer =
+      setInterval(
+        function() {
+
+          attempts++;
+
+
+          if (
+            window.google &&
+            google.accounts &&
+            google.accounts.oauth2
+          ) {
+
+            clearInterval(
+              timer
+            );
+
+
+            initializeGoogleTokenClient();
+
+
+            return;
+          }
+
+
+          if (
+            attempts >=
+            50
+          ) {
+
+            clearInterval(
+              timer
+            );
+
+
+            fail(
+              "Google authorization did not load. Reload this page and try again."
+            );
+          }
+
+        },
+
+        100
       );
+  }
 
-      return;
-    }
 
+  function initializeGoogleTokenClient() {
 
     tokenClient =
-      google.accounts.oauth2.initTokenClient({
+      google.accounts.oauth2
+        .initTokenClient({
 
-        client_id:
-          GOOGLE_CLIENT_ID,
+          client_id:
+            GOOGLE_CLIENT_ID,
 
-        scope:
-          SHEETS_SCOPE,
+          scope:
+            SHEETS_SCOPE,
 
-        include_granted_scopes:
-          true,
+          include_granted_scopes:
+            true,
 
-        callback:
-          handleTokenResponse,
+          callback:
+            handleTokenResponse,
 
-        error_callback:
-          handleOAuthError
+          error_callback:
+            handleOAuthError
 
-      });
+        });
+
+
+    setStatus(
+      "Ready. Tap CONNECT GOOGLE SHEETS."
+    );
   }
 
 
   // ==================================================
-  // GOOGLE AUTH
+  // GOOGLE AUTHORIZATION
   // ==================================================
 
   function connectGoogle() {
@@ -329,8 +414,9 @@
     if (!tokenClient) {
 
       fail(
-        "Google authorization is not ready yet. Reload the page."
+        "Google authorization is not ready yet. Reload this page."
       );
+
 
       return;
     }
@@ -345,18 +431,29 @@
     button.disabled =
       true;
 
+
     button.textContent =
       "CONNECTING...";
 
 
-    tokenClient.requestAccessToken({
+    setStatus(
+      "Waiting for Google authorization...",
+      "working"
+    );
 
-      prompt:
-        accessToken
-          ? ""
-          : "consent"
 
-    });
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT force prompt="consent".
+     *
+     * Google remembers consent for this user/client.
+     * requestAccessToken() will show only whatever UI
+     * Google determines is currently necessary.
+     */
+
+    tokenClient
+      .requestAccessToken();
   }
 
 
@@ -378,13 +475,41 @@
       button.disabled =
         false;
 
+
       button.textContent =
         "CONNECT GOOGLE SHEETS";
 
+
       fail(
-        response?.error ||
-        "Authorization failed."
+        response &&
+        response.error
+
+          ? response.error
+
+          : "Authorization failed."
       );
+
+
+      return;
+    }
+
+
+    if (
+      !response.access_token
+    ) {
+
+      button.disabled =
+        false;
+
+
+      button.textContent =
+        "CONNECT GOOGLE SHEETS";
+
+
+      fail(
+        "Google did not return an access token. Tap CONNECT GOOGLE SHEETS again."
+      );
+
 
       return;
     }
@@ -413,6 +538,7 @@
         button.disabled =
           false;
 
+
         button.textContent =
           "RECONNECT GOOGLE SHEETS";
 
@@ -420,6 +546,7 @@
         fail(
           "No Current Store is set. Return to Shopping List and enter the store in M21."
         );
+
 
         return;
       }
@@ -452,7 +579,9 @@
 
 
       if (!scannerStarted) {
+
         startScanner();
+
       }
 
     } catch (error) {
@@ -460,8 +589,10 @@
       button.disabled =
         false;
 
+
       button.textContent =
         "RECONNECT GOOGLE SHEETS";
+
 
       handleApiError(
         error
@@ -479,14 +610,56 @@
         "connect-button"
       );
 
+
     button.disabled =
       false;
+
 
     button.textContent =
       "CONNECT GOOGLE SHEETS";
 
+
+    const type =
+      error &&
+      error.type
+
+        ? String(
+            error.type
+          )
+
+        : "";
+
+
+    if (
+      type ===
+      "popup_closed"
+    ) {
+
+      fail(
+        "Google closed the authorization window before returning the token. Tap CONNECT GOOGLE SHEETS once more."
+      );
+
+
+      return;
+    }
+
+
+    if (
+      type ===
+      "popup_failed_to_open"
+    ) {
+
+      fail(
+        "Chrome blocked the Google authorization window. Allow pop-ups for this site, then tap CONNECT GOOGLE SHEETS again."
+      );
+
+
+      return;
+    }
+
+
     fail(
-      error?.type ||
+      type ||
       "Google authorization failed."
     );
   }
@@ -522,11 +695,14 @@
 
   function startScanner() {
 
-    if (!window.Html5QrcodeScanner) {
+    if (
+      !window.Html5QrcodeScanner
+    ) {
 
       fail(
         "Barcode scanner library did not load. Reload the page."
       );
+
 
       return;
     }
@@ -542,6 +718,7 @@
           fps:
             12,
 
+
           qrbox:
             function(
               width,
@@ -552,41 +729,66 @@
 
                 width:
                   Math.floor(
-                    width * 0.88
+                    width *
+                    0.88
                   ),
 
                 height:
                   Math.min(
                     170,
                     Math.floor(
-                      height * 0.35
+                      height *
+                      0.35
                     )
                   )
 
               };
             },
 
+
           rememberLastUsedCamera:
             true,
+
 
           showTorchButtonIfSupported:
             true,
 
+
           showZoomSliderIfSupported:
             true,
 
+
           formatsToSupport: [
 
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.ITF,
-            Html5QrcodeSupportedFormats.CODABAR,
-            Html5QrcodeSupportedFormats.DATA_MATRIX,
-            Html5QrcodeSupportedFormats.QR_CODE
+            Html5QrcodeSupportedFormats
+              .EAN_13,
+
+            Html5QrcodeSupportedFormats
+              .EAN_8,
+
+            Html5QrcodeSupportedFormats
+              .UPC_A,
+
+            Html5QrcodeSupportedFormats
+              .UPC_E,
+
+            Html5QrcodeSupportedFormats
+              .CODE_128,
+
+            Html5QrcodeSupportedFormats
+              .CODE_39,
+
+            Html5QrcodeSupportedFormats
+              .ITF,
+
+            Html5QrcodeSupportedFormats
+              .CODABAR,
+
+            Html5QrcodeSupportedFormats
+              .DATA_MATRIX,
+
+            Html5QrcodeSupportedFormats
+              .QR_CODE
 
           ]
 
@@ -637,8 +839,16 @@
 
 
     try {
-      scanner.pause(true);
-    } catch (error) {}
+
+      scanner.pause(
+        true
+      );
+
+    } catch (error) {
+
+      // Processing flag still prevents duplicates.
+
+    }
 
 
     document
@@ -653,10 +863,10 @@
     setStatus(
 
       "⏳ Adding barcode <b>" +
-      escapeHtml(
-        barcode
-      ) +
-      "</b>...",
+        escapeHtml(
+          barcode
+        ) +
+        "</b>...",
 
       "working"
     );
@@ -689,6 +899,7 @@
 
       button.textContent =
         "TRY AGAIN";
+
 
       button.style.display =
         "block";
@@ -751,25 +962,31 @@
     const rawData = [
 
       {
+
         range:
           `'${SHOPPING_SHEET}'!C${targetRow}`,
 
         values:
           [[barcode]]
+
       },
 
       {
+
         range:
           `'${SHOPPING_SHEET}'!H${targetRow}`,
 
         values:
           [[lookup.store]]
+
       }
 
     ];
 
 
-    if (lookup.product) {
+    if (
+      lookup.product
+    ) {
 
       rawData.push({
 
@@ -812,6 +1029,7 @@
       [
 
         {
+
           range:
             `'${SHOPPING_SHEET}'!G${targetRow}`,
 
@@ -819,9 +1037,11 @@
             [[
               `=IF(OR(D${targetRow}="",F${targetRow}=""),"",D${targetRow}*F${targetRow})`
             ]]
+
         },
 
         {
+
           range:
             `'${SHOPPING_SHEET}'!I${targetRow}`,
 
@@ -829,6 +1049,7 @@
             [[
               `=IF(OR(E${targetRow}="",F${targetRow}=""),"",F${targetRow}-E${targetRow})`
             ]]
+
         }
 
       ],
@@ -900,14 +1121,16 @@
         sheet.properties.sheetId,
 
       rowCount:
-        sheet.properties.gridProperties.rowCount
+        sheet.properties
+          .gridProperties
+          .rowCount
 
     };
   }
 
 
   // ==================================================
-  // NEXT EMPTY ROW
+  // NEXT EMPTY SHOPPING ROW
   // ==================================================
 
   async function findNextEmptyShoppingRow(
@@ -931,6 +1154,7 @@
 
 
     for (
+
       let rowNumber =
         SHOP_FIRST_ROW;
 
@@ -938,6 +1162,7 @@
         sheetInfo.rowCount;
 
       rowNumber++
+
     ) {
 
       const values =
@@ -960,9 +1185,13 @@
 
 
     await extendShoppingSheet(
+
       sheetInfo.sheetId,
+
       sheetInfo.rowCount,
+
       SHOP_GROWTH_CHUNK
+
     );
 
 
@@ -1020,7 +1249,7 @@
 
 
   // ==================================================
-  // EXTEND SHEET IF NECESSARY
+  // EXTEND SHOPPING SHEET
   // ==================================================
 
   async function extendShoppingSheet(
@@ -1045,12 +1274,14 @@
         method:
           "POST",
 
+
         body:
           JSON.stringify({
 
             requests: [
 
               {
+
                 appendDimension: {
 
                   sheetId:
@@ -1061,10 +1292,13 @@
 
                   length:
                     amount
+
                 }
+
               },
 
               {
+
                 copyPaste: {
 
                   source: {
@@ -1076,7 +1310,8 @@
                       sourceStartRow,
 
                     endRowIndex:
-                      sourceStartRow + 1,
+                      sourceStartRow +
+                      1,
 
                     startColumnIndex:
                       0,
@@ -1085,6 +1320,7 @@
                       10
 
                   },
+
 
                   destination: {
 
@@ -1095,7 +1331,8 @@
                       oldRowCount,
 
                     endRowIndex:
-                      oldRowCount + amount,
+                      oldRowCount +
+                      amount,
 
                     startColumnIndex:
                       0,
@@ -1104,16 +1341,21 @@
                       10
 
                   },
+
 
                   pasteType:
                     "PASTE_FORMAT",
 
+
                   pasteOrientation:
                     "NORMAL"
+
                 }
+
               },
 
               {
+
                 copyPaste: {
 
                   source: {
@@ -1125,7 +1367,8 @@
                       sourceStartRow,
 
                     endRowIndex:
-                      sourceStartRow + 1,
+                      sourceStartRow +
+                      1,
 
                     startColumnIndex:
                       0,
@@ -1134,6 +1377,7 @@
                       1
 
                   },
+
 
                   destination: {
 
@@ -1144,7 +1388,8 @@
                       oldRowCount,
 
                     endRowIndex:
-                      oldRowCount + amount,
+                      oldRowCount +
+                      amount,
 
                     startColumnIndex:
                       0,
@@ -1154,12 +1399,16 @@
 
                   },
 
+
                   pasteType:
                     "PASTE_DATA_VALIDATION",
 
+
                   pasteOrientation:
                     "NORMAL"
+
                 }
+
               }
 
             ]
@@ -1317,7 +1566,7 @@
 
 
   // ==================================================
-  // SHEETS API
+  // SHEETS API HELPERS
   // ==================================================
 
   async function sheetsGetValues(
@@ -1354,6 +1603,7 @@
 
         method:
           "POST",
+
 
         body:
           JSON.stringify({
@@ -1404,7 +1654,9 @@
     );
 
 
-    if (options.body) {
+    if (
+      options.body
+    ) {
 
       headers.set(
         "Content-Type",
@@ -1419,9 +1671,12 @@
         url,
 
         {
+
           ...options,
+
           headers:
             headers
+
         }
 
       );
@@ -1445,8 +1700,10 @@
       button.style.display =
         "block";
 
+
       button.disabled =
         false;
+
 
       button.textContent =
         "RECONNECT GOOGLE SHEETS";
@@ -1471,6 +1728,7 @@
 
       payload =
         null;
+
     }
 
 
@@ -1504,8 +1762,13 @@
     result
   ) {
 
-    if (navigator.vibrate) {
-      navigator.vibrate(100);
+    if (
+      navigator.vibrate
+    ) {
+
+      navigator.vibrate(
+        100
+      );
     }
 
 
@@ -1556,28 +1819,28 @@
     setStatus(
 
       "✅ Added to row <b>" +
-      result.row +
-      "</b>" +
+        result.row +
+        "</b>" +
 
       '<div class="product">' +
-      productText +
+        productText +
       "</div>" +
 
       '<div class="details">' +
 
-      "Barcode: " +
-      escapeHtml(
-        result.barcode
-      ) +
+        "Barcode: " +
+        escapeHtml(
+          result.barcode
+        ) +
 
-      "<br>Store: " +
-      escapeHtml(
-        result.store
-      ) +
+        "<br>Store: " +
+        escapeHtml(
+          result.store
+        ) +
 
-      priceText +
+        priceText +
 
-      noteText +
+        noteText +
 
       "</div>",
 
@@ -1593,6 +1856,7 @@
 
     button.textContent =
       "SCAN NEXT ITEM";
+
 
     button.style.display =
       "block";
@@ -1610,6 +1874,7 @@
     button.style.display =
       "none";
 
+
     button.textContent =
       "SCAN NEXT ITEM";
 
@@ -1624,7 +1889,9 @@
 
 
     try {
+
       scanner.resume();
+
     } catch (error) {
 
       fail(
@@ -1665,6 +1932,7 @@
 
     status.className =
       className;
+
 
     status.innerHTML =
       message;
