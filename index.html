@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Obsidian Scanner</title>
+
+  <script
+    src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      background: #111318;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 8px 0 4px;
+      text-align: center;
+      font-size: 26px;
+    }
+
+    .subtitle {
+      margin-bottom: 18px;
+      text-align: center;
+      color: #b8b8b8;
+    }
+
+    .store-box {
+      margin-bottom: 16px;
+      padding: 15px;
+      border-radius: 12px;
+      background: #242833;
+      text-align: center;
+    }
+
+    .store-label {
+      color: #aeb4c0;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    #store-name {
+      margin-top: 5px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #reader {
+      overflow: hidden;
+      width: 100%;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #000000;
+    }
+
+    #status {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #242833;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .working {
+      background: #473a1d !important;
+    }
+
+    .success {
+      background: #173d25 !important;
+    }
+
+    .error {
+      background: #511e25 !important;
+    }
+
+    .product {
+      margin-top: 8px;
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .details {
+      margin-top: 7px;
+      color: #d3d3d3;
+      font-size: 14px;
+    }
+
+    #next-button {
+      display: none;
+      width: 100%;
+      margin-top: 16px;
+      padding: 17px;
+      border: none;
+      border-radius: 12px;
+      background: #6b35a5;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .help {
+      margin-top: 18px;
+      color: #aeb4c0;
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🛒 Obsidian Scanner</h1>
+
+  <div class="subtitle">
+    Scan directly into Shopping List
+  </div>
+
+  <div class="store-box">
+    <div class="store-label">
+      CURRENT STORE
+    </div>
+
+    <div id="store-name">
+      Connecting...
+    </div>
+  </div>
+
+  <div id="reader"></div>
+
+  <div id="status">
+    Connecting to Shopping List...
+  </div>
+
+  <button
+    id="next-button"
+    type="button"
+    onclick="scanNext()">
+    SCAN NEXT ITEM
+  </button>
+
+  <div class="help">
+    Each successful scan is sent directly to the next
+    available Shopping List row.
+    <br><br>
+    The scanner pauses after each product to prevent
+    accidental duplicate scans.
+  </div>
+
+</div>
+
+
+<script>
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  const apiUrl =
+    params.get("api");
+
+  const token =
+    params.get("token");
+
+  const storeFromUrl =
+    params.get("store");
+
+
+  let scanner = null;
+  let processing = false;
+
+
+  function setStatus(
+    message,
+    className = ""
+  ) {
+    const status =
+      document.getElementById(
+        "status"
+      );
+
+    status.className =
+      className;
+
+    status.innerHTML =
+      message;
+  }
+
+
+  function escapeHtml(value) {
+    return String(
+      value ?? ""
+    )
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+  }
+
+
+  function fail(message) {
+    document
+      .getElementById(
+        "store-name"
+      )
+      .textContent =
+        "ERROR";
+
+    setStatus(
+      "❌ " +
+        escapeHtml(
+          message
+        ),
+      "error"
+    );
+  }
+
+
+  if (
+    !apiUrl ||
+    !token
+  ) {
+
+    fail(
+      "This scanner must be opened from the Shopping List scanner link."
+    );
+
+  } else {
+
+    document
+      .getElementById(
+        "store-name"
+      )
+      .textContent =
+        storeFromUrl ||
+        "Loading...";
+
+    initializeScanner();
+  }
+
+
+  function initializeScanner() {
+
+    setStatus(
+      "Allow camera access, then point the rear camera at a barcode."
+    );
+
+
+    scanner =
+      new Html5QrcodeScanner(
+        "reader",
+        {
+          fps: 12,
+
+          qrbox: function(
+            width,
+            height
+          ) {
+
+            return {
+              width:
+                Math.floor(
+                  width * 0.88
+                ),
+
+              height:
+                Math.min(
+                  170,
+                  Math.floor(
+                    height * 0.35
+                  )
+                )
+            };
+          },
+
+          rememberLastUsedCamera:
+            true,
+
+          showTorchButtonIfSupported:
+            true,
+
+          showZoomSliderIfSupported:
+            true,
+
+          formatsToSupport: [
+
+            Html5QrcodeSupportedFormats
+              .EAN_13,
+
+            Html5QrcodeSupportedFormats
+              .EAN_8,
+
+            Html5QrcodeSupportedFormats
+              .UPC_A,
+
+            Html5QrcodeSupportedFormats
+              .UPC_E,
+
+            Html5QrcodeSupportedFormats
+              .CODE_128,
+
+            Html5QrcodeSupportedFormats
+              .CODE_39,
+
+            Html5QrcodeSupportedFormats
+              .ITF,
+
+            Html5QrcodeSupportedFormats
+              .CODABAR,
+
+            Html5QrcodeSupportedFormats
+              .DATA_MATRIX,
+
+            Html5QrcodeSupportedFormats
+              .QR_CODE
+          ]
+        },
+        false
+      );
+
+
+    scanner.render(
+      barcodeDetected,
+      function() {}
+    );
+  }
+
+
+  function barcodeDetected(
+    decodedText
+  ) {
+
+    if (processing) {
+      return;
+    }
+
+
+    processing =
+      true;
+
+
+    try {
+      scanner.pause(
+        true
+      );
+    } catch (error) {
+      // Processing flag still prevents duplicates.
+    }
+
+
+    document
+      .getElementById(
+        "next-button"
+      )
+      .style
+      .display =
+        "none";
+
+
+    setStatus(
+      "⏳ Adding barcode <b>" +
+        escapeHtml(
+          decodedText
+        ) +
+        "</b>...",
+      "working"
+    );
+
+
+    sendBarcode(
+      decodedText
+    );
+  }
+
+
+  function sendBarcode(barcode) {
+
+    const callbackName =
+      "obsidianCallback_" +
+      Date.now() +
+      "_" +
+      Math.floor(
+        Math.random() *
+        1000000
+      );
+
+
+    const script =
+      document.createElement(
+        "script"
+      );
+
+
+    let completed =
+      false;
+
+
+    const timeout =
+      setTimeout(
+        function() {
+
+          if (completed) {
+            return;
+          }
+
+
+          completed =
+            true;
+
+
+          cleanup();
+
+
+          scanFailed(
+            "The Shopping List did not respond. Try again."
+          );
+
+        },
+        15000
+      );
+
+
+    window[
+      callbackName
+    ] =
+      function(result) {
+
+        if (completed) {
+          return;
+        }
+
+
+        completed =
+          true;
+
+
+        clearTimeout(
+          timeout
+        );
+
+
+        cleanup();
+
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+
+          scanFailed(
+            result &&
+            result.error
+
+              ? result.error
+
+              : "The barcode could not be added."
+          );
+
+
+          return;
+        }
+
+
+        scanSucceeded(
+          result
+        );
+      };
+
+
+    function cleanup() {
+
+      try {
+        delete window[
+          callbackName
+        ];
+      } catch (error) {}
+
+
+      if (
+        script.parentNode
+      ) {
+        script.parentNode
+          .removeChild(
+            script
+          );
+      }
+    }
+
+
+    const requestUrl =
+      apiUrl +
+
+      "?action=scan" +
+
+      "&token=" +
+      encodeURIComponent(
+        token
+      ) +
+
+      "&barcode=" +
+      encodeURIComponent(
+        barcode
+      ) +
+
+      "&callback=" +
+      encodeURIComponent(
+        callbackName
+      ) +
+
+      "&_=" +
+      Date.now();
+
+
+    script.src =
+      requestUrl;
+
+
+    script.onerror =
+      function() {
+
+        if (completed) {
+          return;
+        }
+
+
+        completed =
+          true;
+
+
+        clearTimeout(
+          timeout
+        );
+
+
+        cleanup();
+
+
+        scanFailed(
+          "Unable to contact the Shopping List."
+        );
+      };
+
+
+    document.body.appendChild(
+      script
+    );
+  }
+
+
+  function scanSucceeded(
+    result
+  ) {
+
+    if (
+      navigator.vibrate
+    ) {
+      navigator.vibrate(
+        100
+      );
+    }
+
+
+    document
+      .getElementById(
+        "store-name"
+      )
+      .textContent =
+        result.store ||
+        storeFromUrl ||
+        "";
+
+
+    const product =
+      result.product
+
+        ? escapeHtml(
+            result.product
+          )
+
+        : "New / unidentified product";
+
+
+    const lastPrice =
+      result.lastPrice
+
+        ? (
+            "<br>Last price: <b>" +
+            escapeHtml(
+              result.lastPrice
+            ) +
+            "</b>"
+          )
+
+        : "";
+
+
+    setStatus(
+
+      "✅ Added to row <b>" +
+        result.row +
+        "</b>" +
+
+      "<div class=\"product\">" +
+        product +
+      "</div>" +
+
+      "<div class=\"details\">" +
+
+        "Barcode: " +
+        escapeHtml(
+          result.barcode
+        ) +
+
+        "<br>Store: " +
+        escapeHtml(
+          result.store
+        ) +
+
+        lastPrice +
+
+      "</div>",
+
+      "success"
+    );
+
+
+    const button =
+      document.getElementById(
+        "next-button"
+      );
+
+
+    button.textContent =
+      "SCAN NEXT ITEM";
+
+
+    button.style.display =
+      "block";
+  }
+
+
+  function scanFailed(
+    message
+  ) {
+
+    setStatus(
+      "❌ " +
+        escapeHtml(
+          message
+        ),
+      "error"
+    );
+
+
+    const button =
+      document.getElementById(
+        "next-button"
+      );
+
+
+    button.textContent =
+      "TRY AGAIN";
+
+
+    button.style.display =
+      "block";
+  }
+
+
+  function scanNext() {
+
+    const button =
+      document.getElementById(
+        "next-button"
+      );
+
+
+    button.style.display =
+      "none";
+
+
+    button.textContent =
+      "SCAN NEXT ITEM";
+
+
+    processing =
+      false;
+
+
+    setStatus(
+      "Point the camera at the next barcode."
+    );
+
+
+    try {
+
+      scanner.resume();
+
+    } catch (error) {
+
+      setStatus(
+        "Camera could not resume. Reload this page.",
+        "error"
+      );
+    }
+  }
+
+</script>
+
+</body>
+</html>
