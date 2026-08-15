@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Obsidian Scanner</title>
+
+  <script
+    src="https://accounts.google.com/gsi/client"
+    defer>
+  </script>
+
+  <script
+    src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
+    defer>
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      background: #111318;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 8px 0 4px;
+      text-align: center;
+      font-size: 26px;
+    }
+
+    .subtitle {
+      margin-bottom: 18px;
+      text-align: center;
+      color: #b8b8b8;
+    }
+
+    .store-box {
+      margin-bottom: 16px;
+      padding: 15px;
+      border-radius: 12px;
+      background: #242833;
+      text-align: center;
+    }
+
+    .store-label {
+      color: #aeb4c0;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    #store-name {
+      margin-top: 5px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #reader {
+      display: none;
+      overflow: hidden;
+      width: 100%;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #000000;
+    }
+
+    #status {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #242833;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .working {
+      background: #473a1d !important;
+    }
+
+    .success {
+      background: #173d25 !important;
+    }
+
+    .error {
+      background: #511e25 !important;
+    }
+
+    .product {
+      margin-top: 8px;
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .details {
+      margin-top: 7px;
+      color: #d3d3d3;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 17px;
+      border: none;
+      border-radius: 12px;
+      background: #6b35a5;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    #next-button {
+      display: none;
+    }
+
+    .help {
+      margin-top: 18px;
+      color: #aeb4c0;
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+  <h1>
+    🛒 Obsidian Scanner
+  </h1>
+
+  <div class="subtitle">
+    Scan directly into Shopping List
+  </div>
+
+
+  <div class="store-box">
+
+    <div class="store-label">
+      CURRENT STORE
+    </div>
+
+    <div id="store-name">
+      Not connected
+    </div>
+
+  </div>
+
+
+  <button
+    id="connect-button"
+    type="button"
+    onclick="connectGoogle()">
+
+    CONNECT GOOGLE SHEETS
+
+  </button>
+
+
+  <div id="reader"></div>
+
+
+  <div id="status">
+    Connect Google Sheets to begin.
+  </div>
+
+
+  <button
+    id="next-button"
+    type="button"
+    onclick="scanNext()">
+
+    SCAN NEXT ITEM
+
+  </button>
+
+
+  <div class="help">
+
+    The scanner reads the Current Store from cell M21,
+    then places each barcode in the next empty Shopping List row.
+
+    <br><br>
+
+    Google authorization is temporary and remains only
+    in this browser session.
+
+  </div>
+
+</div>
+
+
+<script>
+
+  // ==================================================
+  // CONFIGURATION
+  // ==================================================
+
+  const GOOGLE_CLIENT_ID =
+    "357419603703-8no49j1eunhv6g82kkb89tqa84ab7krl.apps.googleusercontent.com";
+
+
+  const SHEETS_SCOPE =
+    "https://www.googleapis.com/auth/spreadsheets";
+
+
+  const SHOPPING_SHEET =
+    "Shopping List";
+
+
+  const PRODUCTS_SHEET =
+    "Products";
+
+
+  const CURRENT_STORE_CELL =
+    "M21";
+
+
+  const SHOP_FIRST_ROW =
+    5;
+
+
+  const SHOP_GROWTH_CHUNK =
+    50;
+
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  const SPREADSHEET_ID =
+    String(
+      params.get("sid") || ""
+    ).trim();
+
+
+  let tokenClient =
+    null;
+
+
+  let accessToken =
+    "";
+
+
+  let scanner =
+    null;
+
+
+  let scannerStarted =
+    false;
+
+
+  let processing =
+    false;
+
+
+  let currentStore =
+    "";
+
+
+  window.addEventListener(
+    "DOMContentLoaded",
+    initializePage
+  );
+
+
+  // ==================================================
+  // INITIALIZATION
+  // ==================================================
+
+  function initializePage() {
+
+    if (!SPREADSHEET_ID) {
+
+      fail(
+        "This scanner must be opened from the OPEN SCANNER link in Shopping List."
+      );
+
+
+      document
+        .getElementById(
+          "connect-button"
+        )
+        .disabled =
+          true;
+
+
+      return;
+    }
+
+
+    waitForGoogleIdentity();
+  }
+
+
+  function waitForGoogleIdentity() {
+
+    let attempts =
+      0;
+
+
+    const timer =
+      setInterval(
+        function() {
+
+          attempts++;
+
+
+          if (
+            window.google &&
+            google.accounts &&
+            google.accounts.oauth2
+          ) {
+
+            clearInterval(
+              timer
+            );
+
+
+            initializeGoogleTokenClient();
+
+
+            return;
+          }
+
+
+          if (
+            attempts >=
+            50
+          ) {
+
+            clearInterval(
+              timer
+            );
+
+
+            fail(
+              "Google authorization did not load. Reload this page and try again."
+            );
+          }
+
+        },
+
+        100
+      );
+  }
+
+
+  function initializeGoogleTokenClient() {
+
+    tokenClient =
+      google.accounts.oauth2
+        .initTokenClient({
+
+          client_id:
+            GOOGLE_CLIENT_ID,
+
+          scope:
+            SHEETS_SCOPE,
+
+          include_granted_scopes:
+            true,
+
+          callback:
+            handleTokenResponse,
+
+          error_callback:
+            handleOAuthError
+
+        });
+
+
+    setStatus(
+      "Ready. Tap CONNECT GOOGLE SHEETS."
+    );
+  }
+
+
+  // ==================================================
+  // GOOGLE AUTHORIZATION
+  // ==================================================
+
+  function connectGoogle() {
+
+    if (!tokenClient) {
+
+      fail(
+        "Google authorization is not ready yet. Reload this page."
+      );
+
+
+      return;
+    }
+
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+
+    button.disabled =
+      true;
+
+
+    button.textContent =
+      "CONNECTING...";
+
+
+    setStatus(
+      "Waiting for Google authorization...",
+      "working"
+    );
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT force prompt="consent".
+     *
+     * Google remembers consent for this user/client.
+     * requestAccessToken() will show only whatever UI
+     * Google determines is currently necessary.
+     */
+
+    tokenClient
+      .requestAccessToken();
+  }
+
+
+  async function handleTokenResponse(
+    response
+  ) {
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+
+    if (
+      !response ||
+      response.error
+    ) {
+
+      button.disabled =
+        false;
+
+
+      button.textContent =
+        "CONNECT GOOGLE SHEETS";
+
+
+      fail(
+        response &&
+        response.error
+
+          ? response.error
+
+          : "Authorization failed."
+      );
+
+
+      return;
+    }
+
+
+    if (
+      !response.access_token
+    ) {
+
+      button.disabled =
+        false;
+
+
+      button.textContent =
+        "CONNECT GOOGLE SHEETS";
+
+
+      fail(
+        "Google did not return an access token. Tap CONNECT GOOGLE SHEETS again."
+      );
+
+
+      return;
+    }
+
+
+    accessToken =
+      response.access_token;
+
+
+    try {
+
+      currentStore =
+        await readCurrentStore();
+
+
+      if (!currentStore) {
+
+        document
+          .getElementById(
+            "store-name"
+          )
+          .textContent =
+            "NOT SET";
+
+
+        button.disabled =
+          false;
+
+
+        button.textContent =
+          "RECONNECT GOOGLE SHEETS";
+
+
+        fail(
+          "No Current Store is set. Return to Shopping List and enter the store in M21."
+        );
+
+
+        return;
+      }
+
+
+      document
+        .getElementById(
+          "store-name"
+        )
+        .textContent =
+          currentStore;
+
+
+      button.style.display =
+        "none";
+
+
+      document
+        .getElementById(
+          "reader"
+        )
+        .style
+        .display =
+          "block";
+
+
+      setStatus(
+        "Connected. Allow camera access, then point the rear camera at a barcode."
+      );
+
+
+      if (!scannerStarted) {
+
+        startScanner();
+
+      }
+
+    } catch (error) {
+
+      button.disabled =
+        false;
+
+
+      button.textContent =
+        "RECONNECT GOOGLE SHEETS";
+
+
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  function handleOAuthError(
+    error
+  ) {
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+
+    button.disabled =
+      false;
+
+
+    button.textContent =
+      "CONNECT GOOGLE SHEETS";
+
+
+    const type =
+      error &&
+      error.type
+
+        ? String(
+            error.type
+          )
+
+        : "";
+
+
+    if (
+      type ===
+      "popup_closed"
+    ) {
+
+      fail(
+        "Google closed the authorization window before returning the token. Tap CONNECT GOOGLE SHEETS once more."
+      );
+
+
+      return;
+    }
+
+
+    if (
+      type ===
+      "popup_failed_to_open"
+    ) {
+
+      fail(
+        "Chrome blocked the Google authorization window. Allow pop-ups for this site, then tap CONNECT GOOGLE SHEETS again."
+      );
+
+
+      return;
+    }
+
+
+    fail(
+      type ||
+      "Google authorization failed."
+    );
+  }
+
+
+  // ==================================================
+  // CURRENT STORE
+  // ==================================================
+
+  async function readCurrentStore() {
+
+    const range =
+      `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`;
+
+
+    const result =
+      await sheetsGetValues(
+        range,
+        "FORMATTED_VALUE"
+      );
+
+
+    return String(
+      result.values?.[0]?.[0] ??
+      ""
+    ).trim();
+  }
+
+
+  // ==================================================
+  // CAMERA
+  // ==================================================
+
+  function startScanner() {
+
+    if (
+      !window.Html5QrcodeScanner
+    ) {
+
+      fail(
+        "Barcode scanner library did not load. Reload the page."
+      );
+
+
+      return;
+    }
+
+
+    scanner =
+      new Html5QrcodeScanner(
+
+        "reader",
+
+        {
+
+          fps:
+            12,
+
+
+          qrbox:
+            function(
+              width,
+              height
+            ) {
+
+              return {
+
+                width:
+                  Math.floor(
+                    width *
+                    0.88
+                  ),
+
+                height:
+                  Math.min(
+                    170,
+                    Math.floor(
+                      height *
+                      0.35
+                    )
+                  )
+
+              };
+            },
+
+
+          rememberLastUsedCamera:
+            true,
+
+
+          showTorchButtonIfSupported:
+            true,
+
+
+          showZoomSliderIfSupported:
+            true,
+
+
+          formatsToSupport: [
+
+            Html5QrcodeSupportedFormats
+              .EAN_13,
+
+            Html5QrcodeSupportedFormats
+              .EAN_8,
+
+            Html5QrcodeSupportedFormats
+              .UPC_A,
+
+            Html5QrcodeSupportedFormats
+              .UPC_E,
+
+            Html5QrcodeSupportedFormats
+              .CODE_128,
+
+            Html5QrcodeSupportedFormats
+              .CODE_39,
+
+            Html5QrcodeSupportedFormats
+              .ITF,
+
+            Html5QrcodeSupportedFormats
+              .CODABAR,
+
+            Html5QrcodeSupportedFormats
+              .DATA_MATRIX,
+
+            Html5QrcodeSupportedFormats
+              .QR_CODE
+
+          ]
+
+        },
+
+        false
+      );
+
+
+    scanner.render(
+      barcodeDetected,
+      function() {}
+    );
+
+
+    scannerStarted =
+      true;
+  }
+
+
+  // ==================================================
+  // BARCODE DETECTED
+  // ==================================================
+
+  async function barcodeDetected(
+    decodedText
+  ) {
+
+    if (processing) {
+      return;
+    }
+
+
+    const barcode =
+      String(
+        decodedText ||
+        ""
+      ).trim();
+
+
+    if (!barcode) {
+      return;
+    }
+
+
+    processing =
+      true;
+
+
+    try {
+
+      scanner.pause(
+        true
+      );
+
+    } catch (error) {
+
+      // Processing flag still prevents duplicates.
+
+    }
+
+
+    document
+      .getElementById(
+        "next-button"
+      )
+      .style
+      .display =
+        "none";
+
+
+    setStatus(
+
+      "⏳ Adding barcode <b>" +
+        escapeHtml(
+          barcode
+        ) +
+        "</b>...",
+
+      "working"
+    );
+
+
+    try {
+
+      const result =
+        await addBarcodeToShoppingList(
+          barcode
+        );
+
+
+      showScanSuccess(
+        result
+      );
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+
+
+      const button =
+        document.getElementById(
+          "next-button"
+        );
+
+
+      button.textContent =
+        "TRY AGAIN";
+
+
+      button.style.display =
+        "block";
+    }
+  }
+
+
+  // ==================================================
+  // ADD BARCODE
+  // ==================================================
+
+  async function addBarcodeToShoppingList(
+    barcode
+  ) {
+
+    const storeNow =
+      await readCurrentStore();
+
+
+    if (!storeNow) {
+
+      throw new Error(
+        "No Current Store is set in M21."
+      );
+    }
+
+
+    if (
+      normalizeStore(
+        storeNow
+      ) !==
+      normalizeStore(
+        currentStore
+      )
+    ) {
+
+      throw new Error(
+        "The Current Store changed after opening the scanner. Reload the scanner."
+      );
+    }
+
+
+    const sheetInfo =
+      await getShoppingSheetInfo();
+
+
+    const targetRow =
+      await findNextEmptyShoppingRow(
+        sheetInfo
+      );
+
+
+    const lookup =
+      await lookupProduct(
+        barcode,
+        storeNow
+      );
+
+
+    const rawData = [
+
+      {
+
+        range:
+          `'${SHOPPING_SHEET}'!C${targetRow}`,
+
+        values:
+          [[barcode]]
+
+      },
+
+      {
+
+        range:
+          `'${SHOPPING_SHEET}'!H${targetRow}`,
+
+        values:
+          [[lookup.store]]
+
+      }
+
+    ];
+
+
+    if (
+      lookup.product
+    ) {
+
+      rawData.push({
+
+        range:
+          `'${SHOPPING_SHEET}'!B${targetRow}`,
+
+        values:
+          [[lookup.product]]
+
+      });
+    }
+
+
+    if (
+      lookup.lastPrice !== "" &&
+      lookup.lastPrice !== null &&
+      lookup.lastPrice !== undefined
+    ) {
+
+      rawData.push({
+
+        range:
+          `'${SHOPPING_SHEET}'!E${targetRow}`,
+
+        values:
+          [[lookup.lastPrice]]
+
+      });
+    }
+
+
+    await sheetsValuesBatchUpdate(
+      rawData,
+      "RAW"
+    );
+
+
+    await sheetsValuesBatchUpdate(
+
+      [
+
+        {
+
+          range:
+            `'${SHOPPING_SHEET}'!G${targetRow}`,
+
+          values:
+            [[
+              `=IF(OR(D${targetRow}="",F${targetRow}=""),"",D${targetRow}*F${targetRow})`
+            ]]
+
+        },
+
+        {
+
+          range:
+            `'${SHOPPING_SHEET}'!I${targetRow}`,
+
+          values:
+            [[
+              `=IF(OR(E${targetRow}="",F${targetRow}=""),"",F${targetRow}-E${targetRow})`
+            ]]
+
+        }
+
+      ],
+
+      "USER_ENTERED"
+
+    );
+
+
+    return {
+
+      row:
+        targetRow,
+
+      barcode:
+        barcode,
+
+      store:
+        lookup.store,
+
+      product:
+        lookup.product,
+
+      lastPrice:
+        lookup.lastPrice,
+
+      note:
+        lookup.note
+
+    };
+  }
+
+
+  // ==================================================
+  // SHOPPING SHEET INFO
+  // ==================================================
+
+  async function getShoppingSheetInfo() {
+
+    const data =
+      await sheetsRequest(
+        "?fields=sheets(properties(sheetId,title,gridProperties(rowCount)))"
+      );
+
+
+    const sheet =
+      (
+        data.sheets ||
+        []
+      )
+      .find(
+        item =>
+          item.properties?.title ===
+          SHOPPING_SHEET
+      );
+
+
+    if (!sheet) {
+
+      throw new Error(
+        `Could not find the "${SHOPPING_SHEET}" sheet.`
+      );
+    }
+
+
+    return {
+
+      sheetId:
+        sheet.properties.sheetId,
+
+      rowCount:
+        sheet.properties
+          .gridProperties
+          .rowCount
+
+    };
+  }
+
+
+  // ==================================================
+  // NEXT EMPTY SHOPPING ROW
+  // ==================================================
+
+  async function findNextEmptyShoppingRow(
+    sheetInfo
+  ) {
+
+    const range =
+      `'${SHOPPING_SHEET}'!A${SHOP_FIRST_ROW}:J${sheetInfo.rowCount}`;
+
+
+    const result =
+      await sheetsGetValues(
+        range,
+        "FORMATTED_VALUE"
+      );
+
+
+    const rows =
+      result.values ||
+      [];
+
+
+    for (
+
+      let rowNumber =
+        SHOP_FIRST_ROW;
+
+      rowNumber <=
+        sheetInfo.rowCount;
+
+      rowNumber++
+
+    ) {
+
+      const values =
+        rows[
+          rowNumber -
+          SHOP_FIRST_ROW
+        ] ||
+        [];
+
+
+      if (
+        isShoppingRowEmpty(
+          values
+        )
+      ) {
+
+        return rowNumber;
+      }
+    }
+
+
+    await extendShoppingSheet(
+
+      sheetInfo.sheetId,
+
+      sheetInfo.rowCount,
+
+      SHOP_GROWTH_CHUNK
+
+    );
+
+
+    return (
+      sheetInfo.rowCount +
+      1
+    );
+  }
+
+
+  function isShoppingRowEmpty(
+    row
+  ) {
+
+    const done =
+      String(
+        row[0] ??
+        ""
+      )
+      .trim()
+      .toUpperCase() ===
+      "TRUE";
+
+
+    return (
+
+      !done &&
+
+      blank(
+        row[1]
+      ) &&
+
+      blank(
+        row[2]
+      ) &&
+
+      blank(
+        row[3]
+      ) &&
+
+      blank(
+        row[5]
+      ) &&
+
+      blank(
+        row[7]
+      ) &&
+
+      blank(
+        row[9]
+      )
+
+    );
+  }
+
+
+  // ==================================================
+  // EXTEND SHOPPING SHEET
+  // ==================================================
+
+  async function extendShoppingSheet(
+    sheetId,
+    oldRowCount,
+    amount
+  ) {
+
+    const sourceStartRow =
+      Math.max(
+        SHOP_FIRST_ROW - 1,
+        oldRowCount - 1
+      );
+
+
+    await sheetsRequest(
+
+      ":batchUpdate",
+
+      {
+
+        method:
+          "POST",
+
+
+        body:
+          JSON.stringify({
+
+            requests: [
+
+              {
+
+                appendDimension: {
+
+                  sheetId:
+                    sheetId,
+
+                  dimension:
+                    "ROWS",
+
+                  length:
+                    amount
+
+                }
+
+              },
+
+              {
+
+                copyPaste: {
+
+                  source: {
+
+                    sheetId:
+                      sheetId,
+
+                    startRowIndex:
+                      sourceStartRow,
+
+                    endRowIndex:
+                      sourceStartRow +
+                      1,
+
+                    startColumnIndex:
+                      0,
+
+                    endColumnIndex:
+                      10
+
+                  },
+
+
+                  destination: {
+
+                    sheetId:
+                      sheetId,
+
+                    startRowIndex:
+                      oldRowCount,
+
+                    endRowIndex:
+                      oldRowCount +
+                      amount,
+
+                    startColumnIndex:
+                      0,
+
+                    endColumnIndex:
+                      10
+
+                  },
+
+
+                  pasteType:
+                    "PASTE_FORMAT",
+
+
+                  pasteOrientation:
+                    "NORMAL"
+
+                }
+
+              },
+
+              {
+
+                copyPaste: {
+
+                  source: {
+
+                    sheetId:
+                      sheetId,
+
+                    startRowIndex:
+                      sourceStartRow,
+
+                    endRowIndex:
+                      sourceStartRow +
+                      1,
+
+                    startColumnIndex:
+                      0,
+
+                    endColumnIndex:
+                      1
+
+                  },
+
+
+                  destination: {
+
+                    sheetId:
+                      sheetId,
+
+                    startRowIndex:
+                      oldRowCount,
+
+                    endRowIndex:
+                      oldRowCount +
+                      amount,
+
+                    startColumnIndex:
+                      0,
+
+                    endColumnIndex:
+                      1
+
+                  },
+
+
+                  pasteType:
+                    "PASTE_DATA_VALIDATION",
+
+
+                  pasteOrientation:
+                    "NORMAL"
+
+                }
+
+              }
+
+            ]
+
+          })
+
+      }
+    );
+  }
+
+
+  // ==================================================
+  // PRODUCT LOOKUP
+  // ==================================================
+
+  async function lookupProduct(
+    barcode,
+    store
+  ) {
+
+    const range =
+      `'${PRODUCTS_SHEET}'!A5:D`;
+
+
+    const result =
+      await sheetsGetValues(
+        range,
+        "UNFORMATTED_VALUE"
+      );
+
+
+    const rows =
+      result.values ||
+      [];
+
+
+    const matches =
+      rows.filter(
+        row =>
+          String(
+            row[0] ??
+            ""
+          ).trim() ===
+          String(
+            barcode
+          ).trim()
+      );
+
+
+    if (
+      matches.length ===
+      0
+    ) {
+
+      return {
+
+        product:
+          "",
+
+        lastPrice:
+          "",
+
+        store:
+          store,
+
+        note:
+          "New barcode"
+
+      };
+    }
+
+
+    const exact =
+      matches.find(
+        row =>
+          normalizeStore(
+            row[3]
+          ) ===
+          normalizeStore(
+            store
+          )
+      );
+
+
+    if (exact) {
+
+      return {
+
+        product:
+          String(
+            exact[1] ??
+            ""
+          ).trim(),
+
+        lastPrice:
+          exact[2] ??
+          "",
+
+        store:
+          String(
+            exact[3] ??
+            store
+          ).trim() ||
+          store,
+
+        note:
+          ""
+
+      };
+    }
+
+
+    if (
+      matches.length ===
+      1
+    ) {
+
+      return {
+
+        product:
+          String(
+            matches[0][1] ??
+            ""
+          ).trim(),
+
+        lastPrice:
+          "",
+
+        store:
+          store,
+
+        note:
+          "Known barcode, new store combination"
+
+      };
+    }
+
+
+    return {
+
+      product:
+        "",
+
+      lastPrice:
+        "",
+
+      store:
+        store,
+
+      note:
+        "Barcode exists at multiple stores; enter Product manually"
+
+    };
+  }
+
+
+  // ==================================================
+  // SHEETS API HELPERS
+  // ==================================================
+
+  async function sheetsGetValues(
+    range,
+    valueRenderOption
+  ) {
+
+    const encodedRange =
+      encodeURIComponent(
+        range
+      );
+
+
+    return sheetsRequest(
+
+      `/values/${encodedRange}?valueRenderOption=${encodeURIComponent(
+        valueRenderOption
+      )}`
+
+    );
+  }
+
+
+  async function sheetsValuesBatchUpdate(
+    data,
+    valueInputOption
+  ) {
+
+    return sheetsRequest(
+
+      "/values:batchUpdate",
+
+      {
+
+        method:
+          "POST",
+
+
+        body:
+          JSON.stringify({
+
+            valueInputOption:
+              valueInputOption,
+
+            data:
+              data
+
+          })
+
+      }
+
+    );
+  }
+
+
+  async function sheetsRequest(
+    path,
+    options = {}
+  ) {
+
+    if (!accessToken) {
+
+      throw new Error(
+        "Google authorization has expired. Reconnect Google Sheets."
+      );
+    }
+
+
+    const url =
+      `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
+        SPREADSHEET_ID
+      )}${path}`;
+
+
+    const headers =
+      new Headers(
+        options.headers ||
+        {}
+      );
+
+
+    headers.set(
+      "Authorization",
+      `Bearer ${accessToken}`
+    );
+
+
+    if (
+      options.body
+    ) {
+
+      headers.set(
+        "Content-Type",
+        "application/json"
+      );
+    }
+
+
+    const response =
+      await fetch(
+
+        url,
+
+        {
+
+          ...options,
+
+          headers:
+            headers
+
+        }
+
+      );
+
+
+    if (
+      response.status ===
+      401
+    ) {
+
+      accessToken =
+        "";
+
+
+      const button =
+        document.getElementById(
+          "connect-button"
+        );
+
+
+      button.style.display =
+        "block";
+
+
+      button.disabled =
+        false;
+
+
+      button.textContent =
+        "RECONNECT GOOGLE SHEETS";
+
+
+      throw new Error(
+        "Google authorization expired. Tap RECONNECT GOOGLE SHEETS."
+      );
+    }
+
+
+    let payload =
+      null;
+
+
+    try {
+
+      payload =
+        await response.json();
+
+    } catch (error) {
+
+      payload =
+        null;
+
+    }
+
+
+    if (!response.ok) {
+
+      const message =
+
+        payload?.error?.message ||
+
+        `Google Sheets API returned HTTP ${response.status}.`;
+
+
+      throw new Error(
+        message
+      );
+    }
+
+
+    return (
+      payload ||
+      {}
+    );
+  }
+
+
+  // ==================================================
+  // SUCCESS / NEXT
+  // ==================================================
+
+  function showScanSuccess(
+    result
+  ) {
+
+    if (
+      navigator.vibrate
+    ) {
+
+      navigator.vibrate(
+        100
+      );
+    }
+
+
+    const productText =
+
+      result.product
+
+        ? escapeHtml(
+            result.product
+          )
+
+        : "New / unidentified product";
+
+
+    const priceText =
+
+      result.lastPrice !== "" &&
+      result.lastPrice !== null &&
+      result.lastPrice !== undefined
+
+        ? (
+            "<br>Last price: <b>" +
+            escapeHtml(
+              formatPrice(
+                result.lastPrice
+              )
+            ) +
+            "</b>"
+          )
+
+        : "";
+
+
+    const noteText =
+
+      result.note
+
+        ? (
+            "<br><br>⚠️ " +
+            escapeHtml(
+              result.note
+            )
+          )
+
+        : "";
+
+
+    setStatus(
+
+      "✅ Added to row <b>" +
+        result.row +
+        "</b>" +
+
+      '<div class="product">' +
+        productText +
+      "</div>" +
+
+      '<div class="details">' +
+
+        "Barcode: " +
+        escapeHtml(
+          result.barcode
+        ) +
+
+        "<br>Store: " +
+        escapeHtml(
+          result.store
+        ) +
+
+        priceText +
+
+        noteText +
+
+      "</div>",
+
+      "success"
+    );
+
+
+    const button =
+      document.getElementById(
+        "next-button"
+      );
+
+
+    button.textContent =
+      "SCAN NEXT ITEM";
+
+
+    button.style.display =
+      "block";
+  }
+
+
+  function scanNext() {
+
+    const button =
+      document.getElementById(
+        "next-button"
+      );
+
+
+    button.style.display =
+      "none";
+
+
+    button.textContent =
+      "SCAN NEXT ITEM";
+
+
+    processing =
+      false;
+
+
+    setStatus(
+      "Point the camera at the next barcode."
+    );
+
+
+    try {
+
+      scanner.resume();
+
+    } catch (error) {
+
+      fail(
+        "Camera could not resume. Reload this page."
+      );
+    }
+  }
+
+
+  // ==================================================
+  // UI HELPERS
+  // ==================================================
+
+  function handleApiError(
+    error
+  ) {
+
+    fail(
+      error?.message ||
+      String(
+        error ||
+        "Unknown error"
+      )
+    );
+  }
+
+
+  function setStatus(
+    message,
+    className = ""
+  ) {
+
+    const status =
+      document.getElementById(
+        "status"
+      );
+
+
+    status.className =
+      className;
+
+
+    status.innerHTML =
+      message;
+  }
+
+
+  function fail(
+    message
+  ) {
+
+    setStatus(
+
+      "❌ " +
+      escapeHtml(
+        message
+      ),
+
+      "error"
+
+    );
+  }
+
+
+  function normalizeStore(
+    value
+  ) {
+
+    return String(
+      value ??
+      ""
+    )
+      .trim()
+      .toLowerCase();
+  }
+
+
+  function blank(
+    value
+  ) {
+
+    return (
+      value === undefined ||
+      value === null ||
+      String(
+        value
+      ).trim() === ""
+    );
+  }
+
+
+  function formatPrice(
+    value
+  ) {
+
+    const number =
+      Number(
+        value
+      );
+
+
+    if (
+      Number.isFinite(
+        number
+      )
+    ) {
+
+      return (
+        "$" +
+        number.toFixed(
+          2
+        )
+      );
+    }
+
+
+    return String(
+      value ??
+      ""
+    );
+  }
+
+
+  function escapeHtml(
+    value
+  ) {
+
+    return String(
+      value ??
+      ""
+    )
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+  }
+
+</script>
+
+</body>
+</html>
