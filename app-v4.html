@@ -1156,6 +1156,66 @@
       line-height: 1.45;
     }
 
+    /* V4 Product Editor */
+    .management-edit-button {
+      width: auto;
+      min-width: 68px;
+      margin: 0;
+      padding: 8px 11px;
+      border-radius: 9px;
+      background: #7137b5;
+      font-size: 12px;
+    }
+
+    .management-editor-card {
+      margin-bottom: 14px;
+      padding: 15px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .management-editor-title {
+      margin-bottom: 12px;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .management-editor-readonly {
+      margin-bottom: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #1c2028;
+      color: #b9c0ca;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .management-editor-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .management-editor-actions button {
+      margin: 0;
+    }
+
+    .management-cancel-button {
+      background: #3b414d;
+    }
+
+    .management-save-button {
+      background: #7137b5;
+    }
+
+    .management-editor-note {
+      margin-top: 10px;
+      color: #f2c58a;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1239,7 +1299,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 management test
+    V4 product editing test
   </div>
 
   <button
@@ -2641,6 +2701,84 @@
       </div>
     </div>
 
+    <div
+      id="management-product-editor"
+      class="management-editor-card hidden"
+    >
+
+      <div class="management-editor-title">
+        Edit Product
+      </div>
+
+      <label for="management-edit-product-name">
+        Product name
+      </label>
+
+      <input
+        id="management-edit-product-name"
+        type="text"
+        autocomplete="off"
+      >
+
+      <label for="management-edit-barcode">
+        Barcode
+      </label>
+
+      <input
+        id="management-edit-barcode"
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+      >
+
+      <label>
+        Store
+      </label>
+
+      <div
+        id="management-edit-store"
+        class="management-editor-readonly"
+      >
+        —
+      </div>
+
+      <label for="management-edit-notes">
+        Product notes
+      </label>
+
+      <textarea
+        id="management-edit-notes"
+        rows="3"
+        autocomplete="off"
+      ></textarea>
+
+      <div class="management-editor-note">
+        Changing the product name or barcode also corrects matching historical item records for this same store. Store changes will be handled separately so an entire branch can be corrected safely.
+      </div>
+
+      <div class="management-editor-actions">
+
+        <button
+          class="management-cancel-button"
+          type="button"
+          onclick="cancelManagementProductEdit()"
+        >
+          CANCEL
+        </button>
+
+        <button
+          id="management-save-product-button"
+          class="management-save-button"
+          type="button"
+          onclick="saveManagementProductEdit()"
+        >
+          SAVE CORRECTION
+        </button>
+
+      </div>
+
+    </div>
+
   </div>
 
   <div class="help">
@@ -2766,6 +2904,8 @@
   let managementReturnPanelId = "home-panel";
   let managementProducts = [];
   let managementTrips = [];
+  let managementHistoryRows = [];
+  let managementEditingProductIndex = null;
 
 
   window.addEventListener(
@@ -10129,7 +10269,7 @@
       await Promise.all(
         [
           sheetsGetValues(
-            `'${PRODUCTS_SHEET}'!A2:M`,
+            `'${PRODUCTS_SHEET}'!A${PRODUCTS_FIRST_ROW}:M`,
             "UNFORMATTED_VALUE"
           ),
           sheetsGetValues(
@@ -10149,17 +10289,12 @@
 
     managementProducts =
       (productsResult.values || [])
-        .filter(
-          row =>
-            String(
-              row[0] ?? ""
-            ).trim() ||
-            String(
-              row[1] ?? ""
-            ).trim()
-        )
         .map(
-          row => ({
+          (row, index) => ({
+            sheetRow:
+              PRODUCTS_FIRST_ROW +
+              index,
+
             barcode:
               String(
                 row[0] ?? ""
@@ -10210,6 +10345,22 @@
                 row[12] ?? ""
               ).trim()
           })
+        )
+        .filter(
+          record =>
+            record.barcode ||
+            record.product
+        );
+
+    managementHistoryRows =
+      (historyResult.values || [])
+        .map(
+          (row, index) => ({
+            sheetRow:
+              index + 2,
+            row:
+              row.slice()
+          })
         );
 
     managementTrips =
@@ -10220,8 +10371,11 @@
       );
   }
 
-
   function showManagementProducts() {
+
+    cancelManagementProductEdit(
+      true
+    );
 
     const box =
       document.getElementById(
@@ -10239,15 +10393,22 @@
 
     const rows =
       managementProducts
-        .slice()
+        .map(
+          (record, originalIndex) => ({
+            record:
+              record,
+            originalIndex:
+              originalIndex
+          })
+        )
         .sort(
           (a, b) =>
             (
-              a.product ||
-              a.barcode
+              a.record.product ||
+              a.record.barcode
             ).localeCompare(
-              b.product ||
-              b.barcode
+              b.record.product ||
+              b.record.barcode
             )
         );
 
@@ -10255,7 +10416,10 @@
       '<div class="management-section-title">Products</div>' +
       rows
         .map(
-          record => {
+          entry => {
+
+            const record =
+              entry.record;
 
             const price =
               isUsableNumber(
@@ -10273,19 +10437,9 @@
                       "Unnamed product"
                     ) +
                   "</div>" +
-                  '<div class="reports-row-value">' +
-                    (
-                      isUsableNumber(
-                        price
-                      )
-                        ? escapeHtml(
-                            formatMoney(
-                              price
-                            )
-                          )
-                        : "—"
-                    ) +
-                  "</div>" +
+                  '<button class="management-edit-button" type="button" onclick="editManagementProduct(' +
+                    entry.originalIndex +
+                  ')">EDIT</button>' +
                 "</div>" +
                 '<div class="management-row-meta">' +
                   escapeHtml(
@@ -10297,6 +10451,18 @@
                       ? " • Barcode " +
                         escapeHtml(
                           record.barcode
+                        )
+                      : ""
+                  ) +
+                  (
+                    isUsableNumber(
+                      price
+                    )
+                      ? " • Last " +
+                        escapeHtml(
+                          formatMoney(
+                            price
+                          )
                         )
                       : ""
                   ) +
@@ -10320,7 +10486,280 @@
   }
 
 
+  function editManagementProduct(
+    index
+  ) {
+
+    const record =
+      managementProducts[
+        index
+      ];
+
+    if (!record) {
+      return;
+    }
+
+    managementEditingProductIndex =
+      index;
+
+    document.getElementById(
+      "management-edit-product-name"
+    ).value =
+      record.product;
+
+    document.getElementById(
+      "management-edit-barcode"
+    ).value =
+      record.barcode;
+
+    document.getElementById(
+      "management-edit-store"
+    ).textContent =
+      record.lastStore ||
+      "Unknown store";
+
+    document.getElementById(
+      "management-edit-notes"
+    ).value =
+      record.notes || "";
+
+    show(
+      "management-product-editor"
+    );
+
+    document.getElementById(
+      "management-product-editor"
+    ).scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "start"
+    });
+  }
+
+
+  function cancelManagementProductEdit(
+    silent
+  ) {
+
+    managementEditingProductIndex =
+      null;
+
+    hide(
+      "management-product-editor"
+    );
+
+    if (!silent) {
+      setStatus(
+        "Product edit cancelled.",
+        "success"
+      );
+    }
+  }
+
+
+  async function saveManagementProductEdit() {
+
+    if (
+      managementEditingProductIndex ===
+      null
+    ) {
+      return;
+    }
+
+    const record =
+      managementProducts[
+        managementEditingProductIndex
+      ];
+
+    if (!record) {
+      return;
+    }
+
+    const newProduct =
+      document.getElementById(
+        "management-edit-product-name"
+      ).value.trim();
+
+    const newBarcode =
+      document.getElementById(
+        "management-edit-barcode"
+      ).value.trim();
+
+    const newNotes =
+      document.getElementById(
+        "management-edit-notes"
+      ).value.trim();
+
+    if (!newProduct) {
+      fail(
+        "Enter a product name."
+      );
+      return;
+    }
+
+    if (!newBarcode) {
+      fail(
+        "Enter a barcode."
+      );
+      return;
+    }
+
+    const duplicate =
+      managementProducts.find(
+        (other, index) =>
+          index !==
+            managementEditingProductIndex &&
+          other.barcode ===
+            newBarcode &&
+          normalizeStore(
+            other.lastStore
+          ) ===
+            normalizeStore(
+              record.lastStore
+            )
+      );
+
+    if (duplicate) {
+      fail(
+        "That barcode is already assigned to another product at this store."
+      );
+      return;
+    }
+
+    const oldBarcode =
+      record.barcode;
+
+    const oldStoreKey =
+      normalizeStore(
+        record.lastStore
+      );
+
+    const matchingHistory =
+      managementHistoryRows.filter(
+        entry =>
+          String(
+            entry.row[3] ?? ""
+          ).trim() ===
+            oldBarcode &&
+          normalizeStore(
+            String(
+              entry.row[2] ?? ""
+            ).trim()
+          ) ===
+            oldStoreKey
+      );
+
+    const updates = [
+      {
+        range:
+          `'${PRODUCTS_SHEET}'!A${record.sheetRow}`,
+        values:
+          [[newBarcode]]
+      },
+      {
+        range:
+          `'${PRODUCTS_SHEET}'!B${record.sheetRow}`,
+        values:
+          [[newProduct]]
+      },
+      {
+        range:
+          `'${PRODUCTS_SHEET}'!H${record.sheetRow}`,
+        values:
+          [[newNotes]]
+      }
+    ];
+
+    matchingHistory.forEach(
+      entry => {
+
+        updates.push(
+          {
+            range:
+              `'${TRIP_HISTORY_SHEET}'!D${entry.sheetRow}`,
+            values:
+              [[newBarcode]]
+          },
+          {
+            range:
+              `'${TRIP_HISTORY_SHEET}'!E${entry.sheetRow}`,
+            values:
+              [[newProduct]]
+          }
+        );
+      }
+    );
+
+    const saveButton =
+      document.getElementById(
+        "management-save-product-button"
+      );
+
+    saveButton.disabled =
+      true;
+
+    setStatus(
+      "Saving product correction...",
+      "working"
+    );
+
+    try {
+
+      await sheetsValuesBatchUpdate(
+        updates,
+        "USER_ENTERED"
+      );
+
+      record.barcode =
+        newBarcode;
+
+      record.product =
+        newProduct;
+
+      record.notes =
+        newNotes;
+
+      matchingHistory.forEach(
+        entry => {
+          entry.row[3] =
+            newBarcode;
+          entry.row[4] =
+            newProduct;
+        }
+      );
+
+      cancelManagementProductEdit(
+        true
+      );
+
+      showManagementProducts();
+
+      setStatus(
+        matchingHistory.length
+          ? `Product corrected. ${matchingHistory.length} historical item record${matchingHistory.length === 1 ? "" : "s"} updated too.`
+          : "Product corrected.",
+        "success"
+      );
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+
+    } finally {
+
+      saveButton.disabled =
+        false;
+    }
+  }
+
   function showManagementStores() {
+
+    cancelManagementProductEdit(
+      true
+    );
 
     const stores =
       new Map();
@@ -10466,6 +10905,10 @@
 
   function showManagementHistoryAudit() {
 
+    cancelManagementProductEdit(
+      true
+    );
+
     const box =
       document.getElementById(
         "management-content"
@@ -10523,6 +10966,10 @@
 
   function showManagementAbout() {
 
+    cancelManagementProductEdit(
+      true
+    );
+
     const box =
       document.getElementById(
         "management-content"
@@ -10562,6 +11009,10 @@
 
 
   function closeManagementSection() {
+
+    cancelManagementProductEdit(
+      true
+    );
 
     hide(
       "management-panel"
