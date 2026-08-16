@@ -1407,6 +1407,78 @@
       line-height: 1.4;
     }
 
+    /* V4 Forward Product Identity Choice */
+    .identity-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2550;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.68);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .identity-overlay.hidden {
+      display: none;
+    }
+
+    .identity-card {
+      width: min(100%, 500px);
+      padding: 18px;
+      border: 1px solid #4b5260;
+      border-radius: 14px;
+      background: #242833;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.48);
+    }
+
+    .identity-title {
+      font-size: 20px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .identity-body {
+      margin-top: 9px;
+      color: #c7ccd4;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .identity-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    .identity-actions button {
+      margin: 0;
+    }
+
+    .identity-known {
+      background: #7137b5;
+    }
+
+    .identity-new {
+      background: #4a3a61;
+    }
+
+    .identity-cancel {
+      background: #3b414d;
+    }
+
+    .identity-note {
+      display: block;
+      margin-top: 3px;
+      color: #c9ced6;
+      font-size: 11px;
+      font-weight: normal;
+      line-height: 1.35;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1490,7 +1562,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 wrong product flow test
+    V4 product identity + empty trip test
   </div>
 
   <button
@@ -3111,6 +3183,63 @@
   </div>
 </div>
 
+<div
+  id="identity-overlay"
+  class="identity-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="identity-title"
+>
+  <div class="identity-card">
+
+    <div
+      id="identity-title"
+      class="identity-title"
+    >
+      Have you bought this product before?
+    </div>
+
+    <div class="identity-body">
+      This barcode is being used for a different product now. Tell Obsidian Shopping whether the product itself is already in your history.
+    </div>
+
+    <div class="identity-actions">
+
+      <button
+        class="identity-known"
+        type="button"
+        onclick="chooseWrongProductIdentity('existing')"
+      >
+        I'VE BOUGHT THIS PRODUCT BEFORE
+        <span class="identity-note">
+          We will look up its previous price at this store by product name.
+        </span>
+      </button>
+
+      <button
+        class="identity-new"
+        type="button"
+        onclick="chooseWrongProductIdentity('new')"
+      >
+        THIS IS A BRAND-NEW PRODUCT
+        <span class="identity-note">
+          No previous price will be carried over.
+        </span>
+      </button>
+
+      <button
+        class="identity-cancel"
+        type="button"
+        onclick="chooseWrongProductIdentity('cancel')"
+      >
+        CANCEL
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
 <nav
   id="bottom-nav"
   class="bottom-nav"
@@ -3237,6 +3366,7 @@
 
   let wrongProductMode = null;
   let wrongProductOriginalName = "";
+  let wrongProductIdentityKind = null;
 
 
   window.addEventListener(
@@ -5765,6 +5895,8 @@
 
     clearValidationStyles();
 
+    updateWrongProductPreviousPrice();
+
     renderPriceComparisons();
   }
 
@@ -6647,19 +6779,6 @@
       const items =
         await loadCurrentShoppingItems();
 
-      if (
-        !items.length
-      ) {
-
-        resumeScanner();
-
-        fail(
-          "This trip has no items yet."
-        );
-
-        return;
-      }
-
       finishReviewItems =
         items;
 
@@ -6683,9 +6802,20 @@
       );
 
       setStatus(
-        "Review the final list before finishing.",
+        items.length
+          ? "Review the final list before finishing."
+          : "No items were purchased. You can still finish and save this store visit.",
         "success"
       );
+
+      if (
+        !items.length
+      ) {
+        showSuccessToast(
+          "Zero-item trip",
+          "This visit will be saved with 0 items and a $0.00 total."
+        );
+      }
 
       document.getElementById(
         "finish-review-panel"
@@ -7037,15 +7167,6 @@
 
       const items =
         await loadCurrentShoppingItems();
-
-      if (
-        !items.length
-      ) {
-
-        throw new Error(
-          "No shopping items were found."
-        );
-      }
 
       const totals =
         calculateTripTotals(
@@ -8813,6 +8934,9 @@
     wrongProductOriginalName =
       "";
 
+    wrongProductIdentityKind =
+      null;
+
     const button =
       document.getElementById(
         "wrong-product-button"
@@ -8826,6 +8950,11 @@
     const modeBox =
       document.getElementById(
         "wrong-product-mode"
+      );
+
+    const identityOverlay =
+      document.getElementById(
+        "identity-overlay"
       );
 
     if (button) {
@@ -8846,6 +8975,12 @@
       );
       modeBox.textContent =
         "";
+    }
+
+    if (identityOverlay) {
+      identityOverlay.classList.add(
+        "hidden"
+      );
     }
   }
 
@@ -8868,6 +9003,9 @@
       );
 
     wrongProductMode =
+      null;
+
+    wrongProductIdentityKind =
       null;
 
     wrongProductOriginalName =
@@ -8941,13 +9079,88 @@
       return;
     }
 
-    wrongProductMode =
-      mode;
-
     wrongProductOriginalName =
       String(
         exactStoreMatch.product || ""
       ).trim();
+
+    document.getElementById(
+      "wrong-product-panel"
+    ).classList.add(
+      "hidden"
+    );
+
+    if (
+      mode === "forward"
+    ) {
+
+      wrongProductMode =
+        "forward";
+
+      wrongProductIdentityKind =
+        null;
+
+      document.getElementById(
+        "identity-overlay"
+      ).classList.remove(
+        "hidden"
+      );
+
+      return;
+    }
+
+    beginWrongProductEntry(
+      "historical",
+      "historical"
+    );
+  }
+
+
+  function chooseWrongProductIdentity(
+    kind
+  ) {
+
+    document.getElementById(
+      "identity-overlay"
+    ).classList.add(
+      "hidden"
+    );
+
+    if (
+      kind === "cancel"
+    ) {
+
+      wrongProductMode =
+        null;
+
+      wrongProductIdentityKind =
+        null;
+
+      showErrorToast(
+        "Change cancelled",
+        "The recognized product was left unchanged."
+      );
+
+      return;
+    }
+
+    beginWrongProductEntry(
+      "forward",
+      kind
+    );
+  }
+
+
+  function beginWrongProductEntry(
+    mode,
+    identityKind
+  ) {
+
+    wrongProductMode =
+      mode;
+
+    wrongProductIdentityKind =
+      identityKind;
 
     const productInput =
       document.getElementById(
@@ -8967,16 +9180,48 @@
     ).checked =
       false;
 
-    document.getElementById(
-      "wrong-product-panel"
-    ).classList.add(
-      "hidden"
-    );
 
-    modeBox.textContent =
+    if (
       mode === "historical"
-        ? "Historical correction selected: past matching records will be corrected too."
-        : "Forward-only change selected: past shopping history will remain untouched.";
+    ) {
+
+      previousPriceAtStore =
+        exactStoreMatch?.price ?? "";
+
+      updatePreviousPriceDisplay();
+
+      modeBox.textContent =
+        "Historical correction selected: past matching records will be corrected too.";
+
+    } else if (
+      identityKind === "existing"
+    ) {
+
+      previousPriceAtStore =
+        "";
+
+      document.getElementById(
+        "previous-price"
+      ).textContent =
+        "Enter the product name to find its previous price at this store.";
+
+      modeBox.textContent =
+        "Existing product selected: its previous price will be looked up by product name. Past records for the old barcode identity stay unchanged.";
+
+    } else {
+
+      previousPriceAtStore =
+        "";
+
+      document.getElementById(
+        "previous-price"
+      ).textContent =
+        "No previous price — treating this as a brand-new product.";
+
+      modeBox.textContent =
+        "Brand-new product selected: no previous price will be carried over, and past shopping history stays unchanged.";
+    }
+
 
     modeBox.classList.remove(
       "hidden"
@@ -8987,11 +9232,115 @@
     showSuccessToast(
       mode === "historical"
         ? "Correct old product record"
-        : "New product from this trip on",
+        : (
+            identityKind === "existing"
+              ? "Use an existing product"
+              : "Brand-new product"
+          ),
       "Enter the product name you are holding, confirm it, and continue adding the item."
     );
   }
 
+
+  function updatePreviousPriceDisplay() {
+
+    document.getElementById(
+      "previous-price"
+    ).textContent =
+      isUsableNumber(
+        previousPriceAtStore
+      )
+        ? formatMoney(
+            previousPriceAtStore
+          )
+        : "No previous price for this product at this store";
+  }
+
+
+  function updateWrongProductPreviousPrice() {
+
+    if (
+      wrongProductMode !== "forward" ||
+      wrongProductIdentityKind !== "existing"
+    ) {
+      return;
+    }
+
+    const name =
+      document.getElementById(
+        "product-name"
+      ).value.trim();
+
+    if (
+      !name
+    ) {
+
+      previousPriceAtStore =
+        "";
+
+      document.getElementById(
+        "previous-price"
+      ).textContent =
+        "Enter the product name to find its previous price at this store.";
+
+      return;
+    }
+
+    const normalized =
+      normalizeProductIdentity(
+        name
+      );
+
+    const candidates =
+      productDatabase.filter(
+        record =>
+          normalizeProductIdentity(
+            record.product
+          ) ===
+            normalized &&
+          normalizeStore(
+            record.store
+          ) ===
+            normalizeStore(
+              activeTrip.store
+            ) &&
+          record.barcode !==
+            currentBarcode &&
+          isUsableNumber(
+            record.price
+          )
+      );
+
+    candidates.sort(
+      (a, b) => {
+
+        const aTime =
+          new Date(
+            a.lastPurchased || 0
+          ).getTime();
+
+        const bTime =
+          new Date(
+            b.lastPurchased || 0
+          ).getTime();
+
+        return (
+          (Number.isNaN(bTime) ? 0 : bTime) -
+          (Number.isNaN(aTime) ? 0 : aTime)
+        );
+      }
+    );
+
+    const match =
+      candidates[0] || null;
+
+    previousPriceAtStore =
+      match
+        ? match.price
+        : "";
+
+    updatePreviousPriceDisplay();
+  }
 
   async function applyWrongProductChangeIfNeeded(
     newProductName
@@ -10155,7 +10504,13 @@
 
         '<div class="history-receipt-item">' +
           '<div class="history-receipt-sub">' +
-            "No item-level receipt data is stored for this trip." +
+            (
+              Number(
+                trip.itemCount
+              ) === 0
+                ? "No items were purchased on this trip."
+                : "No item-level receipt data is stored for this trip."
+            ) +
           "</div>" +
         "</div>";
 
@@ -12019,9 +12374,20 @@
           !trip.hasTripRecord
       ).length;
 
+    const zeroItemCount =
+      managementTrips.filter(
+        trip =>
+          Number(
+            trip.itemCount
+          ) === 0
+      ).length;
+
     const itemlessCount =
       managementTrips.filter(
         trip =>
+          Number(
+            trip.itemCount
+          ) > 0 &&
           !trip.items.length
       ).length;
 
@@ -12044,10 +12410,19 @@
         "</div>" +
       "</div>" +
       '<div class="management-row">' +
-        '<div class="management-row-name">Trips without item details</div>' +
+        '<div class="management-row-name">Zero-item trips</div>' +
         '<div class="management-row-meta">' +
           escapeHtml(
-            `${itemlessCount} trip${itemlessCount === 1 ? "" : "s"}`
+            `${zeroItemCount} intentional store visit${zeroItemCount === 1 ? "" : "s"} with no purchase`
+          ) +
+        "</div>" +
+      "</div>" +
+
+      '<div class="management-row">' +
+        '<div class="management-row-name">Trips missing item details</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            `${itemlessCount} trip${itemlessCount === 1 ? "" : "s"} expected item data but none was found`
           ) +
         "</div>" +
       "</div>";
