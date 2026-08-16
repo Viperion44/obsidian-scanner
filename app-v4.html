@@ -1265,6 +1265,88 @@
       line-height: 1.4;
     }
 
+    .app-toast.error {
+      border-color: rgba(255, 116, 116, 0.62);
+      background: rgba(94, 29, 35, 0.95);
+      color: #fff0f0;
+    }
+
+    .app-toast.error .app-toast-detail {
+      color: #ffd0d0;
+    }
+
+    .change-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.68);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .change-overlay.hidden {
+      display: none;
+    }
+
+    .change-card {
+      width: min(100%, 500px);
+      padding: 18px;
+      border: 1px solid #4b5260;
+      border-radius: 14px;
+      background: #242833;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.48);
+    }
+
+    .change-title {
+      font-size: 20px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .change-body {
+      margin-top: 10px;
+      color: #c7ccd4;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    .change-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    .change-actions button {
+      margin: 0;
+    }
+
+    .change-history {
+      background: #7137b5;
+    }
+
+    .change-forward {
+      background: #4a3a61;
+    }
+
+    .change-cancel {
+      background: #3b414d;
+    }
+
+    .change-action-note {
+      display: block;
+      margin-top: 3px;
+      color: #c9ced6;
+      font-size: 11px;
+      font-weight: normal;
+      line-height: 1.35;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1348,7 +1430,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 management polish test
+    V4 product change modes test
   </div>
 
   <button
@@ -2854,6 +2936,64 @@
   ></div>
 </div>
 
+<div
+  id="change-overlay"
+  class="change-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="change-title"
+>
+  <div class="change-card">
+
+    <div
+      id="change-title"
+      class="change-title"
+    >
+      Confirm product change
+    </div>
+
+    <div
+      id="change-body"
+      class="change-body"
+    ></div>
+
+    <div class="change-actions">
+
+      <button
+        class="change-history"
+        type="button"
+        onclick="resolveProductChangeMode('historical')"
+      >
+        CORRECT PAST RECORDS TOO
+        <span class="change-action-note">
+          Use this when the old name/barcode was wrong.
+        </span>
+      </button>
+
+      <button
+        class="change-forward"
+        type="button"
+        onclick="resolveProductChangeMode('forward')"
+      >
+        USE CHANGE FROM NOW ON
+        <span class="change-action-note">
+          Keep old history exactly as it was recorded.
+        </span>
+      </button>
+
+      <button
+        class="change-cancel"
+        type="button"
+        onclick="resolveProductChangeMode('cancel')"
+      >
+        CANCEL
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
 <nav
   id="bottom-nav"
   class="bottom-nav"
@@ -2976,6 +3116,7 @@
 
   let toastHideTimer = null;
   let toastRemoveTimer = null;
+  let productChangeModeResolver = null;
 
 
   window.addEventListener(
@@ -8334,7 +8475,8 @@
   }
 
 
-  function showSuccessToast(
+  function showAppToast(
+    type,
     title,
     detail
   ) {
@@ -8365,7 +8507,6 @@
         null;
     }
 
-
     if (
       toastRemoveTimer
     ) {
@@ -8377,8 +8518,26 @@
     }
 
 
+    toast.classList.remove(
+      "error",
+      "fade-out"
+    );
+
+    if (
+      type === "error"
+    ) {
+      toast.classList.add(
+        "error"
+      );
+    }
+
+
     titleBox.textContent =
-      "✓ " +
+      (
+        type === "error"
+          ? "⚠ "
+          : "✓ "
+      ) +
       String(
         title || "Done"
       );
@@ -8405,10 +8564,6 @@
     }
 
 
-    toast.classList.remove(
-      "fade-out"
-    );
-
     toast.classList.add(
       "show"
     );
@@ -8421,7 +8576,9 @@
             "fade-out"
           );
         },
-        2400
+        type === "error"
+          ? 3200
+          : 2400
       );
 
 
@@ -8430,13 +8587,95 @@
         function() {
           toast.classList.remove(
             "show",
-            "fade-out"
+            "fade-out",
+            "error"
           );
         },
-        4400
+        type === "error"
+          ? 5200
+          : 4400
       );
   }
 
+
+  function showSuccessToast(
+    title,
+    detail
+  ) {
+    showAppToast(
+      "success",
+      title,
+      detail
+    );
+  }
+
+
+  function showErrorToast(
+    title,
+    detail
+  ) {
+    showAppToast(
+      "error",
+      title,
+      detail
+    );
+  }
+
+
+  function askProductChangeMode(
+    title,
+    body
+  ) {
+
+    document.getElementById(
+      "change-title"
+    ).textContent =
+      title;
+
+    document.getElementById(
+      "change-body"
+    ).textContent =
+      body;
+
+    document.getElementById(
+      "change-overlay"
+    ).classList.remove(
+      "hidden"
+    );
+
+    return new Promise(
+      resolve => {
+        productChangeModeResolver =
+          resolve;
+      }
+    );
+  }
+
+
+  function resolveProductChangeMode(
+    mode
+  ) {
+
+    document.getElementById(
+      "change-overlay"
+    ).classList.add(
+      "hidden"
+    );
+
+    if (
+      productChangeModeResolver
+    ) {
+      const resolver =
+        productChangeModeResolver;
+
+      productChangeModeResolver =
+        null;
+
+      resolver(
+        mode
+      );
+    }
+  }
 
   function previewFutureSection(
     sectionName
@@ -10804,6 +11043,12 @@
       fail(
         "Enter a product name."
       );
+
+      showErrorToast(
+        "Product name required",
+        "Enter a product name before saving."
+      );
+
       return;
     }
 
@@ -10811,6 +11056,12 @@
       fail(
         "Enter a barcode."
       );
+
+      showErrorToast(
+        "Barcode required",
+        "Enter a barcode before saving."
+      );
+
       return;
     }
 
@@ -10830,14 +11081,93 @@
       );
 
     if (duplicate) {
+
+      const duplicateMessage =
+        "That barcode is already assigned to another product at this store.";
+
       fail(
-        "That barcode is already assigned to another product at this store."
+        duplicateMessage
       );
+
+      showErrorToast(
+        "Barcode already in use",
+        duplicateMessage
+      );
+
       return;
     }
 
+
+    const oldProduct =
+      record.product;
+
     const oldBarcode =
       record.barcode;
+
+    const nameChanged =
+      newProduct !==
+      oldProduct;
+
+    const barcodeChanged =
+      newBarcode !==
+      oldBarcode;
+
+    const identityChanged =
+      nameChanged ||
+      barcodeChanged;
+
+
+    let changeMode =
+      "notes-only";
+
+
+    if (
+      identityChanged
+    ) {
+
+      const changes =
+        [];
+
+      if (
+        nameChanged
+      ) {
+        changes.push(
+          `Name: ${oldProduct || "(blank)"} → ${newProduct}`
+        );
+      }
+
+      if (
+        barcodeChanged
+      ) {
+        changes.push(
+          `Barcode: ${oldBarcode || "(blank)"} → ${newBarcode}`
+        );
+      }
+
+      changeMode =
+        await askProductChangeMode(
+          "Confirm product change",
+          `${changes.join("\n")}\nStore: ${record.lastStore || "Unknown store"}\n\nHow should this change be applied?`
+        );
+
+      if (
+        changeMode === "cancel"
+      ) {
+
+        setStatus(
+          "Product change cancelled.",
+          "success"
+        );
+
+        showErrorToast(
+          "Change cancelled",
+          "No data was changed."
+        );
+
+        return;
+      }
+    }
+
 
     const oldStoreKey =
       normalizeStore(
@@ -10858,6 +11188,7 @@
           ) ===
             oldStoreKey
       );
+
 
     const updates = [
       {
@@ -10880,25 +11211,44 @@
       }
     ];
 
-    matchingHistory.forEach(
-      entry => {
 
-        updates.push(
-          {
-            range:
-              `'${TRIP_HISTORY_SHEET}'!D${entry.sheetRow}`,
-            values:
-              [[newBarcode]]
-          },
-          {
-            range:
-              `'${TRIP_HISTORY_SHEET}'!E${entry.sheetRow}`,
-            values:
-              [[newProduct]]
+    if (
+      changeMode ===
+      "historical"
+    ) {
+
+      matchingHistory.forEach(
+        entry => {
+
+          if (
+            barcodeChanged
+          ) {
+            updates.push(
+              {
+                range:
+                  `'${TRIP_HISTORY_SHEET}'!D${entry.sheetRow}`,
+                values:
+                  [[newBarcode]]
+              }
+            );
           }
-        );
-      }
-    );
+
+          if (
+            nameChanged
+          ) {
+            updates.push(
+              {
+                range:
+                  `'${TRIP_HISTORY_SHEET}'!E${entry.sheetRow}`,
+                values:
+                  [[newProduct]]
+              }
+            );
+          }
+        }
+      );
+    }
+
 
     const saveButton =
       document.getElementById(
@@ -10909,9 +11259,12 @@
       true;
 
     setStatus(
-      "Saving product correction...",
+      identityChanged
+        ? "Saving product change..."
+        : "Saving product notes...",
       "working"
     );
+
 
     try {
 
@@ -10919,6 +11272,7 @@
         updates,
         "USER_ENTERED"
       );
+
 
       record.barcode =
         newBarcode;
@@ -10929,14 +11283,32 @@
       record.notes =
         newNotes;
 
-      matchingHistory.forEach(
-        entry => {
-          entry.row[3] =
-            newBarcode;
-          entry.row[4] =
-            newProduct;
-        }
-      );
+
+      if (
+        changeMode ===
+        "historical"
+      ) {
+
+        matchingHistory.forEach(
+          entry => {
+
+            if (
+              barcodeChanged
+            ) {
+              entry.row[3] =
+                newBarcode;
+            }
+
+            if (
+              nameChanged
+            ) {
+              entry.row[4] =
+                newProduct;
+            }
+          }
+        );
+      }
+
 
       cancelManagementProductEdit(
         true
@@ -10944,27 +11316,57 @@
 
       showManagementProducts();
 
-      const correctionDetail =
-        matchingHistory.length
-          ? `${matchingHistory.length} historical item record${matchingHistory.length === 1 ? "" : "s"} updated too.`
-          : "";
+
+      let detail =
+        "";
+
+      if (
+        changeMode ===
+        "historical"
+      ) {
+
+        detail =
+          `${matchingHistory.length} matching historical item record${matchingHistory.length === 1 ? "" : "s"} updated too.`;
+
+      } else if (
+        changeMode ===
+        "forward"
+      ) {
+
+        detail =
+          "Past shopping history was left unchanged.";
+
+      } else {
+
+        detail =
+          "Notes saved.";
+      }
+
 
       setStatus(
-        correctionDetail
-          ? `Product corrected. ${correctionDetail}`
-          : "Product corrected.",
+        identityChanged
+          ? `Product changed. ${detail}`
+          : "Product notes saved.",
         "success"
       );
 
       showSuccessToast(
-        "Product corrected",
-        correctionDetail
+        identityChanged
+          ? "Product changed"
+          : "Product notes saved",
+        detail
       );
+
 
     } catch (error) {
 
       handleApiError(
         error
+      );
+
+      showErrorToast(
+        "Save failed",
+        "The product change was not saved."
       );
 
     } finally {
