@@ -643,6 +643,228 @@
       text-align: center;
     }
 
+    /* V4 History */
+    .history-header-card {
+      margin-bottom: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .history-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .history-heading {
+      margin: 3px 0 0;
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    .history-refresh-button {
+      width: auto;
+      min-width: 48px;
+      margin: 0;
+      padding: 10px 13px;
+      border-radius: 10px;
+      background: #3b414d;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .history-summary-text {
+      margin-top: 8px;
+      color: #aeb4c0;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .history-loading,
+    .history-empty {
+      padding: 22px 16px;
+      border-radius: 13px;
+      background: #242833;
+      color: #aeb4c0;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .history-trip-card {
+      width: 100%;
+      margin: 0 0 11px;
+      padding: 14px;
+      border: 1px solid #3f4551;
+      border-radius: 13px;
+      background: #242833;
+      color: #ffffff;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .history-trip-card:active {
+      background: #2d323e;
+    }
+
+    .history-trip-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .history-trip-store {
+      flex: 1;
+      font-size: 18px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .history-trip-total {
+      white-space: nowrap;
+      font-size: 18px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .history-trip-date {
+      margin-top: 5px;
+      color: #c1c6cf;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .history-trip-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 12px;
+      margin-top: 9px;
+      color: #9fa6b1;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .history-savings {
+      color: #75df91;
+      font-weight: bold;
+    }
+
+    .history-receipt-header {
+      margin-bottom: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+      text-align: center;
+    }
+
+    .history-receipt-store {
+      margin-top: 4px;
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .history-receipt-time {
+      margin-top: 7px;
+      color: #b9c0ca;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .history-receipt-list {
+      overflow: hidden;
+      margin-bottom: 14px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .history-receipt-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid #3d424d;
+    }
+
+    .history-receipt-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-receipt-item-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .history-receipt-product {
+      flex: 1;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .history-receipt-total {
+      white-space: nowrap;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .history-receipt-sub {
+      margin-top: 4px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .history-receipt-promo {
+      margin-top: 5px;
+      color: #75df91;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .history-receipt-notes {
+      margin-top: 5px;
+      color: #d0d4da;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .history-receipt-summary {
+      margin-bottom: 14px;
+      padding: 15px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .history-receipt-summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 5px 0;
+      font-size: 14px;
+    }
+
+    .history-receipt-summary-row span:first-child {
+      color: #aeb4c0;
+    }
+
+    .history-receipt-summary-row span:last-child {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .history-receipt-final {
+      margin-top: 7px;
+      padding-top: 11px;
+      border-top: 1px solid #4a505c;
+      font-size: 20px;
+    }
+
+    .history-back-button {
+      margin-bottom: 14px;
+      background: #3b414d;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -726,7 +948,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 navigation test
+    V4 history test
   </div>
 
   <button
@@ -1760,6 +1982,134 @@
 
   </div>
 
+  <div
+    id="history-panel"
+    class="hidden"
+  >
+
+    <div class="history-header-card">
+
+      <div class="history-header-row">
+
+        <div>
+          <div class="small-label">
+            SHOPPING HISTORY
+          </div>
+
+          <div class="history-heading">
+            Past Trips
+          </div>
+        </div>
+
+        <button
+          class="history-refresh-button"
+          type="button"
+          onclick="refreshHistorySection()"
+          aria-label="Refresh history"
+          title="Refresh history"
+        >
+          ↻
+        </button>
+
+      </div>
+
+      <div
+        id="history-summary-text"
+        class="history-summary-text"
+      >
+        Loading trips...
+      </div>
+
+    </div>
+
+    <div
+      id="history-list"
+      class="history-loading"
+    >
+      Loading shopping history...
+    </div>
+
+  </div>
+
+  <div
+    id="history-receipt-panel"
+    class="hidden"
+  >
+
+    <button
+      class="history-back-button"
+      type="button"
+      onclick="backToHistoryList()"
+    >
+      ← BACK TO HISTORY
+    </button>
+
+    <div class="history-receipt-header">
+
+      <div class="small-label">
+        SAVED TRIP
+      </div>
+
+      <div
+        id="history-receipt-store"
+        class="history-receipt-store"
+      >
+        —
+      </div>
+
+      <div
+        id="history-receipt-time"
+        class="history-receipt-time"
+      >
+        —
+      </div>
+
+    </div>
+
+    <div
+      id="history-receipt-list"
+      class="history-receipt-list"
+    ></div>
+
+    <div class="history-receipt-summary">
+
+      <div class="history-receipt-summary-row">
+        <span>Items</span>
+        <span id="history-receipt-count">0</span>
+      </div>
+
+      <div class="history-receipt-summary-row">
+        <span>Regular value</span>
+        <span id="history-receipt-regular">$0.00</span>
+      </div>
+
+      <div class="history-receipt-summary-row">
+        <span>Savings</span>
+        <span
+          id="history-receipt-savings"
+          class="history-savings"
+        >
+          $0.00
+        </span>
+      </div>
+
+      <div class="history-receipt-summary-row history-receipt-final">
+        <span>FINAL TOTAL</span>
+        <span id="history-receipt-final">$0.00</span>
+      </div>
+
+    </div>
+
+    <div
+      id="history-receipt-trip-id"
+      class="hint"
+      style="text-align:center; margin-bottom:14px;"
+    >
+      —
+    </div>
+
+  </div>
+
   <div class="help">
     V4 development copy. The live app is still index.html.
   </div>
@@ -1772,9 +2122,10 @@
   aria-label="Primary navigation"
 >
   <button
-    class="bottom-nav-button placeholder"
+    id="nav-history-button"
+    class="bottom-nav-button"
     type="button"
-    onclick="previewFutureSection('History')"
+    onclick="openHistorySection()"
     aria-label="History"
   >
     <span class="bottom-nav-icon">🕘</span>
@@ -1782,6 +2133,7 @@
   </button>
 
   <button
+    id="nav-shopping-button"
     class="bottom-nav-button shopping-tab active"
     type="button"
     onclick="returnToShoppingNav()"
@@ -1793,6 +2145,7 @@
   </button>
 
   <button
+    id="nav-reports-button"
     class="bottom-nav-button placeholder"
     type="button"
     onclick="previewFutureSection('Reports')"
@@ -1869,6 +2222,10 @@
 
   let finishReviewItems = [];
   let finishReviewTotals = null;
+
+  let historyTrips = [];
+  let historyReturnPanelId = "home-panel";
+  let historyLoadedOnce = false;
 
 
   window.addEventListener(
@@ -7233,17 +7590,1244 @@
 
     setStatus(
       escapeHtml(sectionName) +
-      " will be added in the next V4 step. Shopping remains active."
+      " will be added in a later V4 step."
+    );
+  }
+
+
+  function setActivePrimaryNav(
+    section
+  ) {
+
+    const ids = {
+      history:
+        "nav-history-button",
+      shopping:
+        "nav-shopping-button",
+      reports:
+        "nav-reports-button"
+    };
+
+    Object.entries(ids)
+      .forEach(
+        ([name, id]) => {
+
+          const button =
+            document.getElementById(
+              id
+            );
+
+          if (!button) {
+            return;
+          }
+
+          if (
+            name === section
+          ) {
+
+            button.classList.add(
+              "active"
+            );
+
+            button.setAttribute(
+              "aria-current",
+              "page"
+            );
+
+          } else {
+
+            button.classList.remove(
+              "active"
+            );
+
+            button.removeAttribute(
+              "aria-current"
+            );
+          }
+        }
+      );
+  }
+
+
+  function getVisibleShoppingPanelId() {
+
+    const panelIds = [
+      "home-panel",
+      "active-trip-panel",
+      "item-panel",
+      "success-panel",
+      "finish-review-panel",
+      "finished-panel"
+    ];
+
+    for (
+      const id of panelIds
+    ) {
+
+      const element =
+        document.getElementById(
+          id
+        );
+
+      if (
+        element &&
+        !element.classList.contains(
+          "hidden"
+        )
+      ) {
+
+        return id;
+      }
+    }
+
+    return activeTrip
+      ? "active-trip-panel"
+      : "home-panel";
+  }
+
+
+  function hideShoppingPanelsForHistory() {
+
+    historyReturnPanelId =
+      getVisibleShoppingPanelId();
+
+    [
+      "home-panel",
+      "active-trip-panel",
+      "item-panel",
+      "success-panel",
+      "finish-review-panel",
+      "finished-panel"
+    ]
+      .forEach(
+        id =>
+          hide(
+            id
+          )
+      );
+  }
+
+
+  async function openHistorySection() {
+
+    if (
+      !accessToken
+    ) {
+
+      fail(
+        "Connect Google Sheets before opening History."
+      );
+
+      return;
+    }
+
+    pauseScanner();
+
+    hideShoppingPanelsForHistory();
+
+    hide(
+      "history-receipt-panel"
+    );
+
+    show(
+      "history-panel"
+    );
+
+    setActivePrimaryNav(
+      "history"
+    );
+
+    setStatus(
+      "Loading shopping history...",
+      "working"
+    );
+
+    document.getElementById(
+      "history-list"
+    ).className =
+      "history-loading";
+
+    document.getElementById(
+      "history-list"
+    ).textContent =
+      "Loading shopping history...";
+
+    try {
+
+      await loadAndRenderHistory();
+
+      historyLoadedOnce =
+        true;
+
+      setStatus(
+        "Shopping history ready.",
+        "success"
+      );
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+
+      const list =
+        document.getElementById(
+          "history-list"
+        );
+
+      list.className =
+        "history-empty";
+
+      list.textContent =
+        "History could not be loaded.";
+    }
+  }
+
+
+  async function refreshHistorySection() {
+
+    if (
+      !accessToken
+    ) {
+
+      fail(
+        "Connect Google Sheets before refreshing History."
+      );
+
+      return;
+    }
+
+    setStatus(
+      "Refreshing shopping history...",
+      "working"
+    );
+
+    try {
+
+      await loadAndRenderHistory();
+
+      historyLoadedOnce =
+        true;
+
+      setStatus(
+        "Shopping history refreshed.",
+        "success"
+      );
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  async function loadAndRenderHistory() {
+
+    const [
+      tripsResult,
+      historyResult,
+      historyDatesResult
+    ] =
+      await Promise.all(
+        [
+          sheetsGetValues(
+            `'${TRIPS_SHEET}'!A2:H`,
+            "UNFORMATTED_VALUE"
+          ),
+
+          sheetsGetValues(
+            `'${TRIP_HISTORY_SHEET}'!A2:Q`,
+            "UNFORMATTED_VALUE"
+          ),
+
+          sheetsGetValues(
+            `'${TRIP_HISTORY_SHEET}'!B2:B`,
+            "FORMATTED_VALUE"
+          )
+        ]
+      );
+
+    historyTrips =
+      buildHistoryTrips(
+        tripsResult.values || [],
+        historyResult.values || [],
+        historyDatesResult.values || []
+      );
+
+    renderHistoryTripList();
+  }
+
+
+  function buildHistoryTrips(
+    tripRows,
+    historyRows,
+    formattedDateRows
+  ) {
+
+    const historyGroups =
+      new Map();
+
+    historyRows.forEach(
+      function(row, index) {
+
+        const tripId =
+          String(
+            row[0] ?? ""
+          ).trim();
+
+        if (!tripId) {
+          return;
+        }
+
+        if (
+          !historyGroups.has(
+            tripId
+          )
+        ) {
+
+          historyGroups.set(
+            tripId,
+            {
+              tripId:
+                tripId,
+
+              store:
+                String(
+                  row[2] ?? ""
+                ).trim(),
+
+              fallbackDate:
+                String(
+                  formattedDateRows[index]?.[0] ??
+                  row[1] ??
+                  ""
+                ).trim(),
+
+              items:
+                [],
+
+              total:
+                0,
+
+              regular:
+                0,
+
+              savings:
+                0
+            }
+          );
+        }
+
+        const group =
+          historyGroups.get(
+            tripId
+          );
+
+        const lineTotal =
+          isUsableNumber(
+            row[7]
+          )
+            ? Number(
+                row[7]
+              )
+            : 0;
+
+        const regularTotal =
+          isUsableNumber(
+            row[13]
+          )
+            ? Number(
+                row[13]
+              )
+            : lineTotal;
+
+        const savings =
+          isUsableNumber(
+            row[14]
+          )
+            ? Number(
+                row[14]
+              )
+            : Math.max(
+                0,
+                regularTotal -
+                lineTotal
+              );
+
+        const item = {
+
+          barcode:
+            String(
+              row[3] ?? ""
+            ).trim(),
+
+          product:
+            String(
+              row[4] ?? ""
+            ).trim(),
+
+          amount:
+            normalizeNumericValue(
+              row[5]
+            ),
+
+          effectiveUnitPrice:
+            normalizeNumericValue(
+              row[6]
+            ),
+
+          lineTotal:
+            lineTotal,
+
+          notes:
+            String(
+              row[8] ?? ""
+            ).trim(),
+
+          shelfUnitPrice:
+            normalizeNumericValue(
+              row[9]
+            ),
+
+          promoApplied:
+            String(
+              row[10] ?? ""
+            ).trim(),
+
+          promoType:
+            String(
+              row[11] ?? ""
+            ).trim(),
+
+          promoDetails:
+            String(
+              row[12] ?? ""
+            ).trim(),
+
+          regularLineTotal:
+            regularTotal,
+
+          savings:
+            savings,
+
+          promoQuantity:
+            normalizeNumericValue(
+              row[15]
+            ),
+
+          promoTotal:
+            normalizeNumericValue(
+              row[16]
+            )
+        };
+
+        group.items.push(
+          item
+        );
+
+        group.total +=
+          lineTotal;
+
+        group.regular +=
+          regularTotal;
+
+        group.savings +=
+          savings;
+      }
+    );
+
+
+    const finishedTrips =
+      [];
+    const represented =
+      new Set();
+
+
+    tripRows.forEach(
+      function(row) {
+
+        const tripId =
+          String(
+            row[0] ?? ""
+          ).trim();
+
+        const status =
+          String(
+            row[4] ?? ""
+          )
+          .trim()
+          .toUpperCase();
+
+        if (
+          !tripId ||
+          status !== "FINISHED"
+        ) {
+
+          return;
+        }
+
+        const group =
+          historyGroups.get(
+            tripId
+          );
+
+        represented.add(
+          tripId
+        );
+
+        const items =
+          group?.items || [];
+
+        const storedTotal =
+          normalizeNumericValue(
+            row[6]
+          );
+
+        const finalTotal =
+          isUsableNumber(
+            storedTotal
+          )
+            ? Number(
+                storedTotal
+              )
+            : roundMoney(
+                group?.total || 0
+              );
+
+        const savings =
+          roundMoney(
+            group?.savings || 0
+          );
+
+        const regular =
+          group
+            ? roundMoney(
+                group.regular
+              )
+            : roundMoney(
+                finalTotal +
+                savings
+              );
+
+        finishedTrips.push(
+          {
+            tripId:
+              tripId,
+
+            store:
+              String(
+                row[1] ??
+                group?.store ??
+                ""
+              ).trim(),
+
+            start:
+              String(
+                row[2] ?? ""
+              ).trim(),
+
+            end:
+              String(
+                row[3] ?? ""
+              ).trim(),
+
+            fallbackDate:
+              group?.fallbackDate || "",
+
+            budget:
+              normalizeNumericValue(
+                row[5]
+              ),
+
+            finalTotal:
+              finalTotal,
+
+            itemCount:
+              isUsableNumber(
+                row[7]
+              )
+                ? Number(
+                    row[7]
+                  )
+                : items.length,
+
+            savings:
+              savings,
+
+            regularTotal:
+              regular,
+
+            items:
+              items,
+
+            hasTripRecord:
+              true
+          }
+        );
+      }
+    );
+
+
+    historyGroups.forEach(
+      function(group, tripId) {
+
+        if (
+          represented.has(
+            tripId
+          )
+        ) {
+          return;
+        }
+
+        finishedTrips.push(
+          {
+            tripId:
+              tripId,
+
+            store:
+              group.store,
+
+            start:
+              "",
+
+            end:
+              "",
+
+            fallbackDate:
+              group.fallbackDate,
+
+            budget:
+              "",
+
+            finalTotal:
+              roundMoney(
+                group.total
+              ),
+
+            itemCount:
+              group.items.length,
+
+            savings:
+              roundMoney(
+                group.savings
+              ),
+
+            regularTotal:
+              roundMoney(
+                group.regular
+              ),
+
+            items:
+              group.items,
+
+            hasTripRecord:
+              false
+          }
+        );
+      }
+    );
+
+
+    finishedTrips.sort(
+      function(a, b) {
+
+        return (
+          historySortTimestamp(
+            b
+          ) -
+          historySortTimestamp(
+            a
+          )
+        );
+      }
+    );
+
+
+    return finishedTrips;
+  }
+
+
+  function historySortTimestamp(
+    trip
+  ) {
+
+    const candidates = [
+      trip.end,
+      trip.start,
+      trip.fallbackDate
+    ];
+
+    for (
+      const value of candidates
+    ) {
+
+      if (!value) {
+        continue;
+      }
+
+      const parsed =
+        new Date(
+          value
+        );
+
+      if (
+        !Number.isNaN(
+          parsed.getTime()
+        )
+      ) {
+
+        return parsed.getTime();
+      }
+    }
+
+    return 0;
+  }
+
+
+  function renderHistoryTripList() {
+
+    const list =
+      document.getElementById(
+        "history-list"
+      );
+
+    const summary =
+      document.getElementById(
+        "history-summary-text"
+      );
+
+
+    if (
+      !historyTrips.length
+    ) {
+
+      summary.textContent =
+        "No finished trips are stored yet.";
+
+      list.className =
+        "history-empty";
+
+      list.textContent =
+        "Your finished shopping trips will appear here.";
+
+      return;
+    }
+
+
+    const totalSpend =
+      historyTrips.reduce(
+        (
+          sum,
+          trip
+        ) =>
+          sum +
+          (
+            isUsableNumber(
+              trip.finalTotal
+            )
+              ? Number(
+                  trip.finalTotal
+                )
+              : 0
+          ),
+        0
+      );
+
+    const totalSavings =
+      historyTrips.reduce(
+        (
+          sum,
+          trip
+        ) =>
+          sum +
+          (
+            isUsableNumber(
+              trip.savings
+            )
+              ? Number(
+                  trip.savings
+                )
+              : 0
+          ),
+        0
+      );
+
+
+    summary.textContent =
+      `${historyTrips.length} saved trip${historyTrips.length === 1 ? "" : "s"} • ${formatMoney(totalSpend)} spent` +
+      (
+        totalSavings > 0
+          ? ` • ${formatMoney(totalSavings)} saved`
+          : ""
+      );
+
+
+    list.className =
+      "";
+
+    list.innerHTML =
+      historyTrips
+        .map(
+          function(trip, index) {
+
+            const savingsHtml =
+              trip.savings > 0
+                ? (
+                    '<span class="history-savings">' +
+                    escapeHtml(
+                      formatMoney(
+                        trip.savings
+                      )
+                    ) +
+                    " saved</span>"
+                  )
+                : "";
+
+            return (
+
+              '<button class="history-trip-card" type="button" onclick="openHistoryReceiptByIndex(' +
+              index +
+              ')">' +
+
+                '<div class="history-trip-top">' +
+
+                  '<div class="history-trip-store">' +
+                    escapeHtml(
+                      trip.store ||
+                      "Unknown store"
+                    ) +
+                  "</div>" +
+
+                  '<div class="history-trip-total">' +
+                    escapeHtml(
+                      formatMoney(
+                        trip.finalTotal
+                      )
+                    ) +
+                  "</div>" +
+
+                "</div>" +
+
+                '<div class="history-trip-date">' +
+                  escapeHtml(
+                    formatHistoryTripDate(
+                      trip
+                    )
+                  ) +
+                "</div>" +
+
+                '<div class="history-trip-meta">' +
+
+                  "<span>" +
+                    escapeHtml(
+                      `${trip.itemCount} item${Number(trip.itemCount) === 1 ? "" : "s"}`
+                    ) +
+                  "</span>" +
+
+                  savingsHtml +
+
+                "</div>" +
+
+              "</button>"
+            );
+          }
+        )
+        .join(
+          ""
+        );
+  }
+
+
+  function formatHistoryTripDate(
+    trip
+  ) {
+
+    if (
+      trip.start
+    ) {
+
+      const start =
+        new Date(
+          trip.start
+        );
+
+      if (
+        !Number.isNaN(
+          start.getTime()
+        )
+      ) {
+
+        const dateText =
+          start.toLocaleDateString(
+            [],
+            {
+              year:
+                "numeric",
+              month:
+                "short",
+              day:
+                "numeric"
+            }
+          );
+
+        if (
+          trip.end
+        ) {
+
+          const end =
+            new Date(
+              trip.end
+            );
+
+          if (
+            !Number.isNaN(
+              end.getTime()
+            )
+          ) {
+
+            return (
+              dateText +
+              " • " +
+              formatTimeOnly(
+                start
+              ) +
+              " – " +
+              formatTimeOnly(
+                end
+              )
+            );
+          }
+        }
+
+        return (
+          dateText +
+          " • " +
+          formatTimeOnly(
+            start
+          )
+        );
+      }
+    }
+
+    return (
+      trip.fallbackDate ||
+      "Saved trip"
+    );
+  }
+
+
+  function openHistoryReceiptByIndex(
+    index
+  ) {
+
+    const trip =
+      historyTrips[
+        index
+      ];
+
+    if (!trip) {
+      return;
+    }
+
+    renderHistoryReceipt(
+      trip
+    );
+
+    hide(
+      "history-panel"
+    );
+
+    show(
+      "history-receipt-panel"
+    );
+
+    document.getElementById(
+      "history-receipt-panel"
+    ).scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "start"
+    });
+  }
+
+
+  function renderHistoryReceipt(
+    trip
+  ) {
+
+    document.getElementById(
+      "history-receipt-store"
+    ).textContent =
+      trip.store ||
+      "Unknown store";
+
+
+    document.getElementById(
+      "history-receipt-time"
+    ).textContent =
+      formatHistoryTripDate(
+        trip
+      );
+
+
+    const list =
+      document.getElementById(
+        "history-receipt-list"
+      );
+
+
+    if (
+      !trip.items.length
+    ) {
+
+      list.innerHTML =
+
+        '<div class="history-receipt-item">' +
+          '<div class="history-receipt-sub">' +
+            "No item-level receipt data is stored for this trip." +
+          "</div>" +
+        "</div>";
+
+    } else {
+
+      list.innerHTML =
+        trip.items
+          .map(
+            function(item) {
+
+              let promoHtml =
+                "";
+
+              if (
+                item.promoApplied === "YES" &&
+                item.promoDetails
+              ) {
+
+                promoHtml =
+
+                  '<div class="history-receipt-promo">' +
+                    "🏷️ " +
+                    escapeHtml(
+                      item.promoDetails
+                    );
+
+                if (
+                  item.savings > 0
+                ) {
+
+                  promoHtml +=
+                    " • Saved " +
+                    escapeHtml(
+                      formatMoney(
+                        item.savings
+                      )
+                    );
+                }
+
+                promoHtml +=
+                  "</div>";
+
+              } else if (
+                item.promoApplied === "NO" &&
+                item.promoDetails
+              ) {
+
+                promoHtml =
+
+                  '<div class="history-receipt-sub">' +
+                    "Promo available but not used: " +
+                    escapeHtml(
+                      item.promoDetails
+                    ) +
+                  "</div>";
+              }
+
+
+              const notesHtml =
+                item.notes
+                  ? (
+                      '<div class="history-receipt-notes">' +
+                        "Note: " +
+                        escapeHtml(
+                          item.notes
+                        ) +
+                      "</div>"
+                    )
+                  : "";
+
+
+              return (
+
+                '<div class="history-receipt-item">' +
+
+                  '<div class="history-receipt-item-top">' +
+
+                    '<div class="history-receipt-product">' +
+                      escapeHtml(
+                        item.product ||
+                        item.barcode ||
+                        "Unnamed item"
+                      ) +
+                    "</div>" +
+
+                    '<div class="history-receipt-total">' +
+                      escapeHtml(
+                        formatMoney(
+                          item.lineTotal
+                        )
+                      ) +
+                    "</div>" +
+
+                  "</div>" +
+
+                  '<div class="history-receipt-sub">' +
+
+                    escapeHtml(
+                      formatPlainNumber(
+                        item.amount
+                      )
+                    ) +
+
+                    " × " +
+
+                    escapeHtml(
+                      formatMoney(
+                        item.effectiveUnitPrice
+                      )
+                    ) +
+
+                    " effective unit price" +
+
+                  "</div>" +
+
+                  promoHtml +
+                  notesHtml +
+
+                "</div>"
+              );
+            }
+          )
+          .join(
+            ""
+          );
+    }
+
+
+    document.getElementById(
+      "history-receipt-count"
+    ).textContent =
+      trip.itemCount;
+
+
+    document.getElementById(
+      "history-receipt-regular"
+    ).textContent =
+      formatMoney(
+        trip.regularTotal
+      );
+
+
+    document.getElementById(
+      "history-receipt-savings"
+    ).textContent =
+      formatMoney(
+        trip.savings
+      );
+
+
+    document.getElementById(
+      "history-receipt-final"
+    ).textContent =
+      formatMoney(
+        trip.finalTotal
+      );
+
+
+    document.getElementById(
+      "history-receipt-trip-id"
+    ).textContent =
+      "Trip ID: " +
+      trip.tripId;
+  }
+
+
+  function backToHistoryList() {
+
+    hide(
+      "history-receipt-panel"
+    );
+
+    show(
+      "history-panel"
+    );
+
+    setActivePrimaryNav(
+      "history"
     );
   }
 
 
   function returnToShoppingNav() {
 
+    const wasHistoryVisible =
+      !document.getElementById(
+        "history-panel"
+      ).classList.contains(
+        "hidden"
+      ) ||
+      !document.getElementById(
+        "history-receipt-panel"
+      ).classList.contains(
+        "hidden"
+      );
+
+    hide(
+      "history-panel"
+    );
+
+    hide(
+      "history-receipt-panel"
+    );
+
+    setActivePrimaryNav(
+      "shopping"
+    );
+
+
+    if (
+      wasHistoryVisible
+    ) {
+
+      const restoreId =
+        historyReturnPanelId ||
+        (
+          activeTrip
+            ? "active-trip-panel"
+            : "home-panel"
+        );
+
+      show(
+        restoreId
+      );
+
+      if (
+        restoreId ===
+        "active-trip-panel"
+      ) {
+
+        resumeScanner();
+      }
+    }
+
+
     setStatus(
       activeTrip
         ? "Shopping is active."
-        : "Shopping is selected."
+        : "Shopping is selected.",
+      "success"
     );
   }
 
