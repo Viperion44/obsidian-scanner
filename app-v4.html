@@ -865,6 +865,160 @@
       background: #3b414d;
     }
 
+    /* V4 Reports */
+    .reports-header-card {
+      margin-bottom: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .reports-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .reports-heading {
+      margin: 3px 0 0;
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    .reports-refresh-button {
+      width: auto;
+      min-width: 48px;
+      margin: 0;
+      padding: 10px 13px;
+      border-radius: 10px;
+      background: #3b414d;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .reports-summary-text {
+      margin-top: 8px;
+      color: #aeb4c0;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .reports-loading,
+    .reports-empty {
+      padding: 22px 16px;
+      border-radius: 13px;
+      background: #242833;
+      color: #aeb4c0;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .reports-kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .reports-kpi {
+      padding: 14px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .reports-kpi-label {
+      color: #9fa6b1;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .reports-kpi-value {
+      margin-top: 5px;
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 1.2;
+    }
+
+    .reports-kpi-value.savings {
+      color: #75df91;
+    }
+
+    .reports-section-card {
+      margin-bottom: 14px;
+      padding: 15px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .reports-section-title {
+      margin-bottom: 11px;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .reports-section-hint {
+      margin-top: -5px;
+      margin-bottom: 11px;
+      color: #9fa6b1;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .reports-store-row,
+    .reports-product-row {
+      padding: 11px 0;
+      border-bottom: 1px solid #3d424d;
+    }
+
+    .reports-store-row:last-child,
+    .reports-product-row:last-child {
+      border-bottom: none;
+    }
+
+    .reports-row-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .reports-row-name {
+      flex: 1;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .reports-row-value {
+      white-space: nowrap;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .reports-row-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 11px;
+      margin-top: 5px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .reports-savings {
+      color: #75df91;
+      font-weight: bold;
+    }
+
+    .reports-no-data {
+      color: #9fa6b1;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -948,7 +1102,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 history test
+    V4 reports test
   </div>
 
   <button
@@ -2110,6 +2264,146 @@
 
   </div>
 
+  <div
+    id="reports-panel"
+    class="hidden"
+  >
+
+    <div class="reports-header-card">
+
+      <div class="reports-header-row">
+
+        <div>
+          <div class="small-label">
+            SHOPPING REPORTS
+          </div>
+
+          <div class="reports-heading">
+            Overview
+          </div>
+        </div>
+
+        <button
+          class="reports-refresh-button"
+          type="button"
+          onclick="refreshReportsSection()"
+          aria-label="Refresh reports"
+          title="Refresh reports"
+        >
+          ↻
+        </button>
+
+      </div>
+
+      <div
+        id="reports-summary-text"
+        class="reports-summary-text"
+      >
+        Loading reports...
+      </div>
+
+    </div>
+
+    <div
+      id="reports-loading"
+      class="reports-loading"
+    >
+      Loading shopping reports...
+    </div>
+
+    <div
+      id="reports-content"
+      class="hidden"
+    >
+
+      <div class="reports-kpi-grid">
+
+        <div class="reports-kpi">
+          <div class="reports-kpi-label">
+            Total Spent
+          </div>
+
+          <div
+            id="reports-total-spent"
+            class="reports-kpi-value"
+          >
+            $0.00
+          </div>
+        </div>
+
+        <div class="reports-kpi">
+          <div class="reports-kpi-label">
+            Saved
+          </div>
+
+          <div
+            id="reports-total-saved"
+            class="reports-kpi-value savings"
+          >
+            $0.00
+          </div>
+        </div>
+
+        <div class="reports-kpi">
+          <div class="reports-kpi-label">
+            Trips
+          </div>
+
+          <div
+            id="reports-trip-count"
+            class="reports-kpi-value"
+          >
+            0
+          </div>
+        </div>
+
+        <div class="reports-kpi">
+          <div class="reports-kpi-label">
+            Average Trip
+          </div>
+
+          <div
+            id="reports-average-trip"
+            class="reports-kpi-value"
+          >
+            $0.00
+          </div>
+        </div>
+
+      </div>
+
+      <div class="reports-section-card">
+
+        <div class="reports-section-title">
+          🏪 Spending by Store
+        </div>
+
+        <div class="reports-section-hint">
+          Stores ranked by total amount spent.
+        </div>
+
+        <div id="reports-store-list"></div>
+
+      </div>
+
+      <div class="reports-section-card">
+
+        <div class="reports-section-title">
+          🛒 Top Products by Spend
+        </div>
+
+        <div class="reports-section-hint">
+          Product names are grouped across stores.
+        </div>
+
+        <div id="reports-product-list"></div>
+
+      </div>
+
+    </div>
+
+  </div>
+
   <div class="help">
     V4 development copy. The live app is still index.html.
   </div>
@@ -2146,9 +2440,9 @@
 
   <button
     id="nav-reports-button"
-    class="bottom-nav-button placeholder"
+    class="bottom-nav-button"
     type="button"
-    onclick="previewFutureSection('Reports')"
+    onclick="openReportsSection()"
     aria-label="Reports"
   >
     <span class="bottom-nav-icon">📊</span>
@@ -2226,6 +2520,9 @@
   let historyTrips = [];
   let historyReturnPanelId = "home-panel";
   let historyLoadedOnce = false;
+
+  let reportsReturnPanelId = "home-panel";
+  let reportsLoadedOnce = false;
 
 
   window.addEventListener(
@@ -7726,6 +8023,10 @@
     hideShoppingPanelsForHistory();
 
     hide(
+      "reports-panel"
+    );
+
+    hide(
       "history-receipt-panel"
     );
 
@@ -8770,6 +9071,742 @@
   }
 
 
+  async function openReportsSection() {
+
+    if (
+      !accessToken
+    ) {
+
+      fail(
+        "Connect Google Sheets before opening Reports."
+      );
+
+      return;
+    }
+
+    reportsReturnPanelId =
+      getVisibleShoppingPanelId();
+
+    pauseScanner();
+
+    [
+      "home-panel",
+      "active-trip-panel",
+      "item-panel",
+      "success-panel",
+      "finish-review-panel",
+      "finished-panel",
+      "history-panel",
+      "history-receipt-panel"
+    ]
+      .forEach(
+        id =>
+          hide(
+            id
+          )
+      );
+
+    show(
+      "reports-panel"
+    );
+
+    setActivePrimaryNav(
+      "reports"
+    );
+
+    setStatus(
+      "Loading shopping reports...",
+      "working"
+    );
+
+    show(
+      "reports-loading"
+    );
+
+    hide(
+      "reports-content"
+    );
+
+    try {
+
+      await loadAndRenderReports();
+
+      reportsLoadedOnce =
+        true;
+
+      setStatus(
+        "Shopping reports ready.",
+        "success"
+      );
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+
+      document.getElementById(
+        "reports-loading"
+      ).className =
+        "reports-empty";
+
+      document.getElementById(
+        "reports-loading"
+      ).textContent =
+        "Reports could not be loaded.";
+    }
+  }
+
+
+  async function refreshReportsSection() {
+
+    if (
+      !accessToken
+    ) {
+
+      fail(
+        "Connect Google Sheets before refreshing Reports."
+      );
+
+      return;
+    }
+
+    setStatus(
+      "Refreshing shopping reports...",
+      "working"
+    );
+
+    show(
+      "reports-loading"
+    );
+
+    hide(
+      "reports-content"
+    );
+
+    try {
+
+      await loadAndRenderReports();
+
+      reportsLoadedOnce =
+        true;
+
+      setStatus(
+        "Shopping reports refreshed.",
+        "success"
+      );
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  async function loadAndRenderReports() {
+
+    const [
+      tripsResult,
+      historyResult,
+      historyDatesResult
+    ] =
+      await Promise.all(
+        [
+          sheetsGetValues(
+            `'${TRIPS_SHEET}'!A2:H`,
+            "UNFORMATTED_VALUE"
+          ),
+
+          sheetsGetValues(
+            `'${TRIP_HISTORY_SHEET}'!A2:Q`,
+            "UNFORMATTED_VALUE"
+          ),
+
+          sheetsGetValues(
+            `'${TRIP_HISTORY_SHEET}'!B2:B`,
+            "FORMATTED_VALUE"
+          )
+        ]
+      );
+
+    const reportTrips =
+      buildHistoryTrips(
+        tripsResult.values || [],
+        historyResult.values || [],
+        historyDatesResult.values || []
+      );
+
+    renderReports(
+      reportTrips
+    );
+  }
+
+
+  function renderReports(
+    trips
+  ) {
+
+    const loading =
+      document.getElementById(
+        "reports-loading"
+      );
+
+    const content =
+      document.getElementById(
+        "reports-content"
+      );
+
+    const summary =
+      document.getElementById(
+        "reports-summary-text"
+      );
+
+
+    if (
+      !trips.length
+    ) {
+
+      loading.className =
+        "reports-empty";
+
+      loading.textContent =
+        "No finished trips are stored yet.";
+
+      summary.textContent =
+        "Reports will appear after you finish shopping trips.";
+
+      hide(
+        "reports-content"
+      );
+
+      show(
+        "reports-loading"
+      );
+
+      return;
+    }
+
+
+    const totalSpent =
+      roundMoney(
+        trips.reduce(
+          (
+            sum,
+            trip
+          ) =>
+            sum +
+            (
+              isUsableNumber(
+                trip.finalTotal
+              )
+                ? Number(
+                    trip.finalTotal
+                  )
+                : 0
+            ),
+          0
+        )
+      );
+
+
+    const totalSaved =
+      roundMoney(
+        trips.reduce(
+          (
+            sum,
+            trip
+          ) =>
+            sum +
+            (
+              isUsableNumber(
+                trip.savings
+              )
+                ? Number(
+                    trip.savings
+                  )
+                : 0
+            ),
+          0
+        )
+      );
+
+
+    const averageTrip =
+      roundMoney(
+        totalSpent /
+        trips.length
+      );
+
+
+    document.getElementById(
+      "reports-total-spent"
+    ).textContent =
+      formatMoney(
+        totalSpent
+      );
+
+
+    document.getElementById(
+      "reports-total-saved"
+    ).textContent =
+      formatMoney(
+        totalSaved
+      );
+
+
+    document.getElementById(
+      "reports-trip-count"
+    ).textContent =
+      trips.length;
+
+
+    document.getElementById(
+      "reports-average-trip"
+    ).textContent =
+      formatMoney(
+        averageTrip
+      );
+
+
+    summary.textContent =
+      `${trips.length} finished trip${trips.length === 1 ? "" : "s"} included`;
+
+
+    renderStoreReport(
+      trips
+    );
+
+
+    renderProductReport(
+      trips
+    );
+
+
+    hide(
+      "reports-loading"
+    );
+
+    show(
+      "reports-content"
+    );
+  }
+
+
+  function renderStoreReport(
+    trips
+  ) {
+
+    const stores =
+      new Map();
+
+
+    trips.forEach(
+      trip => {
+
+        const store =
+          String(
+            trip.store ||
+            "Unknown store"
+          ).trim();
+
+        const key =
+          normalizeStore(
+            store
+          ) ||
+          "unknown store";
+
+
+        if (
+          !stores.has(
+            key
+          )
+        ) {
+
+          stores.set(
+            key,
+            {
+              store:
+                store,
+
+              trips:
+                0,
+
+              spent:
+                0,
+
+              saved:
+                0
+            }
+          );
+        }
+
+
+        const record =
+          stores.get(
+            key
+          );
+
+
+        record.trips +=
+          1;
+
+
+        if (
+          isUsableNumber(
+            trip.finalTotal
+          )
+        ) {
+
+          record.spent +=
+            Number(
+              trip.finalTotal
+            );
+        }
+
+
+        if (
+          isUsableNumber(
+            trip.savings
+          )
+        ) {
+
+          record.saved +=
+            Number(
+              trip.savings
+            );
+        }
+      }
+    );
+
+
+    const rows =
+      Array.from(
+        stores.values()
+      )
+      .map(
+        record => ({
+          ...record,
+          spent:
+            roundMoney(
+              record.spent
+            ),
+          saved:
+            roundMoney(
+              record.saved
+            ),
+          average:
+            roundMoney(
+              record.spent /
+              record.trips
+            )
+        })
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.spent -
+          a.spent
+      );
+
+
+    const box =
+      document.getElementById(
+        "reports-store-list"
+      );
+
+
+    if (
+      !rows.length
+    ) {
+
+      box.innerHTML =
+        '<div class="reports-no-data">No store data available.</div>';
+
+      return;
+    }
+
+
+    box.innerHTML =
+      rows
+        .map(
+          record => {
+
+            const savingsHtml =
+              record.saved > 0
+                ? (
+                    '<span class="reports-savings">' +
+                    escapeHtml(
+                      formatMoney(
+                        record.saved
+                      )
+                    ) +
+                    " saved</span>"
+                  )
+                : "";
+
+            return (
+
+              '<div class="reports-store-row">' +
+
+                '<div class="reports-row-top">' +
+
+                  '<div class="reports-row-name">' +
+                    escapeHtml(
+                      record.store
+                    ) +
+                  "</div>" +
+
+                  '<div class="reports-row-value">' +
+                    escapeHtml(
+                      formatMoney(
+                        record.spent
+                      )
+                    ) +
+                  "</div>" +
+
+                "</div>" +
+
+                '<div class="reports-row-meta">' +
+
+                  "<span>" +
+                    escapeHtml(
+                      `${record.trips} trip${record.trips === 1 ? "" : "s"}`
+                    ) +
+                  "</span>" +
+
+                  "<span>Avg " +
+                    escapeHtml(
+                      formatMoney(
+                        record.average
+                      )
+                    ) +
+                  "</span>" +
+
+                  savingsHtml +
+
+                "</div>" +
+
+              "</div>"
+            );
+          }
+        )
+        .join(
+          ""
+        );
+  }
+
+
+  function renderProductReport(
+    trips
+  ) {
+
+    const products =
+      new Map();
+
+
+    trips.forEach(
+      trip => {
+
+        (
+          trip.items ||
+          []
+        )
+          .forEach(
+            item => {
+
+              const product =
+                String(
+                  item.product ||
+                  item.barcode ||
+                  "Unnamed item"
+                ).trim();
+
+              const key =
+                normalizeProductIdentity(
+                  product
+                ) ||
+                product.toLowerCase();
+
+
+              if (
+                !products.has(
+                  key
+                )
+              ) {
+
+                products.set(
+                  key,
+                  {
+                    product:
+                      product,
+
+                    purchases:
+                      0,
+
+                    spent:
+                      0,
+
+                    saved:
+                      0
+                  }
+                );
+              }
+
+
+              const record =
+                products.get(
+                  key
+                );
+
+
+              record.purchases +=
+                1;
+
+
+              if (
+                isUsableNumber(
+                  item.lineTotal
+                )
+              ) {
+
+                record.spent +=
+                  Number(
+                    item.lineTotal
+                  );
+              }
+
+
+              if (
+                isUsableNumber(
+                  item.savings
+                )
+              ) {
+
+                record.saved +=
+                  Number(
+                    item.savings
+                  );
+              }
+            }
+          );
+      }
+    );
+
+
+    const rows =
+      Array.from(
+        products.values()
+      )
+      .map(
+        record => ({
+          ...record,
+          spent:
+            roundMoney(
+              record.spent
+            ),
+          saved:
+            roundMoney(
+              record.saved
+            )
+        })
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.spent -
+          a.spent
+      )
+      .slice(
+        0,
+        10
+      );
+
+
+    const box =
+      document.getElementById(
+        "reports-product-list"
+      );
+
+
+    if (
+      !rows.length
+    ) {
+
+      box.innerHTML =
+        '<div class="reports-no-data">No product data available.</div>';
+
+      return;
+    }
+
+
+    box.innerHTML =
+      rows
+        .map(
+          record => {
+
+            const savingsHtml =
+              record.saved > 0
+                ? (
+                    '<span class="reports-savings">' +
+                    escapeHtml(
+                      formatMoney(
+                        record.saved
+                      )
+                    ) +
+                    " saved</span>"
+                  )
+                : "";
+
+            return (
+
+              '<div class="reports-product-row">' +
+
+                '<div class="reports-row-top">' +
+
+                  '<div class="reports-row-name">' +
+                    escapeHtml(
+                      record.product
+                    ) +
+                  "</div>" +
+
+                  '<div class="reports-row-value">' +
+                    escapeHtml(
+                      formatMoney(
+                        record.spent
+                      )
+                    ) +
+                  "</div>" +
+
+                "</div>" +
+
+                '<div class="reports-row-meta">' +
+
+                  "<span>" +
+                    escapeHtml(
+                      `${record.purchases} purchase${record.purchases === 1 ? "" : "s"}`
+                    ) +
+                  "</span>" +
+
+                  savingsHtml +
+
+                "</div>" +
+
+              "</div>"
+            );
+          }
+        )
+        .join(
+          ""
+        );
+  }
+
+
   function returnToShoppingNav() {
 
     const wasHistoryVisible =
@@ -8784,6 +9821,13 @@
         "hidden"
       );
 
+    const wasReportsVisible =
+      !document.getElementById(
+        "reports-panel"
+      ).classList.contains(
+        "hidden"
+      );
+
     hide(
       "history-panel"
     );
@@ -8792,17 +9836,27 @@
       "history-receipt-panel"
     );
 
+    hide(
+      "reports-panel"
+    );
+
     setActivePrimaryNav(
       "shopping"
     );
 
 
     if (
-      wasHistoryVisible
+      wasHistoryVisible ||
+      wasReportsVisible
     ) {
 
       const restoreId =
-        historyReturnPanelId ||
+        wasReportsVisible
+          ? reportsReturnPanelId
+          : historyReturnPanelId;
+
+      const safeRestoreId =
+        restoreId ||
         (
           activeTrip
             ? "active-trip-panel"
@@ -8810,11 +9864,11 @@
         );
 
       show(
-        restoreId
+        safeRestoreId
       );
 
       if (
-        restoreId ===
+        safeRestoreId ===
         "active-trip-panel"
       ) {
 
