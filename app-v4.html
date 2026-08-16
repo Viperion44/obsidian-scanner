@@ -1235,8 +1235,8 @@
       opacity: 0;
       pointer-events: none;
       transition:
-        opacity 0.35s ease,
-        transform 0.35s ease;
+        opacity 0.22s ease,
+        transform 0.22s ease;
     }
 
     .app-toast.show {
@@ -1247,6 +1247,9 @@
     .app-toast.fade-out {
       opacity: 0;
       transform: translate(-50%, -6px);
+      transition:
+        opacity 1.8s ease,
+        transform 1.8s ease;
     }
 
     .app-toast-title {
@@ -1345,7 +1348,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 toast feedback test
+    V4 management polish test
   </div>
 
   <button
@@ -8430,7 +8433,7 @@
             "fade-out"
           );
         },
-        4300
+        4400
       );
   }
 
@@ -10415,7 +10418,9 @@
 
     try {
       await loadManagementData();
-      showManagementProducts();
+      showManagementProducts(
+        false
+      );
 
       setStatus(
         "Management ready.",
@@ -10542,7 +10547,34 @@
       );
   }
 
-  function showManagementProducts() {
+  function scrollManagementContentIntoView() {
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    if (!box) {
+      return;
+    }
+
+    setTimeout(
+      function() {
+        box.scrollIntoView({
+          behavior:
+            "smooth",
+          block:
+            "start"
+        });
+      },
+      40
+    );
+  }
+
+
+  function showManagementProducts(
+    shouldScroll = true
+  ) {
 
     cancelManagementProductEdit(
       true
@@ -10654,6 +10686,12 @@
         .join(
           ""
         );
+
+    if (
+      shouldScroll
+    ) {
+      scrollManagementContentIntoView();
+    }
   }
 
 
@@ -11081,6 +11119,8 @@
         .join(
           ""
         );
+
+    scrollManagementContentIntoView();
   }
 
 
@@ -11142,6 +11182,8 @@
           ) +
         "</div>" +
       "</div>";
+
+    scrollManagementContentIntoView();
   }
 
 
@@ -11186,6 +11228,8 @@
           ) +
         "</div>" +
       "</div>";
+
+    scrollManagementContentIntoView();
   }
 
 
