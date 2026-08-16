@@ -40,7 +40,7 @@
 
     body {
       margin: 0;
-      padding: 12px;
+      padding: 12px 12px calc(94px + env(safe-area-inset-bottom));
       background: #111318;
       color: #ffffff;
       font-family: Arial, Helvetica, sans-serif;
@@ -643,6 +643,69 @@
       text-align: center;
     }
 
+    /* V4 fixed primary navigation */
+    .bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1000;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+      border-top: 1px solid #3b414d;
+      background: rgba(17, 19, 24, 0.97);
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .bottom-nav-button {
+      width: 100%;
+      min-height: 58px;
+      margin: 0;
+      padding: 7px 4px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: #8f96a3;
+      font-size: 11px;
+      font-weight: bold;
+      line-height: 1.15;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .bottom-nav-button:active {
+      background: #20242d;
+    }
+
+    .bottom-nav-button.active {
+      color: #c9a7f2;
+      background: #241a31;
+    }
+
+    .bottom-nav-button.placeholder {
+      color: #8f96a3;
+    }
+
+    .bottom-nav-icon {
+      display: block;
+      margin: 0 auto 3px;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .bottom-nav-button.shopping-tab .bottom-nav-icon {
+      font-size: 25px;
+    }
+
+    .bottom-nav-button.shopping-tab.active {
+      color: #ffffff;
+      background: #7137b5;
+    }
+
     @media (max-width: 480px) {
       .manual-row {
         display: block;
@@ -663,7 +726,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V3 development build
+    V4 navigation test
   </div>
 
   <button
@@ -1698,10 +1761,47 @@
   </div>
 
   <div class="help">
-    V3 development copy. The live app is still index.html.
+    V4 development copy. The live app is still index.html.
   </div>
 
 </div>
+
+<nav
+  id="bottom-nav"
+  class="bottom-nav"
+  aria-label="Primary navigation"
+>
+  <button
+    class="bottom-nav-button placeholder"
+    type="button"
+    onclick="previewFutureSection('History')"
+    aria-label="History"
+  >
+    <span class="bottom-nav-icon">🕘</span>
+    History
+  </button>
+
+  <button
+    class="bottom-nav-button shopping-tab active"
+    type="button"
+    onclick="returnToShoppingNav()"
+    aria-label="Shopping"
+    aria-current="page"
+  >
+    <span class="bottom-nav-icon">🛒</span>
+    Shopping
+  </button>
+
+  <button
+    class="bottom-nav-button placeholder"
+    type="button"
+    onclick="previewFutureSection('Reports')"
+    aria-label="Reports"
+  >
+    <span class="bottom-nav-icon">📊</span>
+    Reports
+  </button>
+</nav>
 
 <script>
 
@@ -7123,6 +7223,27 @@
         error ||
         "Unknown error"
       )
+    );
+  }
+
+
+  function previewFutureSection(
+    sectionName
+  ) {
+
+    setStatus(
+      escapeHtml(sectionName) +
+      " will be added in the next V4 step. Shopping remains active."
+    );
+  }
+
+
+  function returnToShoppingNav() {
+
+    setStatus(
+      activeTrip
+        ? "Shopping is active."
+        : "Shopping is selected."
     );
   }
 
