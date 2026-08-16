@@ -105,17 +105,14 @@
       background: #3b414d;
     }
 
-    button.danger {
-      background: #6d2831;
-    }
-
     button:disabled {
       opacity: 0.55;
       cursor: default;
     }
 
     input,
-    textarea {
+    textarea,
+    select {
       width: 100%;
       padding: 13px;
       border: 1px solid #555c69;
@@ -132,7 +129,8 @@
     }
 
     input:focus,
-    textarea:focus {
+    textarea:focus,
+    select:focus {
       outline: 2px solid #8650c5;
       border-color: transparent;
     }
@@ -323,6 +321,48 @@
       line-height: 1.4;
     }
 
+    .promo-card {
+      margin-top: 18px;
+      padding: 15px;
+      border: 1px solid #4d5360;
+      border-radius: 12px;
+      background: #1b1f28;
+    }
+
+    .promo-title {
+      margin-bottom: 13px;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .promo-summary {
+      margin-top: 14px;
+      padding: 13px;
+      border-radius: 9px;
+      background: #151820;
+      line-height: 1.65;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 4px 0;
+    }
+
+    .summary-row span:first-child {
+      color: #aeb4c0;
+    }
+
+    .summary-row span:last-child {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .savings-positive {
+      color: #75df91;
+    }
+
     .calc-box {
       margin-top: 12px;
       padding: 13px;
@@ -448,8 +488,6 @@
   </div>
 
 
-  <!-- AUTH -->
-
   <button
     id="connect-button"
     type="button"
@@ -470,8 +508,6 @@
     id="home-panel"
     class="hidden"
   >
-
-    <!-- EXISTING OPEN TRIP -->
 
     <div
       id="resume-card"
@@ -551,8 +587,6 @@
 
     </div>
 
-
-    <!-- START NEW -->
 
     <div
       id="new-trip-card"
@@ -713,9 +747,8 @@
     </div>
 
 
-    <!-- SCANNER -->
-
     <div id="reader"></div>
+
 
     <div class="manual-card">
 
@@ -843,7 +876,7 @@
           min="0"
           step="0.001"
           value="1"
-          oninput="fieldChanged(this); updateCalculations();"
+          oninput="fieldChanged(this); updatePricing();"
         >
 
         <div class="hint">
@@ -856,7 +889,7 @@
       <div class="field">
 
         <label>
-          Last Unit Price
+          Previous Unit Price
         </label>
 
         <div
@@ -869,26 +902,354 @@
       </div>
 
 
-      <div class="field">
+      <!-- PRICING / PROMOTION -->
 
-        <label for="today-price">
-          Today's Unit Price
-        </label>
+      <div class="promo-card">
 
-        <input
-          id="today-price"
-          type="number"
-          inputmode="decimal"
-          min="0"
-          step="0.01"
-          placeholder="0.00"
-          oninput="fieldChanged(this); updateCalculations();"
+        <div class="promo-title">
+          🏷️ Today's Pricing
+        </div>
+
+
+        <div class="field">
+
+          <label for="shelf-price">
+            Shelf Unit Price
+          </label>
+
+          <input
+            id="shelf-price"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+            oninput="fieldChanged(this); updatePricing();"
+          >
+
+          <div class="hint">
+            The normal price shown on the shelf before any promotion.
+          </div>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="promo-status">
+            Promotion
+          </label>
+
+          <select
+            id="promo-status"
+            onchange="promotionStatusChanged()"
+          >
+            <option value="NONE">
+              No promotion
+            </option>
+
+            <option value="APPLIED">
+              Promotion applied
+            </option>
+
+            <option value="IGNORED">
+              Promotion available, not used
+            </option>
+          </select>
+
+        </div>
+
+
+        <div
+          id="promo-options"
+          class="hidden"
         >
+
+          <div class="field">
+
+            <label for="promo-type">
+              Promotion Type
+            </label>
+
+            <select
+              id="promo-type"
+              onchange="promotionTypeChanged()"
+            >
+
+              <option value="X_FOR_Y">
+                X for $Y
+              </option>
+
+              <option value="BUY_X_GET_Y">
+                Buy X, get Y free
+              </option>
+
+              <option value="PERCENT">
+                Percentage discount
+              </option>
+
+              <option value="SPECIAL_UNIT">
+                Special unit price
+              </option>
+
+              <option value="MANUAL">
+                Other / manual
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- X FOR Y -->
+
+          <div
+            id="promo-x-for-y"
+            class="promo-fields"
+          >
+
+            <div class="field">
+
+              <label for="promo-quantity">
+                Promo Quantity
+              </label>
+
+              <input
+                id="promo-quantity"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="1"
+                placeholder="Example: 2"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+            </div>
+
+            <div class="field">
+
+              <label for="promo-total">
+                Promo Total
+              </label>
+
+              <input
+                id="promo-total"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="Example: 80"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+              <div class="hint">
+                Example: for “2 for $80”, enter 2 and 80.
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- BUY X GET Y -->
+
+          <div
+            id="promo-buy-get"
+            class="promo-fields hidden"
+          >
+
+            <div class="field">
+
+              <label for="promo-buy-quantity">
+                Buy Quantity
+              </label>
+
+              <input
+                id="promo-buy-quantity"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                step="1"
+                placeholder="Example: 2"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+            </div>
+
+            <div class="field">
+
+              <label for="promo-free-quantity">
+                Free Quantity
+              </label>
+
+              <input
+                id="promo-free-quantity"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                step="1"
+                placeholder="Example: 1"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+            </div>
+
+          </div>
+
+
+          <!-- PERCENT -->
+
+          <div
+            id="promo-percent"
+            class="promo-fields hidden"
+          >
+
+            <div class="field">
+
+              <label for="promo-percent-value">
+                Discount %
+              </label>
+
+              <input
+                id="promo-percent-value"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="Example: 25"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+            </div>
+
+          </div>
+
+
+          <!-- SPECIAL UNIT -->
+
+          <div
+            id="promo-special-unit"
+            class="promo-fields hidden"
+          >
+
+            <div class="field">
+
+              <label for="promo-threshold">
+                Minimum Quantity
+              </label>
+
+              <input
+                id="promo-threshold"
+                type="number"
+                inputmode="decimal"
+                min="1"
+                step="1"
+                placeholder="Example: 4"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+            </div>
+
+            <div class="field">
+
+              <label for="promo-special-price">
+                Special Unit Price
+              </label>
+
+              <input
+                id="promo-special-price"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="Example: 30"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+            </div>
+
+          </div>
+
+
+          <!-- MANUAL -->
+
+          <div
+            id="promo-manual"
+            class="promo-fields hidden"
+          >
+
+            <div class="field">
+
+              <label for="promo-manual-total">
+                Actual Final Line Total
+              </label>
+
+              <input
+                id="promo-manual-total"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="What you actually pay"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+            </div>
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="promo-note">
+              Promotion Details / Note
+            </label>
+
+            <textarea
+              id="promo-note"
+              placeholder="Optional extra description"
+              oninput="updatePricing()"
+            ></textarea>
+
+          </div>
+
+        </div>
+
+
+        <div class="promo-summary">
+
+          <div class="summary-row">
+            <span>Regular total</span>
+            <span id="regular-total-display">—</span>
+          </div>
+
+          <div class="summary-row">
+            <span>Actual line total</span>
+            <span id="actual-total-display">—</span>
+          </div>
+
+          <div class="summary-row">
+            <span>Effective unit price</span>
+            <span id="effective-price-display">—</span>
+          </div>
+
+          <div class="summary-row">
+            <span>Savings</span>
+            <span
+              id="savings-display"
+              class="savings-positive"
+            >
+              —
+            </span>
+          </div>
+
+        </div>
 
       </div>
 
 
-      <div class="field">
+      <div class="field" style="margin-top:18px;">
 
         <label>
           Store
@@ -907,7 +1268,7 @@
       <div class="field">
 
         <label for="notes">
-          Notes
+          Product Notes
         </label>
 
         <textarea
@@ -921,7 +1282,7 @@
       <div class="calc-box">
 
         <div>
-          Line Total
+          Final Line Total
         </div>
 
         <div
@@ -1071,7 +1432,7 @@
   let exactStoreMatch = null;
   let previousPriceAtStore = "";
 
-  let lastComparisonSummary = "";
+  let currentPricing = null;
 
 
   window.addEventListener(
@@ -1290,30 +1651,29 @@
 
   function showHome() {
 
-    hide(
-      "active-trip-panel"
-    );
+    hide("active-trip-panel");
+    hide("item-panel");
+    hide("success-panel");
 
-    hide(
-      "item-panel"
-    );
-
-    hide(
-      "success-panel"
-    );
-
-    show(
-      "home-panel"
-    );
+    show("home-panel");
 
     const resumeCard =
       document.getElementById(
         "resume-card"
       );
 
+    const newTripCard =
+      document.getElementById(
+        "new-trip-card"
+      );
+
     if (openTripCandidate) {
 
       resumeCard.classList.remove(
+        "hidden"
+      );
+
+      newTripCard.classList.add(
         "hidden"
       );
 
@@ -1348,6 +1708,10 @@
     } else {
 
       resumeCard.classList.add(
+        "hidden"
+      );
+
+      newTripCard.classList.remove(
         "hidden"
       );
     }
@@ -1412,7 +1776,7 @@
         showHome();
 
         fail(
-          "There is already an OPEN trip. Resume that trip instead of starting another."
+          "There is already an OPEN trip."
         );
 
         return;
@@ -1582,13 +1946,11 @@
 
   async function enterActiveTrip() {
 
-    hide(
-      "home-panel"
-    );
+    hide("home-panel");
+    hide("item-panel");
+    hide("success-panel");
 
-    show(
-      "active-trip-panel"
-    );
+    show("active-trip-panel");
 
     document.getElementById(
       "active-store"
@@ -1647,7 +2009,7 @@
 
 
   /* ===================================================
-     FIND OPEN TRIP
+     OPEN TRIP
      =================================================== */
 
   async function findOpenTrip() {
@@ -1719,7 +2081,6 @@
 
           sheetRow:
             index + 2
-
         });
       }
     );
@@ -1735,7 +2096,7 @@
 
 
   /* ===================================================
-     STORE LIST
+     STORE
      =================================================== */
 
   function populateKnownStores() {
@@ -1824,7 +2185,7 @@
 
 
   /* ===================================================
-     TRIP SUMMARY
+     SUMMARY
      =================================================== */
 
   async function refreshTripSummary() {
@@ -1893,7 +2254,7 @@
 
 
   /* ===================================================
-     PRODUCTS DATABASE
+     PRODUCT DATABASE
      =================================================== */
 
   async function loadProductDatabase() {
@@ -1978,7 +2339,6 @@
               String(
                 row[12] ?? ""
               ).trim()
-
           };
         }
       )
@@ -2049,7 +2409,6 @@
         Html5QrcodeSupportedFormats.CODABAR,
         Html5QrcodeSupportedFormats.DATA_MATRIX,
         Html5QrcodeSupportedFormats.QR_CODE
-
       ]
     };
 
@@ -2194,7 +2553,7 @@
 
 
   /* ===================================================
-     BARCODE LOOKUP
+     LOOKUP
      =================================================== */
 
   async function beginBarcodeLookup(
@@ -2233,7 +2592,7 @@
       ) {
 
         throw new Error(
-          "The current store in Shopping List does not match the active trip."
+          "The current store does not match the active trip."
         );
       }
 
@@ -2247,13 +2606,8 @@
       ).value =
         "";
 
-      hide(
-        "active-trip-panel"
-      );
-
-      show(
-        "item-panel"
-      );
+      hide("active-trip-panel");
+      show("item-panel");
 
       document.getElementById(
         "item-panel"
@@ -2443,7 +2797,7 @@
       "1";
 
     document.getElementById(
-      "today-price"
+      "shelf-price"
     ).value =
       "";
 
@@ -2451,6 +2805,8 @@
       "notes"
     ).value =
       "";
+
+    resetPromotionFields();
 
     document.getElementById(
       "previous-price"
@@ -2468,7 +2824,7 @@
 
     renderBarcodeReuseWarning();
 
-    updateCalculations();
+    updatePricing();
     renderPriceComparisons();
   }
 
@@ -2551,86 +2907,778 @@
 
 
   /* ===================================================
-     CALCULATIONS
+     PROMOTION UI
      =================================================== */
 
-  function updateCalculations() {
+  function resetPromotionFields() {
+
+    document.getElementById(
+      "promo-status"
+    ).value =
+      "NONE";
+
+    document.getElementById(
+      "promo-type"
+    ).value =
+      "X_FOR_Y";
+
+    [
+      "promo-quantity",
+      "promo-total",
+      "promo-buy-quantity",
+      "promo-free-quantity",
+      "promo-percent-value",
+      "promo-threshold",
+      "promo-special-price",
+      "promo-manual-total"
+    ]
+      .forEach(
+        id => {
+
+          document.getElementById(
+            id
+          ).value =
+            "";
+        }
+      );
+
+    document.getElementById(
+      "promo-note"
+    ).value =
+      "";
+
+    hide(
+      "promo-options"
+    );
+
+    showPromoTypePanel(
+      "X_FOR_Y"
+    );
+
+    currentPricing =
+      null;
+  }
+
+
+  function promotionStatusChanged() {
+
+    const status =
+      document.getElementById(
+        "promo-status"
+      ).value;
+
+    if (status === "NONE") {
+
+      hide(
+        "promo-options"
+      );
+
+    } else {
+
+      show(
+        "promo-options"
+      );
+
+      promotionTypeChanged();
+    }
+
+    clearFormError();
+    updatePricing();
+  }
+
+
+  function promotionTypeChanged() {
+
+    const type =
+      document.getElementById(
+        "promo-type"
+      ).value;
+
+    showPromoTypePanel(
+      type
+    );
+
+    clearFormError();
+    updatePricing();
+  }
+
+
+  function showPromoTypePanel(
+    type
+  ) {
+
+    [
+      "promo-x-for-y",
+      "promo-buy-get",
+      "promo-percent",
+      "promo-special-unit",
+      "promo-manual"
+    ]
+      .forEach(
+        id =>
+          hide(id)
+      );
+
+    if (type === "X_FOR_Y") {
+
+      show(
+        "promo-x-for-y"
+      );
+
+    } else if (
+      type === "BUY_X_GET_Y"
+    ) {
+
+      show(
+        "promo-buy-get"
+      );
+
+    } else if (
+      type === "PERCENT"
+    ) {
+
+      show(
+        "promo-percent"
+      );
+
+    } else if (
+      type === "SPECIAL_UNIT"
+    ) {
+
+      show(
+        "promo-special-unit"
+      );
+
+    } else if (
+      type === "MANUAL"
+    ) {
+
+      show(
+        "promo-manual"
+      );
+    }
+  }
+
+
+  /* ===================================================
+     PRICING ENGINE
+     =================================================== */
+
+  function updatePricing() {
+
+    currentPricing =
+      calculatePricing();
+
+    const pricing =
+      currentPricing;
+
+    document.getElementById(
+      "regular-total-display"
+    ).textContent =
+      pricing.validBase
+        ? formatMoney(
+            pricing.regularLineTotal
+          )
+        : "—";
+
+    document.getElementById(
+      "actual-total-display"
+    ).textContent =
+      pricing.valid
+        ? formatMoney(
+            pricing.actualLineTotal
+          )
+        : "—";
+
+    document.getElementById(
+      "effective-price-display"
+    ).textContent =
+      pricing.valid
+        ? formatMoney(
+            pricing.effectiveUnitPrice
+          )
+        : "—";
+
+    document.getElementById(
+      "savings-display"
+    ).textContent =
+      pricing.valid
+        ? formatMoney(
+            pricing.savings
+          )
+        : "—";
+
+    document.getElementById(
+      "line-total"
+    ).textContent =
+      pricing.valid
+        ? formatMoney(
+            pricing.actualLineTotal
+          )
+        : "—";
+
+    updatePreviousPriceDifference(
+      pricing
+    );
+
+    renderPriceComparisons();
+  }
+
+
+  function calculatePricing() {
 
     const amount =
       readPositiveNumber(
         "amount"
       );
 
-    const price =
+    const shelfPrice =
       readPositiveNumber(
-        "today-price"
+        "shelf-price"
       );
 
-    document.getElementById(
-      "line-total"
-    ).textContent =
-      (
-        amount !== null &&
-        price !== null
-      )
-        ? formatMoney(
-            amount * price
-          )
-        : "—";
+    const promoStatus =
+      document.getElementById(
+        "promo-status"
+      ).value;
 
-    const diffBox =
+    const promoType =
+      document.getElementById(
+        "promo-type"
+      ).value;
+
+    const promoNote =
+      document.getElementById(
+        "promo-note"
+      ).value.trim();
+
+    const base = {
+
+      valid:
+        false,
+
+      validBase:
+        (
+          amount !== null &&
+          shelfPrice !== null
+        ),
+
+      amount:
+        amount,
+
+      shelfUnitPrice:
+        shelfPrice,
+
+      promoStatus:
+        promoStatus,
+
+      promoApplied:
+        "",
+
+      promoType:
+        "",
+
+      promoDetails:
+        "",
+
+      promoQuantity:
+        "",
+
+      promoTotal:
+        "",
+
+      regularLineTotal:
+        null,
+
+      actualLineTotal:
+        null,
+
+      effectiveUnitPrice:
+        null,
+
+      savings:
+        null
+    };
+
+
+    if (!base.validBase) {
+
+      return base;
+    }
+
+
+    base.regularLineTotal =
+      amount *
+      shelfPrice;
+
+
+    /* NO PROMOTION */
+
+    if (
+      promoStatus ===
+      "NONE"
+    ) {
+
+      base.actualLineTotal =
+        base.regularLineTotal;
+
+      base.effectiveUnitPrice =
+        shelfPrice;
+
+      base.savings =
+        0;
+
+      base.valid =
+        true;
+
+      return base;
+    }
+
+
+    base.promoApplied =
+      promoStatus === "APPLIED"
+        ? "YES"
+        : "NO";
+
+    base.promoType =
+      promoTypeLabel(
+        promoType
+      );
+
+
+    /* X FOR Y */
+
+    if (
+      promoType ===
+      "X_FOR_Y"
+    ) {
+
+      const quantity =
+        readPositiveNumber(
+          "promo-quantity"
+        );
+
+      const total =
+        readPositiveNumber(
+          "promo-total"
+        );
+
+      if (
+        quantity === null ||
+        total === null
+      ) {
+
+        return base;
+      }
+
+      base.promoQuantity =
+        quantity;
+
+      base.promoTotal =
+        total;
+
+      base.promoDetails =
+        `${formatPlainNumber(quantity)} for ${formatMoney(total)}`;
+
+      if (promoNote) {
+
+        base.promoDetails +=
+          ` — ${promoNote}`;
+      }
+
+
+      if (
+        promoStatus ===
+        "APPLIED"
+      ) {
+
+        const fullBundles =
+          Math.floor(
+            amount /
+            quantity
+          );
+
+        const leftover =
+          amount -
+          (
+            fullBundles *
+            quantity
+          );
+
+        base.actualLineTotal =
+          (
+            fullBundles *
+            total
+          ) +
+          (
+            leftover *
+            shelfPrice
+          );
+
+      } else {
+
+        base.actualLineTotal =
+          base.regularLineTotal;
+      }
+    }
+
+
+    /* BUY X GET Y FREE */
+
+    else if (
+      promoType ===
+      "BUY_X_GET_Y"
+    ) {
+
+      const buyQty =
+        readPositiveNumber(
+          "promo-buy-quantity"
+        );
+
+      const freeQty =
+        readPositiveNumber(
+          "promo-free-quantity"
+        );
+
+      if (
+        buyQty === null ||
+        freeQty === null
+      ) {
+
+        return base;
+      }
+
+      const groupSize =
+        buyQty +
+        freeQty;
+
+      base.promoQuantity =
+        groupSize;
+
+      base.promoDetails =
+        `Buy ${formatPlainNumber(buyQty)}, get ${formatPlainNumber(freeQty)} free`;
+
+      if (promoNote) {
+
+        base.promoDetails +=
+          ` — ${promoNote}`;
+      }
+
+
+      if (
+        promoStatus ===
+        "APPLIED"
+      ) {
+
+        const fullGroups =
+          Math.floor(
+            amount /
+            groupSize
+          );
+
+        const leftover =
+          amount -
+          (
+            fullGroups *
+            groupSize
+          );
+
+        const paidUnits =
+          (
+            fullGroups *
+            buyQty
+          ) +
+          leftover;
+
+        base.actualLineTotal =
+          paidUnits *
+          shelfPrice;
+
+      } else {
+
+        base.actualLineTotal =
+          base.regularLineTotal;
+      }
+    }
+
+
+    /* PERCENT */
+
+    else if (
+      promoType ===
+      "PERCENT"
+    ) {
+
+      const percent =
+        readPositiveNumber(
+          "promo-percent-value"
+        );
+
+      if (
+        percent === null ||
+        percent > 100
+      ) {
+
+        return base;
+      }
+
+      base.promoDetails =
+        `${formatPlainNumber(percent)}% off`;
+
+      if (promoNote) {
+
+        base.promoDetails +=
+          ` — ${promoNote}`;
+      }
+
+
+      if (
+        promoStatus ===
+        "APPLIED"
+      ) {
+
+        base.actualLineTotal =
+          base.regularLineTotal *
+          (
+            1 -
+            (
+              percent /
+              100
+            )
+          );
+
+      } else {
+
+        base.actualLineTotal =
+          base.regularLineTotal;
+      }
+    }
+
+
+    /* SPECIAL UNIT PRICE */
+
+    else if (
+      promoType ===
+      "SPECIAL_UNIT"
+    ) {
+
+      const threshold =
+        readPositiveNumber(
+          "promo-threshold"
+        );
+
+      const specialPrice =
+        readPositiveNumber(
+          "promo-special-price"
+        );
+
+      if (
+        threshold === null ||
+        specialPrice === null
+      ) {
+
+        return base;
+      }
+
+      base.promoQuantity =
+        threshold;
+
+      base.promoTotal =
+        specialPrice;
+
+      base.promoDetails =
+        `${formatPlainNumber(threshold)}+ at ${formatMoney(specialPrice)} each`;
+
+      if (promoNote) {
+
+        base.promoDetails +=
+          ` — ${promoNote}`;
+      }
+
+
+      if (
+        promoStatus ===
+        "APPLIED" &&
+        amount >= threshold
+      ) {
+
+        base.actualLineTotal =
+          amount *
+          specialPrice;
+
+      } else {
+
+        base.actualLineTotal =
+          base.regularLineTotal;
+      }
+    }
+
+
+    /* MANUAL */
+
+    else if (
+      promoType ===
+      "MANUAL"
+    ) {
+
+      const manualTotal =
+        readPositiveNumber(
+          "promo-manual-total"
+        );
+
+      if (
+        promoStatus ===
+        "APPLIED" &&
+        manualTotal === null
+      ) {
+
+        return base;
+      }
+
+      base.promoDetails =
+        promoNote ||
+        "Manual promotion";
+
+      if (
+        promoStatus ===
+        "APPLIED"
+      ) {
+
+        base.actualLineTotal =
+          manualTotal;
+
+        base.promoTotal =
+          manualTotal;
+
+      } else {
+
+        base.actualLineTotal =
+          base.regularLineTotal;
+      }
+    }
+
+
+    if (
+      !Number.isFinite(
+        base.actualLineTotal
+      )
+    ) {
+
+      return base;
+    }
+
+
+    base.effectiveUnitPrice =
+      base.actualLineTotal /
+      amount;
+
+    base.savings =
+      Math.max(
+        0,
+        base.regularLineTotal -
+        base.actualLineTotal
+      );
+
+    base.valid =
+      true;
+
+    return base;
+  }
+
+
+  function updatePreviousPriceDifference(
+    pricing
+  ) {
+
+    const box =
       document.getElementById(
         "local-price-difference"
       );
 
     if (
-      price !== null &&
-      isUsableNumber(
+      !pricing.valid ||
+      !isUsableNumber(
         previousPriceAtStore
       )
     ) {
 
-      const diff =
-        price -
-        Number(
-          previousPriceAtStore
-        );
+      box.innerHTML =
+        "";
 
-      if (diff > 0.005) {
+      return;
+    }
 
-        diffBox.innerHTML =
-          '<span class="comparison-worse">' +
-          escapeHtml(
-            formatMoney(diff)
-          ) +
-          " more expensive than last time.</span>";
+    const difference =
+      pricing.effectiveUnitPrice -
+      Number(
+        previousPriceAtStore
+      );
 
-      } else if (
-        diff < -0.005
-      ) {
+    if (
+      difference > 0.005
+    ) {
 
-        diffBox.innerHTML =
-          '<span class="comparison-better">' +
-          escapeHtml(
-            formatMoney(
-              Math.abs(diff)
+      box.innerHTML =
+
+        '<span class="comparison-worse">' +
+
+        escapeHtml(
+          formatMoney(
+            difference
+          )
+        ) +
+
+        " more expensive per effective unit than last time.</span>";
+
+    } else if (
+      difference < -0.005
+    ) {
+
+      box.innerHTML =
+
+        '<span class="comparison-better">' +
+
+        escapeHtml(
+          formatMoney(
+            Math.abs(
+              difference
             )
-          ) +
-          " cheaper than last time.</span>";
+          )
+        ) +
 
-      } else {
-
-        diffBox.textContent =
-          "Same price as last time.";
-      }
+        " cheaper per effective unit than last time.</span>";
 
     } else {
 
-      diffBox.innerHTML =
-        "";
+      box.textContent =
+        "Same effective unit price as last time.";
     }
+  }
 
-    renderPriceComparisons();
+
+  function promoTypeLabel(
+    value
+  ) {
+
+    const labels = {
+
+      X_FOR_Y:
+        "X for $Y",
+
+      BUY_X_GET_Y:
+        "Buy X, get Y free",
+
+      PERCENT:
+        "Percentage discount",
+
+      SPECIAL_UNIT:
+        "Special unit price",
+
+      MANUAL:
+        "Other / manual"
+    };
+
+    return labels[value] || "";
   }
 
 
@@ -2789,6 +3837,15 @@
       block:
         "center"
     });
+
+    if (
+      navigator.vibrate
+    ) {
+
+      navigator.vibrate(
+        80
+      );
+    }
   }
 
 
@@ -2812,16 +3869,30 @@
     [
       "product-name",
       "amount",
-      "today-price"
+      "shelf-price",
+      "promo-quantity",
+      "promo-total",
+      "promo-buy-quantity",
+      "promo-free-quantity",
+      "promo-percent-value",
+      "promo-threshold",
+      "promo-special-price",
+      "promo-manual-total"
     ]
       .forEach(
         id => {
 
-          document.getElementById(
-            id
-          ).classList.remove(
-            "invalid-field"
-          );
+          const element =
+            document.getElementById(
+              id
+            );
+
+          if (element) {
+
+            element.classList.remove(
+              "invalid-field"
+            );
+          }
         }
       );
 
@@ -2881,15 +3952,16 @@
         "amount"
       );
 
-    const price =
+    const shelfPrice =
       readPositiveNumber(
-        "today-price"
+        "shelf-price"
       );
 
     const notes =
       document.getElementById(
         "notes"
       ).value.trim();
+
 
     if (!product) {
 
@@ -2901,6 +3973,7 @@
       return;
     }
 
+
     if (!confirmed) {
 
       showFormError(
@@ -2910,6 +3983,7 @@
 
       return;
     }
+
 
     if (amount === null) {
 
@@ -2921,15 +3995,48 @@
       return;
     }
 
-    if (price === null) {
+
+    if (shelfPrice === null) {
 
       showFormError(
-        "Enter today's unit price.",
-        "today-price"
+        "Enter the shelf unit price.",
+        "shelf-price"
       );
 
       return;
     }
+
+
+    currentPricing =
+      calculatePricing();
+
+
+    if (!currentPricing.valid) {
+
+      const promoStatus =
+        document.getElementById(
+          "promo-status"
+        ).value;
+
+      if (
+        promoStatus !==
+        "NONE"
+      ) {
+
+        showFormError(
+          "Complete the promotion information before adding this item."
+        );
+
+      } else {
+
+        showFormError(
+          "The pricing information is incomplete."
+        );
+      }
+
+      return;
+    }
+
 
     const button =
       document.getElementById(
@@ -2941,6 +4048,7 @@
 
     button.textContent =
       "ADDING...";
+
 
     try {
 
@@ -2959,22 +4067,50 @@
           previousPrice:
             previousPriceAtStore,
 
-          todayPrice:
-            price,
+          effectiveUnitPrice:
+            currentPricing.effectiveUnitPrice,
+
+          actualLineTotal:
+            currentPricing.actualLineTotal,
 
           store:
             activeTrip.store,
 
           notes:
-            notes
+            notes,
 
+          shelfUnitPrice:
+            currentPricing.shelfUnitPrice,
+
+          promoApplied:
+            currentPricing.promoApplied,
+
+          promoType:
+            currentPricing.promoType,
+
+          promoDetails:
+            currentPricing.promoDetails,
+
+          regularLineTotal:
+            currentPricing.regularLineTotal,
+
+          savings:
+            currentPricing.savings,
+
+          promoQuantity:
+            currentPricing.promoQuantity,
+
+          promoTotal:
+            currentPricing.promoTotal
         });
+
 
       button.disabled =
         false;
 
       button.textContent =
         "ADD ITEM TO TRIP";
+
 
       hide(
         "item-panel"
@@ -2983,6 +4119,33 @@
       show(
         "success-panel"
       );
+
+
+      let promoText =
+        "No promotion";
+
+      if (
+        currentPricing.promoStatus ===
+        "APPLIED"
+      ) {
+
+        promoText =
+          currentPricing.promoDetails ||
+          currentPricing.promoType;
+
+      } else if (
+        currentPricing.promoStatus ===
+        "IGNORED"
+      ) {
+
+        promoText =
+          "Available but not used: " +
+          (
+            currentPricing.promoDetails ||
+            currentPricing.promoType
+          );
+      }
+
 
       document.getElementById(
         "success-details"
@@ -2999,19 +4162,55 @@
         "<br>" +
 
         '<span class="success-label">Amount:</span> ' +
-        escapeHtml(amount) +
-        "<br>" +
-
-        '<span class="success-label">Unit price:</span> ' +
         escapeHtml(
-          formatMoney(price)
+          formatPlainNumber(
+            amount
+          )
         ) +
         "<br>" +
 
-        '<span class="success-label">Line total:</span> ' +
+        '<span class="success-label">Shelf unit price:</span> ' +
         escapeHtml(
           formatMoney(
-            amount * price
+            currentPricing.shelfUnitPrice
+          )
+        ) +
+        "<br>" +
+
+        '<span class="success-label">Effective unit price:</span> ' +
+        escapeHtml(
+          formatMoney(
+            currentPricing.effectiveUnitPrice
+          )
+        ) +
+        "<br>" +
+
+        '<span class="success-label">Promotion:</span> ' +
+        escapeHtml(
+          promoText
+        ) +
+        "<br>" +
+
+        '<span class="success-label">Regular total:</span> ' +
+        escapeHtml(
+          formatMoney(
+            currentPricing.regularLineTotal
+          )
+        ) +
+        "<br>" +
+
+        '<span class="success-label">Actual line total:</span> ' +
+        escapeHtml(
+          formatMoney(
+            currentPricing.actualLineTotal
+          )
+        ) +
+        "<br>" +
+
+        '<span class="success-label">Savings:</span> ' +
+        escapeHtml(
+          formatMoney(
+            currentPricing.savings
           )
         ) +
         "<br>" +
@@ -3021,7 +4220,9 @@
           result.row
         );
 
+
       await refreshTripSummary();
+
 
       document.getElementById(
         "success-panel"
@@ -3032,6 +4233,7 @@
           "start"
       });
 
+
     } catch (error) {
 
       button.disabled =
@@ -3040,7 +4242,9 @@
       button.textContent =
         "ADD ITEM TO TRIP";
 
-      handleApiError(error);
+      handleApiError(
+        error
+      );
 
       showFormError(
         error?.message ||
@@ -3049,6 +4253,10 @@
     }
   }
 
+
+  /* ===================================================
+     WRITE ITEM TO SHOPPING LIST
+     =================================================== */
 
   async function writeShoppingItem(
     item
@@ -3062,8 +4270,10 @@
         sheetInfo
       );
 
+
     await sheetsValuesBatchUpdate(
       [
+
         {
           range:
             `'${SHOPPING_SHEET}'!B${row}`,
@@ -3109,7 +4319,19 @@
             `'${SHOPPING_SHEET}'!F${row}`,
 
           values:
-            [[item.todayPrice]]
+            [[
+              item.effectiveUnitPrice
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!G${row}`,
+
+          values:
+            [[
+              item.actualLineTotal
+            ]]
         },
 
         {
@@ -3126,23 +4348,95 @@
 
           values:
             [[item.notes]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!K${row}`,
+
+          values:
+            [[
+              item.shelfUnitPrice
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!L${row}`,
+
+          values:
+            [[
+              item.promoApplied
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!M${row}`,
+
+          values:
+            [[
+              item.promoType
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!N${row}`,
+
+          values:
+            [[
+              item.promoDetails
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!O${row}`,
+
+          values:
+            [[
+              item.regularLineTotal
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!P${row}`,
+
+          values:
+            [[
+              item.savings
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!Q${row}`,
+
+          values:
+            [[
+              item.promoQuantity
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!R${row}`,
+
+          values:
+            [[
+              item.promoTotal
+            ]]
         }
+
       ],
       "RAW"
     );
 
+
     await sheetsValuesBatchUpdate(
       [
-        {
-          range:
-            `'${SHOPPING_SHEET}'!G${row}`,
-
-          values:
-            [[
-              `=IF(OR(D${row}="",F${row}=""),"",D${row}*F${row})`
-            ]]
-        },
-
         {
           range:
             `'${SHOPPING_SHEET}'!I${row}`,
@@ -3155,6 +4449,7 @@
       ],
       "USER_ENTERED"
     );
+
 
     return {
       row:
@@ -3215,6 +4510,8 @@
     exactStoreMatch = null;
     previousPriceAtStore = "";
 
+    currentPricing = null;
+
     processing = false;
 
     clearFormError();
@@ -3259,7 +4556,9 @@
         sheet.properties.sheetId,
 
       rowCount:
-        sheet.properties.gridProperties.rowCount
+        sheet.properties
+          .gridProperties
+          .rowCount
     };
   }
 
@@ -3300,7 +4599,7 @@
     }
 
     throw new Error(
-      "No empty Shopping List row is available yet."
+      "No empty Shopping List row is available."
     );
   }
 
@@ -3388,7 +4687,6 @@
 
         body:
           JSON.stringify({
-
             values:
               values
           })
@@ -3450,6 +4748,7 @@
         await response.json();
 
     } catch (error) {}
+
 
     if (!response.ok) {
 
@@ -3604,7 +4903,9 @@
       )
     ) {
 
-      return String(value);
+      return String(
+        value
+      );
     }
 
     return date.toLocaleString();
@@ -3702,9 +5003,13 @@
     }
 
     const number =
-      Number(value);
+      Number(
+        value
+      );
 
-    return Number.isFinite(number)
+    return Number.isFinite(
+      number
+    )
       ? number
       : "";
   }
@@ -3719,7 +5024,9 @@
       value !== null &&
       value !== undefined &&
       Number.isFinite(
-        Number(value)
+        Number(
+          value
+        )
       )
     );
   }
@@ -3735,14 +5042,19 @@
       ).value;
 
     if (raw === "") {
+
       return null;
     }
 
     const number =
-      Number(raw);
+      Number(
+        raw
+      );
 
     if (
-      !Number.isFinite(number) ||
+      !Number.isFinite(
+        number
+      ) ||
       number <= 0
     ) {
 
@@ -3758,10 +5070,14 @@
   ) {
 
     const number =
-      Number(value);
+      Number(
+        value
+      );
 
     if (
-      !Number.isFinite(number)
+      !Number.isFinite(
+        number
+      )
     ) {
 
       return "—";
@@ -3769,8 +5085,39 @@
 
     return (
       "$" +
-      number.toFixed(2)
+      number.toFixed(
+        2
+      )
     );
+  }
+
+
+  function formatPlainNumber(
+    value
+  ) {
+
+    const number =
+      Number(
+        value
+      );
+
+    if (
+      !Number.isFinite(
+        number
+      )
+    ) {
+
+      return String(
+        value ?? ""
+      );
+    }
+
+    return number
+      .toFixed(3)
+      .replace(
+        /\.?0+$/,
+        ""
+      );
   }
 
 
@@ -3790,7 +5137,8 @@
     if (type) {
 
       box.classList.add(
-        "status-" + type
+        "status-" +
+        type
       );
     }
 
@@ -3805,7 +5153,9 @@
 
     setStatus(
       "❌ " +
-      escapeHtml(message),
+      escapeHtml(
+        message
+      ),
       "error"
     );
   }
@@ -3832,11 +5182,26 @@
     return String(
       value ?? ""
     )
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
   }
 
 </script>
