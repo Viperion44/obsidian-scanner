@@ -1490,6 +1490,14 @@
       SCAN NEXT ITEM
     </button>
 
+    <button
+      class="finish"
+      type="button"
+      onclick="openFinishReview()"
+    >
+      REVIEW &amp; FINISH TRIP
+    </button>
+
   </div>
 
   <div
@@ -1706,15 +1714,6 @@
   const TRIP_HISTORY_SHEET =
     "Trip History";
 
-  /*
-    IMPORTANT:
-    Current Store moved when the Shopping List
-    was expanded with promotion columns.
-
-    Visible CURRENT STORE:
-      T21 = label
-      U21 = value
-  */
   const CURRENT_STORE_CELL =
     "U21";
 
@@ -5190,6 +5189,10 @@
         "active-trip-panel"
       );
 
+      hide(
+        "success-panel"
+      );
+
       show(
         "finish-review-panel"
       );
@@ -6198,10 +6201,6 @@
       `'${SHOPPING_SHEET}'!A${SHOP_FIRST_ROW}:R`
     );
 
-    /*
-      U21 is outside A:R, so clear the
-      visible Current Store cell separately.
-    */
     await sheetsValuesBatchUpdate(
       [
         {
