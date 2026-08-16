@@ -1216,6 +1216,52 @@
       line-height: 1.45;
     }
 
+    /* V4 Floating Feedback Toast */
+    .app-toast {
+      position: fixed;
+      top: calc(14px + env(safe-area-inset-top));
+      left: 50%;
+      z-index: 2000;
+      width: min(calc(100% - 28px), 520px);
+      padding: 13px 15px;
+      border: 1px solid rgba(119, 225, 146, 0.55);
+      border-radius: 12px;
+      background: rgba(24, 76, 42, 0.94);
+      color: #eaffef;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transform: translate(-50%, -10px);
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        opacity 0.35s ease,
+        transform 0.35s ease;
+    }
+
+    .app-toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    .app-toast.fade-out {
+      opacity: 0;
+      transform: translate(-50%, -6px);
+    }
+
+    .app-toast-title {
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .app-toast-detail {
+      margin-top: 3px;
+      color: #ccefd5;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1299,7 +1345,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 product editing test
+    V4 toast feedback test
   </div>
 
   <button
@@ -2787,6 +2833,24 @@
 
 </div>
 
+<div
+  id="app-toast"
+  class="app-toast"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+>
+  <div
+    id="app-toast-title"
+    class="app-toast-title"
+  ></div>
+
+  <div
+    id="app-toast-detail"
+    class="app-toast-detail hidden"
+  ></div>
+</div>
+
 <nav
   id="bottom-nav"
   class="bottom-nav"
@@ -2906,6 +2970,9 @@
   let managementTrips = [];
   let managementHistoryRows = [];
   let managementEditingProductIndex = null;
+
+  let toastHideTimer = null;
+  let toastRemoveTimer = null;
 
 
   window.addEventListener(
@@ -8264,6 +8331,110 @@
   }
 
 
+  function showSuccessToast(
+    title,
+    detail
+  ) {
+
+    const toast =
+      document.getElementById(
+        "app-toast"
+      );
+
+    const titleBox =
+      document.getElementById(
+        "app-toast-title"
+      );
+
+    const detailBox =
+      document.getElementById(
+        "app-toast-detail"
+      );
+
+
+    if (
+      toastHideTimer
+    ) {
+      clearTimeout(
+        toastHideTimer
+      );
+      toastHideTimer =
+        null;
+    }
+
+
+    if (
+      toastRemoveTimer
+    ) {
+      clearTimeout(
+        toastRemoveTimer
+      );
+      toastRemoveTimer =
+        null;
+    }
+
+
+    titleBox.textContent =
+      "✓ " +
+      String(
+        title || "Done"
+      );
+
+
+    if (
+      detail
+    ) {
+      detailBox.textContent =
+        String(
+          detail
+        );
+
+      detailBox.classList.remove(
+        "hidden"
+      );
+    } else {
+      detailBox.textContent =
+        "";
+
+      detailBox.classList.add(
+        "hidden"
+      );
+    }
+
+
+    toast.classList.remove(
+      "fade-out"
+    );
+
+    toast.classList.add(
+      "show"
+    );
+
+
+    toastHideTimer =
+      setTimeout(
+        function() {
+          toast.classList.add(
+            "fade-out"
+          );
+        },
+        2400
+      );
+
+
+    toastRemoveTimer =
+      setTimeout(
+        function() {
+          toast.classList.remove(
+            "show",
+            "fade-out"
+          );
+        },
+        4300
+      );
+  }
+
+
   function previewFutureSection(
     sectionName
   ) {
@@ -10735,11 +10906,21 @@
 
       showManagementProducts();
 
-      setStatus(
+      const correctionDetail =
         matchingHistory.length
-          ? `Product corrected. ${matchingHistory.length} historical item record${matchingHistory.length === 1 ? "" : "s"} updated too.`
+          ? `${matchingHistory.length} historical item record${matchingHistory.length === 1 ? "" : "s"} updated too.`
+          : "";
+
+      setStatus(
+        correctionDetail
+          ? `Product corrected. ${correctionDetail}`
           : "Product corrected.",
         "success"
+      );
+
+      showSuccessToast(
+        "Product corrected",
+        correctionDetail
       );
 
     } catch (error) {
