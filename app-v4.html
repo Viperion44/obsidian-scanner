@@ -1019,6 +1019,143 @@
       line-height: 1.45;
     }
 
+    /* V4 Management */
+    .management-launcher {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .management-launcher-button {
+      margin: 0;
+      background: #3b414d;
+    }
+
+    .management-panel-card {
+      margin-bottom: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .management-heading {
+      margin: 4px 0 0;
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    .management-subtitle {
+      margin-top: 7px;
+      color: #aeb4c0;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .management-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .management-action {
+      min-height: 112px;
+      margin: 0;
+      padding: 14px;
+      border: 1px solid #3f4551;
+      border-radius: 13px;
+      background: #242833;
+      color: #fff;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .management-action:active {
+      background: #2d323e;
+    }
+
+    .management-action-icon {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .management-action-title {
+      display: block;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .management-action-desc {
+      display: block;
+      margin-top: 5px;
+      color: #aeb4c0;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .management-list-card {
+      margin-bottom: 14px;
+      padding: 14px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .management-section-title {
+      margin-bottom: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .management-empty {
+      color: #9fa6b1;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .management-row {
+      padding: 11px 0;
+      border-bottom: 1px solid #3d424d;
+    }
+
+    .management-row:last-child {
+      border-bottom: none;
+    }
+
+    .management-row-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .management-row-name {
+      flex: 1;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .management-row-meta {
+      margin-top: 4px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .management-warning {
+      margin-top: 10px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #3a2a1d;
+      color: #f2c58a;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1102,7 +1239,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 reports test
+    V4 management test
   </div>
 
   <button
@@ -1267,6 +1404,16 @@
         START TRIP
       </button>
 
+    </div>
+
+    <div class="management-launcher">
+      <button
+        class="management-launcher-button"
+        type="button"
+        onclick="openManagementSection()"
+      >
+        ⚙️ MANAGE PRODUCTS, STORES & DATA
+      </button>
     </div>
 
   </div>
@@ -2404,6 +2551,98 @@
 
   </div>
 
+  <div
+    id="management-panel"
+    class="hidden"
+  >
+
+    <button
+      class="history-back-button"
+      type="button"
+      onclick="closeManagementSection()"
+    >
+      ← BACK TO SHOPPING
+    </button>
+
+    <div class="management-panel-card">
+
+      <div class="small-label">
+        MAINTENANCE
+      </div>
+
+      <div class="management-heading">
+        Manage Data
+      </div>
+
+      <div class="management-subtitle">
+        Review and correct backend records without opening Google Sheets.
+      </div>
+
+      <div class="management-warning">
+        This first Management build is read-only. We are verifying the data views before enabling edits or deletions.
+      </div>
+
+    </div>
+
+    <div class="management-grid">
+
+      <button
+        class="management-action"
+        type="button"
+        onclick="showManagementProducts()"
+      >
+        <span class="management-action-icon">📦</span>
+        <span class="management-action-title">Products</span>
+        <span class="management-action-desc">Review saved product/store records.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
+        onclick="showManagementStores()"
+      >
+        <span class="management-action-icon">🏪</span>
+        <span class="management-action-title">Stores</span>
+        <span class="management-action-desc">Review stores found in your data.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
+        onclick="showManagementHistoryAudit()"
+      >
+        <span class="management-action-icon">🧾</span>
+        <span class="management-action-title">History Audit</span>
+        <span class="management-action-desc">Check saved trip records.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
+        onclick="showManagementAbout()"
+      >
+        <span class="management-action-icon">⚙️</span>
+        <span class="management-action-title">App Data</span>
+        <span class="management-action-desc">Backend and connection information.</span>
+      </button>
+
+    </div>
+
+    <div
+      id="management-content"
+      class="management-list-card"
+    >
+      <div class="management-section-title">
+        Choose a section
+      </div>
+
+      <div class="management-empty">
+        Products, stores, and history auditing will appear here.
+      </div>
+    </div>
+
+  </div>
+
   <div class="help">
     V4 development copy. The live app is still index.html.
   </div>
@@ -2523,6 +2762,10 @@
 
   let reportsReturnPanelId = "home-panel";
   let reportsLoadedOnce = false;
+
+  let managementReturnPanelId = "home-panel";
+  let managementProducts = [];
+  let managementTrips = [];
 
 
   window.addEventListener(
@@ -8023,6 +8266,10 @@
     hideShoppingPanelsForHistory();
 
     hide(
+      "management-panel"
+    );
+
+    hide(
       "reports-panel"
     );
 
@@ -9097,7 +9344,8 @@
       "finish-review-panel",
       "finished-panel",
       "history-panel",
-      "history-receipt-panel"
+      "history-receipt-panel",
+      "management-panel"
     ]
       .forEach(
         id =>
@@ -9807,6 +10055,546 @@
   }
 
 
+  async function openManagementSection() {
+
+    if (
+      !accessToken
+    ) {
+      fail(
+        "Connect Google Sheets before opening Management."
+      );
+      return;
+    }
+
+    managementReturnPanelId =
+      getVisibleShoppingPanelId();
+
+    pauseScanner();
+
+    [
+      "home-panel",
+      "active-trip-panel",
+      "item-panel",
+      "success-panel",
+      "finish-review-panel",
+      "finished-panel",
+      "history-panel",
+      "history-receipt-panel",
+      "reports-panel"
+    ]
+      .forEach(
+        id =>
+          hide(
+            id
+          )
+      );
+
+    show(
+      "management-panel"
+    );
+
+    setActivePrimaryNav(
+      "shopping"
+    );
+
+    setStatus(
+      "Loading management data...",
+      "working"
+    );
+
+    try {
+      await loadManagementData();
+      showManagementProducts();
+
+      setStatus(
+        "Management ready.",
+        "success"
+      );
+    } catch (error) {
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  async function loadManagementData() {
+
+    const [
+      productsResult,
+      tripsResult,
+      historyResult,
+      historyDatesResult
+    ] =
+      await Promise.all(
+        [
+          sheetsGetValues(
+            `'${PRODUCTS_SHEET}'!A2:M`,
+            "UNFORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${TRIPS_SHEET}'!A2:H`,
+            "UNFORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${TRIP_HISTORY_SHEET}'!A2:Q`,
+            "UNFORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${TRIP_HISTORY_SHEET}'!B2:B`,
+            "FORMATTED_VALUE"
+          )
+        ]
+      );
+
+    managementProducts =
+      (productsResult.values || [])
+        .filter(
+          row =>
+            String(
+              row[0] ?? ""
+            ).trim() ||
+            String(
+              row[1] ?? ""
+            ).trim()
+        )
+        .map(
+          row => ({
+            barcode:
+              String(
+                row[0] ?? ""
+              ).trim(),
+
+            product:
+              String(
+                row[1] ?? ""
+              ).trim(),
+
+            lastUnitPrice:
+              normalizeNumericValue(
+                row[2]
+              ),
+
+            lastStore:
+              String(
+                row[3] ?? ""
+              ).trim(),
+
+            lowestUnitPrice:
+              normalizeNumericValue(
+                row[5]
+              ),
+
+            highestUnitPrice:
+              normalizeNumericValue(
+                row[6]
+              ),
+
+            notes:
+              String(
+                row[7] ?? ""
+              ).trim(),
+
+            lastEffectivePrice:
+              normalizeNumericValue(
+                row[9]
+              ),
+
+            lastPromoApplied:
+              String(
+                row[10] ?? ""
+              ).trim(),
+
+            lastPromoDetails:
+              String(
+                row[12] ?? ""
+              ).trim()
+          })
+        );
+
+    managementTrips =
+      buildHistoryTrips(
+        tripsResult.values || [],
+        historyResult.values || [],
+        historyDatesResult.values || []
+      );
+  }
+
+
+  function showManagementProducts() {
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    if (
+      !managementProducts.length
+    ) {
+      box.innerHTML =
+        '<div class="management-section-title">Products</div>' +
+        '<div class="management-empty">No product records are stored yet.</div>';
+      return;
+    }
+
+    const rows =
+      managementProducts
+        .slice()
+        .sort(
+          (a, b) =>
+            (
+              a.product ||
+              a.barcode
+            ).localeCompare(
+              b.product ||
+              b.barcode
+            )
+        );
+
+    box.innerHTML =
+      '<div class="management-section-title">Products</div>' +
+      rows
+        .map(
+          record => {
+
+            const price =
+              isUsableNumber(
+                record.lastEffectivePrice
+              )
+                ? record.lastEffectivePrice
+                : record.lastUnitPrice;
+
+            return (
+              '<div class="management-row">' +
+                '<div class="management-row-top">' +
+                  '<div class="management-row-name">' +
+                    escapeHtml(
+                      record.product ||
+                      "Unnamed product"
+                    ) +
+                  "</div>" +
+                  '<div class="reports-row-value">' +
+                    (
+                      isUsableNumber(
+                        price
+                      )
+                        ? escapeHtml(
+                            formatMoney(
+                              price
+                            )
+                          )
+                        : "—"
+                    ) +
+                  "</div>" +
+                "</div>" +
+                '<div class="management-row-meta">' +
+                  escapeHtml(
+                    record.lastStore ||
+                    "Unknown store"
+                  ) +
+                  (
+                    record.barcode
+                      ? " • Barcode " +
+                        escapeHtml(
+                          record.barcode
+                        )
+                      : ""
+                  ) +
+                  (
+                    record.lastPromoApplied === "YES" &&
+                    record.lastPromoDetails
+                      ? " • Promo: " +
+                        escapeHtml(
+                          record.lastPromoDetails
+                        )
+                      : ""
+                  ) +
+                "</div>" +
+              "</div>"
+            );
+          }
+        )
+        .join(
+          ""
+        );
+  }
+
+
+  function showManagementStores() {
+
+    const stores =
+      new Map();
+
+    managementProducts.forEach(
+      record => {
+
+        const store =
+          String(
+            record.lastStore || ""
+          ).trim();
+
+        if (!store) {
+          return;
+        }
+
+        const key =
+          normalizeStore(
+            store
+          );
+
+        if (
+          !stores.has(
+            key
+          )
+        ) {
+          stores.set(
+            key,
+            {
+              store:
+                store,
+              products:
+                0
+            }
+          );
+        }
+
+        stores.get(
+          key
+        ).products +=
+          1;
+      }
+    );
+
+    managementTrips.forEach(
+      trip => {
+
+        const store =
+          String(
+            trip.store || ""
+          ).trim();
+
+        if (!store) {
+          return;
+        }
+
+        const key =
+          normalizeStore(
+            store
+          );
+
+        if (
+          !stores.has(
+            key
+          )
+        ) {
+          stores.set(
+            key,
+            {
+              store:
+                store,
+              products:
+                0
+            }
+          );
+        }
+      }
+    );
+
+    const rows =
+      Array.from(
+        stores.values()
+      )
+      .sort(
+        (a, b) =>
+          a.store.localeCompare(
+            b.store
+          )
+      );
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    if (
+      !rows.length
+    ) {
+      box.innerHTML =
+        '<div class="management-section-title">Stores</div>' +
+        '<div class="management-empty">No store records are stored yet.</div>';
+      return;
+    }
+
+    box.innerHTML =
+      '<div class="management-section-title">Stores</div>' +
+      rows
+        .map(
+          record => {
+
+            const tripCount =
+              managementTrips.filter(
+                trip =>
+                  normalizeStore(
+                    trip.store || ""
+                  ) ===
+                  normalizeStore(
+                    record.store
+                  )
+              ).length;
+
+            return (
+              '<div class="management-row">' +
+                '<div class="management-row-name">' +
+                  escapeHtml(
+                    record.store
+                  ) +
+                "</div>" +
+                '<div class="management-row-meta">' +
+                  escapeHtml(
+                    `${record.products} saved product record${record.products === 1 ? "" : "s"} • ${tripCount} finished trip${tripCount === 1 ? "" : "s"}`
+                  ) +
+                "</div>" +
+              "</div>"
+            );
+          }
+        )
+        .join(
+          ""
+        );
+  }
+
+
+  function showManagementHistoryAudit() {
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    if (
+      !managementTrips.length
+    ) {
+      box.innerHTML =
+        '<div class="management-section-title">History Audit</div>' +
+        '<div class="management-empty">No finished trips are stored yet.</div>';
+      return;
+    }
+
+    const legacyCount =
+      managementTrips.filter(
+        trip =>
+          !trip.hasTripRecord
+      ).length;
+
+    const itemlessCount =
+      managementTrips.filter(
+        trip =>
+          !trip.items.length
+      ).length;
+
+    box.innerHTML =
+      '<div class="management-section-title">History Audit</div>' +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Finished trips</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            `${managementTrips.length} total`
+          ) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Legacy trips</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            `${legacyCount} trip${legacyCount === 1 ? "" : "s"} exist in Trip History without a matching Trips record.`
+          ) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Trips without item details</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            `${itemlessCount} trip${itemlessCount === 1 ? "" : "s"}`
+          ) +
+        "</div>" +
+      "</div>";
+  }
+
+
+  function showManagementAbout() {
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    box.innerHTML =
+      '<div class="management-section-title">App Data</div>' +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Spreadsheet ID</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            spreadsheetId
+          ) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Products loaded</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            String(
+              managementProducts.length
+            )
+          ) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Finished trips loaded</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            String(
+              managementTrips.length
+            )
+          ) +
+        "</div>" +
+      "</div>";
+  }
+
+
+  function closeManagementSection() {
+
+    hide(
+      "management-panel"
+    );
+
+    const restoreId =
+      managementReturnPanelId ||
+      (
+        activeTrip
+          ? "active-trip-panel"
+          : "home-panel"
+      );
+
+    show(
+      restoreId
+    );
+
+    if (
+      restoreId ===
+      "active-trip-panel"
+    ) {
+      resumeScanner();
+    }
+
+    setStatus(
+      activeTrip
+        ? "Shopping is active."
+        : "Shopping is selected.",
+      "success"
+    );
+  }
+
+
   function returnToShoppingNav() {
 
     const wasHistoryVisible =
@@ -9838,6 +10626,10 @@
 
     hide(
       "reports-panel"
+    );
+
+    hide(
+      "management-panel"
     );
 
     setActivePrimaryNav(
