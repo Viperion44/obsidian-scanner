@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
 
@@ -9,26 +8,30 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Obsidian Scanner</title>
+  <title>Obsidian Shopping Scanner</title>
 
   <script
     src="https://accounts.google.com/gsi/client"
-    defer>
-  </script>
+    defer
+  ></script>
 
   <script
     src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
-    defer>
-  </script>
+    defer
+  ></script>
 
   <style>
     * {
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       margin: 0;
-      padding: 18px;
+      padding: 16px;
       background: #111318;
       color: #ffffff;
       font-family: Arial, Helvetica, sans-serif;
@@ -36,113 +39,396 @@
 
     .container {
       width: 100%;
-      max-width: 620px;
+      max-width: 650px;
       margin: 0 auto;
     }
 
     h1 {
-      margin: 8px 0 4px;
+      margin: 6px 0 4px;
       text-align: center;
-      font-size: 26px;
+      font-size: 27px;
     }
 
     .subtitle {
-      margin-bottom: 18px;
+      margin-bottom: 17px;
       text-align: center;
       color: #b8b8b8;
+      font-size: 14px;
     }
 
-    .store-box {
-      margin-bottom: 16px;
-      padding: 15px;
-      border-radius: 12px;
+    .card {
+      margin-bottom: 15px;
+      padding: 16px;
+      border-radius: 13px;
       background: #242833;
-      text-align: center;
     }
 
-    .store-label {
+    .small-label {
       color: #aeb4c0;
       font-size: 12px;
       font-weight: bold;
       letter-spacing: 1px;
     }
 
-    #store-name {
+    .big-value {
       margin-top: 5px;
-      font-size: 24px;
+      font-size: 25px;
       font-weight: bold;
     }
 
-    #reader {
+    .center {
+      text-align: center;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 13px;
+      padding: 16px;
+      border: none;
+      border-radius: 11px;
+      background: #7137b5;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    button.secondary {
+      background: #3b414d;
+    }
+
+    button.small-button {
+      padding: 11px;
+      font-size: 14px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #555c69;
+      border-radius: 9px;
+      background: #151820;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 17px;
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: 2px solid #8650c5;
+      border-color: transparent;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #c9ced7;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .field {
+      margin-bottom: 17px;
+    }
+
+    .hint {
+      margin-top: 6px;
+      color: #9fa6b1;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    #store-setup-panel,
+    #active-store-panel,
+    #entry-tools-panel,
+    #item-panel,
+    #success-panel,
+    #scan-next-button {
       display: none;
+    }
+
+    #reader {
       overflow: hidden;
       width: 100%;
-      border-radius: 12px;
-      background: #ffffff;
-      color: #000000;
+      min-height: 240px;
+      margin-bottom: 15px;
+      border-radius: 13px;
+      background: #000000;
+    }
+
+    .manual-barcode-card {
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .manual-title {
+      margin-bottom: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .manual-row {
+      display: flex;
+      gap: 9px;
+    }
+
+    .manual-row input {
+      flex: 1;
+    }
+
+    .manual-row button {
+      width: auto;
+      min-width: 110px;
+      margin-top: 0;
+      padding: 12px 16px;
     }
 
     #status {
-      margin-top: 16px;
-      padding: 16px;
+      margin-top: 15px;
+      padding: 15px;
       border-radius: 12px;
       background: #242833;
       line-height: 1.45;
       text-align: center;
     }
 
-    .working {
-      background: #473a1d !important;
+    .status-working {
+      background: #493c20 !important;
     }
 
-    .success {
+    .status-success {
       background: #173d25 !important;
     }
 
-    .error {
+    .status-error {
       background: #511e25 !important;
     }
 
-    .product {
-      margin-top: 8px;
-      font-size: 21px;
+    .item-heading {
+      margin-bottom: 13px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .barcode-summary {
+      margin-bottom: 16px;
+      color: #d3d8df;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    .known-badge,
+    .new-badge,
+    .warning-badge {
+      display: inline-block;
+      margin-bottom: 11px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 13px;
       font-weight: bold;
     }
 
-    .details {
-      margin-top: 7px;
-      color: #d3d3d3;
-      font-size: 14px;
+    .known-badge {
+      background: #205c35;
     }
 
-    button {
-      width: 100%;
-      margin-top: 16px;
-      padding: 17px;
-      border: none;
-      border-radius: 12px;
-      background: #6b35a5;
-      color: white;
+    .new-badge {
+      background: #33445e;
+    }
+
+    .warning-badge {
+      background: #78551f;
+    }
+
+    .form-card {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .readonly-value {
+      padding: 11px 13px;
+      border-radius: 9px;
+      background: #191d25;
+      color: #e4e7ec;
+      line-height: 1.4;
+    }
+
+    .price-old {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .confirmation-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 9px;
+      background: #191d25;
+    }
+
+    .confirmation-row input {
+      width: 22px;
+      height: 22px;
+      margin: 1px 0 0;
+      flex: 0 0 auto;
+    }
+
+    .confirmation-row label {
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .calc-box {
+      margin-top: 12px;
+      padding: 13px;
+      border-radius: 9px;
+      background: #191d25;
+      line-height: 1.6;
+    }
+
+    .calc-main {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .comparison-card {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #202530;
+    }
+
+    .comparison-title {
+      margin-bottom: 10px;
       font-size: 18px;
       font-weight: bold;
-      cursor: pointer;
     }
 
-    button:disabled {
-      opacity: 0.6;
-      cursor: default;
+    .comparison-intro {
+      margin-bottom: 11px;
+      color: #c5cad3;
+      font-size: 13px;
+      line-height: 1.45;
     }
 
-    #next-button {
+    .comparison-item {
+      margin-top: 8px;
+      padding: 11px;
+      border-radius: 9px;
+      background: #171b22;
+      line-height: 1.5;
+    }
+
+    .comparison-store {
+      font-weight: bold;
+    }
+
+    .comparison-better {
+      color: #75df91;
+    }
+
+    .comparison-worse {
+      color: #ff9393;
+    }
+
+    .comparison-neutral {
+      color: #d5d9e0;
+    }
+
+    .reuse-warning {
+      margin-top: 13px;
+      padding: 13px;
+      border-radius: 9px;
+      background: #65491c;
+      color: #ffe2a1;
+      line-height: 1.5;
+    }
+
+    #form-validation-error {
       display: none;
+      margin-top: 16px;
+      margin-bottom: 4px;
+      padding: 15px;
+      border: 2px solid #d9515d;
+      border-radius: 11px;
+      background: #511e25;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1.45;
+    }
+
+    .invalid-field {
+      border: 2px solid #e45c68 !important;
+      outline: none !important;
+    }
+
+    .invalid-confirmation {
+      border: 2px solid #e45c68;
+      background: #3f1d23;
+    }
+
+    #success-panel {
+      margin-top: 16px;
+      padding: 18px;
+      border-radius: 13px;
+      background: #173d25;
+    }
+
+    .success-title {
+      margin-bottom: 13px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .success-grid {
+      line-height: 1.75;
+    }
+
+    .success-label {
+      color: #bde2c8;
+      font-weight: bold;
     }
 
     .help {
-      margin-top: 18px;
-      color: #aeb4c0;
-      text-align: center;
+      margin-top: 20px;
+      color: #9ea5b0;
       font-size: 13px;
       line-height: 1.5;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+
+      .manual-row {
+        display: block;
+      }
+
+      .manual-row button {
+        width: 100%;
+        margin-top: 9px;
+      }
     }
   </style>
 </head>
@@ -152,39 +438,149 @@
 
 <div class="container">
 
-  <h1>
-    🛒 Obsidian Scanner
-  </h1>
+  <h1>🛒 Obsidian Shopping Scanner</h1>
 
   <div class="subtitle">
-    Scan directly into Shopping List
-  </div>
-
-
-  <div class="store-box">
-
-    <div class="store-label">
-      CURRENT STORE
-    </div>
-
-    <div id="store-name">
-      Not connected
-    </div>
-
+    Choose store • scan/type barcode • review • compare • add
   </div>
 
 
   <button
     id="connect-button"
     type="button"
-    onclick="connectGoogle()">
-
+    onclick="connectGoogle()"
+  >
     CONNECT GOOGLE SHEETS
-
   </button>
 
 
-  <div id="reader"></div>
+  <!-- STORE SELECTION -->
+
+  <div
+    id="store-setup-panel"
+    class="card"
+  >
+
+    <div class="small-label">
+      STEP 1 — CURRENT STORE
+    </div>
+
+    <div
+      style="
+        margin-top:8px;
+        margin-bottom:14px;
+        font-size:20px;
+        font-weight:bold;
+      "
+    >
+      Where are you shopping?
+    </div>
+
+    <div class="field">
+
+      <label for="store-input">
+        Store
+      </label>
+
+      <input
+        id="store-input"
+        type="text"
+        list="known-stores"
+        autocomplete="off"
+        placeholder="Choose an existing store or type a new one"
+      >
+
+      <datalist id="known-stores"></datalist>
+
+      <div class="hint">
+        Existing stores appear as suggestions.
+        For a new supermarket, simply type its name.
+      </div>
+
+    </div>
+
+    <button
+      type="button"
+      onclick="confirmStore()"
+    >
+      USE THIS STORE
+    </button>
+
+  </div>
+
+
+  <!-- ACTIVE STORE -->
+
+  <div
+    id="active-store-panel"
+    class="card center"
+  >
+
+    <div class="small-label">
+      CURRENT STORE
+    </div>
+
+    <div
+      id="store-name"
+      class="big-value"
+    >
+      —
+    </div>
+
+    <button
+      class="secondary small-button"
+      type="button"
+      onclick="changeStore()"
+    >
+      CHANGE STORE
+    </button>
+
+  </div>
+
+
+  <!-- CAMERA / MANUAL BARCODE -->
+
+  <div id="entry-tools-panel">
+
+    <div id="reader"></div>
+
+    <div class="manual-barcode-card">
+
+      <div class="manual-title">
+        ⌨️ Barcode won't scan?
+      </div>
+
+      <div
+        class="hint"
+        style="margin-bottom:11px;"
+      >
+        Type or paste the barcode manually.
+        Camera and manual entry use exactly the same lookup.
+      </div>
+
+      <div class="manual-row">
+
+        <input
+          id="manual-barcode"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="Enter barcode"
+          onkeydown="manualBarcodeKeyDown(event)"
+        >
+
+        <button
+          type="button"
+          onclick="submitManualBarcode()"
+        >
+          LOOK UP
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
 
 
   <div id="status">
@@ -192,26 +588,285 @@
   </div>
 
 
+  <!-- PRODUCT FORM -->
+
+  <div id="item-panel">
+
+    <div class="form-card">
+
+      <div
+        id="match-badge"
+        class="new-badge"
+      >
+        BARCODE
+      </div>
+
+      <div class="item-heading">
+        Review Product
+      </div>
+
+      <div
+        id="barcode-summary"
+        class="barcode-summary"
+      ></div>
+
+      <div
+        id="reuse-warning"
+        class="reuse-warning"
+        style="display:none;"
+      ></div>
+
+
+      <div class="field">
+
+        <label for="product-name">
+          Product
+        </label>
+
+        <input
+          id="product-name"
+          type="text"
+          autocomplete="off"
+          placeholder="Example: Oikos Pro Yogurt 900 g"
+          oninput="productNameChanged()"
+        >
+
+        <div
+          id="confirmation-container"
+          class="confirmation-row"
+        >
+
+          <input
+            id="confirm-name"
+            type="checkbox"
+            onchange="confirmationChanged()"
+          >
+
+          <label for="confirm-name">
+            I confirm that this product name matches
+            the item I am holding.
+          </label>
+
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label>
+          Barcode
+        </label>
+
+        <div
+          id="form-barcode"
+          class="readonly-value"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="amount">
+          Amount
+        </label>
+
+        <input
+          id="amount"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.001"
+          value="1"
+          oninput="fieldChanged(this); updateCalculations();"
+        >
+
+        <div class="hint">
+          Pieces OR kilograms. Example:
+          <b>1</b> item or <b>1.375</b> kg.
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label>
+          Last Unit Price
+        </label>
+
+        <div
+          id="previous-price"
+          class="readonly-value price-old"
+        >
+          —
+        </div>
+
+        <div class="hint">
+          Previous stored price for this Barcode + Store.
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="today-price">
+          Today's Unit Price
+        </label>
+
+        <input
+          id="today-price"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+          oninput="fieldChanged(this); updateCalculations();"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label>
+          Store
+        </label>
+
+        <div
+          id="form-store"
+          class="readonly-value"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="notes">
+          Notes
+        </label>
+
+        <textarea
+          id="notes"
+          placeholder="Optional"
+        ></textarea>
+
+      </div>
+
+
+      <div class="calc-box">
+
+        <div>
+          Line Total
+        </div>
+
+        <div
+          id="line-total"
+          class="calc-main"
+        >
+          —
+        </div>
+
+        <div
+          id="local-price-difference"
+          style="margin-top:7px;"
+        ></div>
+
+      </div>
+
+    </div>
+
+
+    <!-- PRICE COMPARISON -->
+
+    <div class="comparison-card">
+
+      <div class="comparison-title">
+        🏪 Price Comparison
+      </div>
+
+      <div class="comparison-intro">
+        This checks your Products database for the same product
+        at other stores.
+
+        <br><br>
+
+        If the product name contains a package size such as
+        <b>900 g</b>, <b>1 kg</b>, <b>500 ml</b> or
+        <b>1 L</b>, the scanner attempts to normalize the price
+        before comparing it.
+      </div>
+
+      <div id="comparison-results">
+        Enter or confirm the product name to compare prices.
+      </div>
+
+    </div>
+
+
+    <div id="form-validation-error"></div>
+
+
+    <button
+      id="add-item-button"
+      type="button"
+      onclick="addReviewedItem()"
+    >
+      ADD ITEM TO SHOPPING LIST
+    </button>
+
+
+    <button
+      class="secondary"
+      type="button"
+      onclick="cancelCurrentItem()"
+    >
+      CANCEL / ENTER ANOTHER BARCODE
+    </button>
+
+  </div>
+
+
+  <!-- SUCCESS -->
+
+  <div id="success-panel">
+
+    <div
+      id="success-title"
+      class="success-title"
+    ></div>
+
+    <div
+      id="success-details"
+      class="success-grid"
+    ></div>
+
+  </div>
+
+
   <button
-    id="next-button"
+    id="scan-next-button"
     type="button"
-    onclick="scanNext()">
-
+    onclick="scanNextItem()"
+  >
     SCAN NEXT ITEM
-
   </button>
 
 
   <div class="help">
-
-    The scanner reads the Current Store from cell M21,
-    then places each barcode in the next empty Shopping List row.
+    Set the store once for the trip.
 
     <br><br>
 
-    Google authorization is temporary and remains only
-    in this browser session.
-
+    Scan with the rear camera or enter the barcode manually.
+    Nothing is written until you review and confirm the item.
   </div>
 
 </div>
@@ -219,72 +874,61 @@
 
 <script>
 
-  // ==================================================
-  // CONFIGURATION
-  // ==================================================
+  /* ===================================================
+     CONFIG
+     =================================================== */
 
   const GOOGLE_CLIENT_ID =
     "357419603703-8no49j1eunhv6g82kkb89tqa84ab7krl.apps.googleusercontent.com";
 
-
   const SHEETS_SCOPE =
     "https://www.googleapis.com/auth/spreadsheets";
-
 
   const SHOPPING_SHEET =
     "Shopping List";
 
-
   const PRODUCTS_SHEET =
     "Products";
-
 
   const CURRENT_STORE_CELL =
     "M21";
 
-
   const SHOP_FIRST_ROW =
     5;
-
 
   const SHOP_GROWTH_CHUNK =
     50;
 
-
   const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
+    new URLSearchParams(window.location.search);
 
   const SPREADSHEET_ID =
-    String(
-      params.get("sid") || ""
-    ).trim();
+    String(params.get("sid") || "").trim();
 
 
-  let tokenClient =
-    null;
+  /* ===================================================
+     STATE
+     =================================================== */
 
+  let tokenClient = null;
+  let accessToken = "";
 
-  let accessToken =
-    "";
+  let scanner = null;
+  let scannerStarted = false;
+  let scannerPaused = false;
 
+  let processing = false;
 
-  let scanner =
-    null;
+  let currentStore = "";
+  let currentBarcode = "";
 
+  let previousPriceAtStore = "";
 
-  let scannerStarted =
-    false;
+  let productDatabase = [];
+  let barcodeMatches = [];
+  let exactStoreMatch = null;
 
-
-  let processing =
-    false;
-
-
-  let currentStore =
-    "";
+  let lastComparisonSummary = "";
 
 
   window.addEventListener(
@@ -293,30 +937,24 @@
   );
 
 
-  // ==================================================
-  // INITIALIZATION
-  // ==================================================
+  /* ===================================================
+     INITIALIZATION
+     =================================================== */
 
   function initializePage() {
 
     if (!SPREADSHEET_ID) {
 
       fail(
-        "This scanner must be opened from the OPEN SCANNER link in Shopping List."
+        "This scanner must be opened using a link containing the spreadsheet ID."
       );
 
-
-      document
-        .getElementById(
-          "connect-button"
-        )
-        .disabled =
-          true;
-
+      document.getElementById(
+        "connect-button"
+      ).disabled = true;
 
       return;
     }
-
 
     waitForGoogleIdentity();
   }
@@ -324,9 +962,7 @@
 
   function waitForGoogleIdentity() {
 
-    let attempts =
-      0;
-
+    let attempts = 0;
 
     const timer =
       setInterval(
@@ -334,42 +970,27 @@
 
           attempts++;
 
-
           if (
             window.google &&
             google.accounts &&
             google.accounts.oauth2
           ) {
 
-            clearInterval(
-              timer
-            );
-
-
+            clearInterval(timer);
             initializeGoogleTokenClient();
-
-
             return;
           }
 
+          if (attempts >= 50) {
 
-          if (
-            attempts >=
-            50
-          ) {
-
-            clearInterval(
-              timer
-            );
-
+            clearInterval(timer);
 
             fail(
-              "Google authorization did not load. Reload this page and try again."
+              "Google authorization did not load. Reload the page."
             );
           }
 
         },
-
         100
       );
   }
@@ -378,26 +999,24 @@
   function initializeGoogleTokenClient() {
 
     tokenClient =
-      google.accounts.oauth2
-        .initTokenClient({
+      google.accounts.oauth2.initTokenClient({
 
-          client_id:
-            GOOGLE_CLIENT_ID,
+        client_id:
+          GOOGLE_CLIENT_ID,
 
-          scope:
-            SHEETS_SCOPE,
+        scope:
+          SHEETS_SCOPE,
 
-          include_granted_scopes:
-            true,
+        include_granted_scopes:
+          true,
 
-          callback:
-            handleTokenResponse,
+        callback:
+          handleTokenResponse,
 
-          error_callback:
-            handleOAuthError
+        error_callback:
+          handleOAuthError
 
-        });
-
+      });
 
     setStatus(
       "Ready. Tap CONNECT GOOGLE SHEETS."
@@ -405,244 +1024,138 @@
   }
 
 
-  // ==================================================
-  // GOOGLE AUTHORIZATION
-  // ==================================================
+  /* ===================================================
+     GOOGLE AUTH
+     =================================================== */
 
   function connectGoogle() {
 
     if (!tokenClient) {
 
       fail(
-        "Google authorization is not ready yet. Reload this page."
+        "Google authorization is not ready yet. Reload the page."
       );
-
 
       return;
     }
-
 
     const button =
       document.getElementById(
         "connect-button"
       );
 
-
-    button.disabled =
-      true;
-
-
-    button.textContent =
-      "CONNECTING...";
-
+    button.disabled = true;
+    button.textContent = "CONNECTING...";
 
     setStatus(
       "Waiting for Google authorization...",
       "working"
     );
 
-
-    /*
-     * IMPORTANT:
-     *
-     * Do NOT force prompt="consent".
-     *
-     * Google remembers consent for this user/client.
-     * requestAccessToken() will show only whatever UI
-     * Google determines is currently necessary.
-     */
-
-    tokenClient
-      .requestAccessToken();
+    tokenClient.requestAccessToken();
   }
 
 
-  async function handleTokenResponse(
-    response
-  ) {
+  async function handleTokenResponse(response) {
 
     const button =
       document.getElementById(
         "connect-button"
       );
 
-
     if (
       !response ||
-      response.error
-    ) {
-
-      button.disabled =
-        false;
-
-
-      button.textContent =
-        "CONNECT GOOGLE SHEETS";
-
-
-      fail(
-        response &&
-        response.error
-
-          ? response.error
-
-          : "Authorization failed."
-      );
-
-
-      return;
-    }
-
-
-    if (
+      response.error ||
       !response.access_token
     ) {
 
-      button.disabled =
-        false;
-
-
+      button.disabled = false;
       button.textContent =
         "CONNECT GOOGLE SHEETS";
 
-
       fail(
-        "Google did not return an access token. Tap CONNECT GOOGLE SHEETS again."
+        response?.error ||
+        "Google did not return an access token."
       );
-
 
       return;
     }
-
 
     accessToken =
       response.access_token;
 
-
     try {
 
-      currentStore =
+      setStatus(
+        "Loading your stores and product database...",
+        "working"
+      );
+
+      productDatabase =
+        await loadProductDatabase();
+
+      const sheetStore =
         await readCurrentStore();
 
-
-      if (!currentStore) {
-
-        document
-          .getElementById(
-            "store-name"
-          )
-          .textContent =
-            "NOT SET";
-
-
-        button.disabled =
-          false;
-
-
-        button.textContent =
-          "RECONNECT GOOGLE SHEETS";
-
-
-        fail(
-          "No Current Store is set. Return to Shopping List and enter the store in M21."
-        );
-
-
-        return;
-      }
-
-
-      document
-        .getElementById(
-          "store-name"
-        )
-        .textContent =
-          currentStore;
-
+      populateKnownStores(
+        sheetStore
+      );
 
       button.style.display =
         "none";
 
+      document.getElementById(
+        "store-setup-panel"
+      ).style.display =
+        "block";
 
-      document
-        .getElementById(
-          "reader"
-        )
-        .style
-        .display =
-          "block";
+      if (sheetStore) {
 
+        document.getElementById(
+          "store-input"
+        ).value =
+          sheetStore;
+      }
 
       setStatus(
-        "Connected. Allow camera access, then point the rear camera at a barcode."
+        "Connected. Choose an existing store or type a new store name."
       );
-
-
-      if (!scannerStarted) {
-
-        startScanner();
-
-      }
 
     } catch (error) {
 
-      button.disabled =
-        false;
-
+      button.disabled = false;
 
       button.textContent =
         "RECONNECT GOOGLE SHEETS";
 
-
-      handleApiError(
-        error
-      );
+      handleApiError(error);
     }
   }
 
 
-  function handleOAuthError(
-    error
-  ) {
+  function handleOAuthError(error) {
 
     const button =
       document.getElementById(
         "connect-button"
       );
 
-
-    button.disabled =
-      false;
-
+    button.disabled = false;
 
     button.textContent =
       "CONNECT GOOGLE SHEETS";
 
-
     const type =
-      error &&
-      error.type
+      error?.type || "";
 
-        ? String(
-            error.type
-          )
-
-        : "";
-
-
-    if (
-      type ===
-      "popup_closed"
-    ) {
+    if (type === "popup_closed") {
 
       fail(
-        "Google closed the authorization window before returning the token. Tap CONNECT GOOGLE SHEETS once more."
+        "Google authorization was closed. Tap CONNECT GOOGLE SHEETS again."
       );
-
 
       return;
     }
-
 
     if (
       type ===
@@ -650,13 +1163,11 @@
     ) {
 
       fail(
-        "Chrome blocked the Google authorization window. Allow pop-ups for this site, then tap CONNECT GOOGLE SHEETS again."
+        "Chrome blocked the authorization window. Allow pop-ups and try again."
       );
-
 
       return;
     }
-
 
     fail(
       type ||
@@ -665,427 +1176,2244 @@
   }
 
 
-  // ==================================================
-  // CURRENT STORE
-  // ==================================================
+  /* ===================================================
+     STORE
+     =================================================== */
 
   async function readCurrentStore() {
 
-    const range =
-      `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`;
-
-
     const result =
       await sheetsGetValues(
-        range,
+        `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`,
         "FORMATTED_VALUE"
       );
 
-
     return String(
-      result.values?.[0]?.[0] ??
-      ""
+      result.values?.[0]?.[0] ?? ""
     ).trim();
   }
 
 
-  // ==================================================
-  // CAMERA
-  // ==================================================
+  function populateKnownStores(
+    sheetStore
+  ) {
 
-  function startScanner() {
+    const stores =
+      new Map();
 
-    if (
-      !window.Html5QrcodeScanner
-    ) {
+    productDatabase.forEach(
+      record => {
 
-      fail(
-        "Barcode scanner library did not load. Reload the page."
+        const store =
+          String(
+            record.store || ""
+          ).trim();
+
+        if (!store) {
+          return;
+        }
+
+        const key =
+          normalizeStore(store);
+
+        if (!stores.has(key)) {
+
+          stores.set(
+            key,
+            store
+          );
+        }
+      }
+    );
+
+    if (sheetStore) {
+
+      const key =
+        normalizeStore(sheetStore);
+
+      if (!stores.has(key)) {
+
+        stores.set(
+          key,
+          sheetStore
+        );
+      }
+    }
+
+    const datalist =
+      document.getElementById(
+        "known-stores"
       );
 
+    datalist.innerHTML = "";
+
+    Array.from(
+      stores.values()
+    )
+    .sort(
+      (a, b) =>
+        a.localeCompare(b)
+    )
+    .forEach(
+      store => {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value =
+          store;
+
+        datalist.appendChild(
+          option
+        );
+      }
+    );
+  }
+
+
+  async function confirmStore() {
+
+    const store =
+      document.getElementById(
+        "store-input"
+      ).value.trim();
+
+    if (!store) {
+
+      fail(
+        "Choose an existing store or type a new store name."
+      );
+
+      document.getElementById(
+        "store-input"
+      ).focus();
 
       return;
     }
 
+    try {
 
-    scanner =
-      new Html5QrcodeScanner(
-
-        "reader",
-
-        {
-
-          fps:
-            12,
-
-
-          qrbox:
-            function(
-              width,
-              height
-            ) {
-
-              return {
-
-                width:
-                  Math.floor(
-                    width *
-                    0.88
-                  ),
-
-                height:
-                  Math.min(
-                    170,
-                    Math.floor(
-                      height *
-                      0.35
-                    )
-                  )
-
-              };
-            },
-
-
-          rememberLastUsedCamera:
-            true,
-
-
-          showTorchButtonIfSupported:
-            true,
-
-
-          showZoomSliderIfSupported:
-            true,
-
-
-          formatsToSupport: [
-
-            Html5QrcodeSupportedFormats
-              .EAN_13,
-
-            Html5QrcodeSupportedFormats
-              .EAN_8,
-
-            Html5QrcodeSupportedFormats
-              .UPC_A,
-
-            Html5QrcodeSupportedFormats
-              .UPC_E,
-
-            Html5QrcodeSupportedFormats
-              .CODE_128,
-
-            Html5QrcodeSupportedFormats
-              .CODE_39,
-
-            Html5QrcodeSupportedFormats
-              .ITF,
-
-            Html5QrcodeSupportedFormats
-              .CODABAR,
-
-            Html5QrcodeSupportedFormats
-              .DATA_MATRIX,
-
-            Html5QrcodeSupportedFormats
-              .QR_CODE
-
-          ]
-
-        },
-
-        false
+      setStatus(
+        "Setting current store...",
+        "working"
       );
 
+      await sheetsValuesBatchUpdate(
+        [
+          {
+            range:
+              `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`,
 
-    scanner.render(
-      barcodeDetected,
-      function() {}
-    );
+            values:
+              [[store]]
+          }
+        ],
+        "RAW"
+      );
 
+      currentStore =
+        store;
 
-    scannerStarted =
-      true;
+      document.getElementById(
+        "store-name"
+      ).textContent =
+        currentStore;
+
+      document.getElementById(
+        "form-store"
+      ).textContent =
+        currentStore;
+
+      document.getElementById(
+        "store-setup-panel"
+      ).style.display =
+        "none";
+
+      document.getElementById(
+        "active-store-panel"
+      ).style.display =
+        "block";
+
+      document.getElementById(
+        "entry-tools-panel"
+      ).style.display =
+        "block";
+
+      setStatus(
+        "Store selected. Starting rear camera..."
+      );
+
+      if (!scannerStarted) {
+
+        await startRearCamera();
+
+      } else {
+
+        resumeScanner();
+      }
+
+    } catch (error) {
+
+      handleApiError(error);
+    }
   }
 
 
-  // ==================================================
-  // BARCODE DETECTED
-  // ==================================================
+  function changeStore() {
+
+    if (
+      processing ||
+      currentBarcode
+    ) {
+
+      const proceed =
+        window.confirm(
+          "You currently have a product open. Cancel it and change stores?"
+        );
+
+      if (!proceed) {
+        return;
+      }
+    }
+
+    resetCurrentItem();
+    pauseScanner();
+
+    document.getElementById(
+      "entry-tools-panel"
+    ).style.display =
+      "none";
+
+    document.getElementById(
+      "active-store-panel"
+    ).style.display =
+      "none";
+
+    document.getElementById(
+      "store-setup-panel"
+    ).style.display =
+      "block";
+
+    document.getElementById(
+      "store-input"
+    ).value =
+      currentStore;
+
+    setStatus(
+      "Choose another existing store or type a new one."
+    );
+  }
+
+
+  /* ===================================================
+     PRODUCTS DATABASE
+     =================================================== */
+
+  async function loadProductDatabase() {
+
+    const result =
+      await sheetsGetValues(
+        `'${PRODUCTS_SHEET}'!A5:D`,
+        "UNFORMATTED_VALUE"
+      );
+
+    const rows =
+      result.values || [];
+
+    return rows
+      .map(
+        function(row, index) {
+
+          return {
+
+            sheetRow:
+              SHOP_FIRST_ROW + index,
+
+            barcode:
+              String(
+                row[0] ?? ""
+              ).trim(),
+
+            product:
+              String(
+                row[1] ?? ""
+              ).trim(),
+
+            price:
+              normalizeNumericValue(
+                row[2]
+              ),
+
+            store:
+              String(
+                row[3] ?? ""
+              ).trim()
+
+          };
+        }
+      )
+      .filter(
+        record =>
+          record.barcode ||
+          record.product ||
+          record.store
+      );
+  }
+
+
+  /* ===================================================
+     CAMERA
+     =================================================== */
+
+  async function startRearCamera() {
+
+    if (!window.Html5Qrcode) {
+
+      throw new Error(
+        "Barcode scanner library did not load."
+      );
+    }
+
+    scanner =
+      new Html5Qrcode(
+        "reader"
+      );
+
+    const config = {
+
+      fps:
+        12,
+
+      qrbox:
+        function(width, height) {
+
+          return {
+
+            width:
+              Math.floor(
+                width * 0.88
+              ),
+
+            height:
+              Math.min(
+                180,
+                Math.floor(
+                  height * 0.35
+                )
+              )
+
+          };
+        },
+
+      aspectRatio:
+        1.2,
+
+      formatsToSupport: [
+
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.CODABAR,
+        Html5QrcodeSupportedFormats.DATA_MATRIX,
+        Html5QrcodeSupportedFormats.QR_CODE
+
+      ]
+    };
+
+    try {
+
+      await scanner.start(
+        {
+          facingMode: {
+            exact:
+              "environment"
+          }
+        },
+        config,
+        barcodeDetected,
+        function() {}
+      );
+
+    } catch (error) {
+
+      await scanner.start(
+        {
+          facingMode:
+            "environment"
+        },
+        config,
+        barcodeDetected,
+        function() {}
+      );
+    }
+
+    scannerStarted = true;
+    scannerPaused = false;
+
+    setStatus(
+      "Rear camera ready. Scan a barcode or type one manually below."
+    );
+  }
+
+
+  function pauseScanner() {
+
+    if (
+      !scannerStarted ||
+      scannerPaused ||
+      !scanner
+    ) {
+      return;
+    }
+
+    try {
+
+      scanner.pause(true);
+      scannerPaused = true;
+
+    } catch (error) {}
+  }
+
+
+  function resumeScanner() {
+
+    if (
+      !scannerStarted ||
+      !scanner
+    ) {
+      return;
+    }
+
+    try {
+
+      if (scannerPaused) {
+
+        scanner.resume();
+        scannerPaused = false;
+      }
+
+      setStatus(
+        "Ready. Scan a barcode or enter one manually."
+      );
+
+    } catch (error) {
+
+      fail(
+        "Camera could not resume. Reload this page."
+      );
+    }
+  }
+
 
   async function barcodeDetected(
     decodedText
+  ) {
+
+    const barcode =
+      String(
+        decodedText || ""
+      ).trim();
+
+    if (!barcode) {
+      return;
+    }
+
+    await beginBarcodeLookup(
+      barcode,
+      "camera"
+    );
+  }
+
+
+  /* ===================================================
+     MANUAL BARCODE
+     =================================================== */
+
+  function manualBarcodeKeyDown(
+    event
+  ) {
+
+    if (event.key === "Enter") {
+
+      event.preventDefault();
+      submitManualBarcode();
+    }
+  }
+
+
+  async function submitManualBarcode() {
+
+    const barcode =
+      document.getElementById(
+        "manual-barcode"
+      ).value.trim();
+
+    if (!barcode) {
+
+      fail(
+        "Enter a barcode first."
+      );
+
+      document.getElementById(
+        "manual-barcode"
+      ).focus();
+
+      return;
+    }
+
+    await beginBarcodeLookup(
+      barcode,
+      "manual"
+    );
+  }
+
+
+  /* ===================================================
+     BARCODE LOOKUP
+     =================================================== */
+
+  async function beginBarcodeLookup(
+    barcode,
+    source
   ) {
 
     if (processing) {
       return;
     }
 
+    if (!currentStore) {
 
-    const barcode =
-      String(
-        decodedText ||
-        ""
-      ).trim();
+      fail(
+        "Choose the current store first."
+      );
 
-
-    if (!barcode) {
       return;
     }
 
+    processing = true;
+    currentBarcode = barcode;
 
-    processing =
-      true;
+    pauseScanner();
 
-
-    try {
-
-      scanner.pause(
-        true
-      );
-
-    } catch (error) {
-
-      // Processing flag still prevents duplicates.
-
-    }
-
-
-    document
-      .getElementById(
-        "next-button"
-      )
-      .style
-      .display =
-        "none";
-
+    clearFormError();
 
     setStatus(
-
-      "⏳ Adding barcode <b>" +
-        escapeHtml(
-          barcode
-        ) +
-        "</b>...",
-
+      "Barcode received. Looking up product information...",
       "working"
     );
 
-
     try {
 
-      const result =
-        await addBarcodeToShoppingList(
-          barcode
+      const storeNow =
+        await readCurrentStore();
+
+      if (
+        normalizeStore(storeNow) !==
+        normalizeStore(currentStore)
+      ) {
+
+        throw new Error(
+          "The store in Shopping List changed. Confirm the store again."
         );
+      }
 
-
-      showScanSuccess(
-        result
+      prepareProductForm(
+        barcode,
+        source
       );
+
+      document.getElementById(
+        "manual-barcode"
+      ).value = "";
+
+      setStatus(
+        "Review the product information below before adding it.",
+        "success"
+      );
+
+      document.getElementById(
+        "item-panel"
+      ).scrollIntoView({
+        behavior:
+          "smooth",
+        block:
+          "start"
+      });
 
     } catch (error) {
 
-      handleApiError(
-        error
-      );
+      processing = false;
+      currentBarcode = "";
 
-
-      const button =
-        document.getElementById(
-          "next-button"
-        );
-
-
-      button.textContent =
-        "TRY AGAIN";
-
-
-      button.style.display =
-        "block";
+      handleApiError(error);
     }
   }
 
 
-  // ==================================================
-  // ADD BARCODE
-  // ==================================================
-
-  async function addBarcodeToShoppingList(
-    barcode
+  function prepareProductForm(
+    barcode,
+    source
   ) {
 
-    const storeNow =
-      await readCurrentStore();
-
-
-    if (!storeNow) {
-
-      throw new Error(
-        "No Current Store is set in M21."
+    barcodeMatches =
+      productDatabase.filter(
+        record =>
+          record.barcode ===
+          barcode
       );
+
+    exactStoreMatch =
+      barcodeMatches.find(
+        record =>
+          normalizeStore(
+            record.store
+          ) ===
+          normalizeStore(
+            currentStore
+          )
+      ) || null;
+
+    previousPriceAtStore =
+      exactStoreMatch
+        ? exactStoreMatch.price
+        : "";
+
+    let suggestedProduct = "";
+    let badgeText = "";
+    let badgeClass = "";
+
+    if (exactStoreMatch) {
+
+      suggestedProduct =
+        exactStoreMatch.product;
+
+      badgeText =
+        "KNOWN BARCODE + STORE";
+
+      badgeClass =
+        "known-badge";
+
+    } else if (
+      barcodeMatches.length === 1
+    ) {
+
+      suggestedProduct =
+        barcodeMatches[0].product;
+
+      badgeText =
+        "BARCODE KNOWN AT ANOTHER STORE";
+
+      badgeClass =
+        "warning-badge";
+
+    } else if (
+      barcodeMatches.length > 1
+    ) {
+
+      const names =
+        [
+          ...new Set(
+            barcodeMatches
+              .map(
+                record =>
+                  normalizeProductIdentity(
+                    record.product
+                  )
+              )
+              .filter(Boolean)
+          )
+        ];
+
+      if (names.length === 1) {
+
+        suggestedProduct =
+          barcodeMatches[0].product;
+      }
+
+      badgeText =
+        "BARCODE HAS MULTIPLE RECORDS";
+
+      badgeClass =
+        "warning-badge";
+
+    } else {
+
+      badgeText =
+        "NEW BARCODE";
+
+      badgeClass =
+        "new-badge";
     }
 
+    const badge =
+      document.getElementById(
+        "match-badge"
+      );
+
+    badge.textContent =
+      badgeText;
+
+    badge.className =
+      badgeClass;
+
+    document.getElementById(
+      "barcode-summary"
+    ).innerHTML =
+
+      "<b>Entered by:</b> " +
+      escapeHtml(
+        source === "camera"
+          ? "Camera"
+          : "Manual entry"
+      ) +
+
+      "<br><b>Barcode:</b> " +
+      escapeHtml(barcode) +
+
+      "<br><b>Store:</b> " +
+      escapeHtml(currentStore);
+
+    document.getElementById(
+      "form-barcode"
+    ).textContent =
+      barcode;
+
+    document.getElementById(
+      "form-store"
+    ).textContent =
+      currentStore;
+
+    document.getElementById(
+      "product-name"
+    ).value =
+      suggestedProduct;
+
+    document.getElementById(
+      "confirm-name"
+    ).checked =
+      false;
+
+    document.getElementById(
+      "amount"
+    ).value =
+      "1";
+
+    document.getElementById(
+      "today-price"
+    ).value =
+      "";
+
+    document.getElementById(
+      "notes"
+    ).value =
+      "";
+
+    document.getElementById(
+      "previous-price"
+    ).textContent =
+      isUsablePrice(
+        previousPriceAtStore
+      )
+        ? formatMoney(
+            previousPriceAtStore
+          )
+        : "No previous price for this barcode at this store";
+
+    clearValidationStyles();
+    clearFormError();
+
+    renderBarcodeReuseWarning();
+
+    document.getElementById(
+      "item-panel"
+    ).style.display =
+      "block";
+
+    document.getElementById(
+      "success-panel"
+    ).style.display =
+      "none";
+
+    document.getElementById(
+      "scan-next-button"
+    ).style.display =
+      "none";
+
+    updateCalculations();
+    renderPriceComparisons();
+  }
+
+
+  /* ===================================================
+     REUSED BARCODE WARNING
+     =================================================== */
+
+  function renderBarcodeReuseWarning() {
+
+    const box =
+      document.getElementById(
+        "reuse-warning"
+      );
+
+    const otherMatches =
+      barcodeMatches.filter(
+        record =>
+          normalizeStore(
+            record.store
+          ) !==
+          normalizeStore(
+            currentStore
+          )
+      );
+
+    if (!otherMatches.length) {
+
+      box.style.display =
+        "none";
+
+      box.innerHTML =
+        "";
+
+      return;
+    }
+
+    const lines =
+      otherMatches.map(
+        record => {
+
+          let text =
+
+            "<b>" +
+            escapeHtml(
+              record.store ||
+              "Unknown store"
+            ) +
+            "</b>: " +
+
+            escapeHtml(
+              record.product ||
+              "Unnamed product"
+            );
+
+          if (
+            isUsablePrice(
+              record.price
+            )
+          ) {
+
+            text +=
+
+              " — " +
+              escapeHtml(
+                formatMoney(
+                  record.price
+                )
+              );
+          }
+
+          return text;
+        }
+      );
+
+    box.innerHTML =
+
+      "⚠️ <b>This same barcode exists in records from another store.</b>" +
+
+      "<br><br>" +
+
+      lines.join("<br>") +
+
+      "<br><br>" +
+
+      "Confirm the product name against the item in your hand before adding it.";
+
+    box.style.display =
+      "block";
+  }
+
+
+  /* ===================================================
+     VALIDATION UX
+     =================================================== */
+
+  function showFormError(
+    message,
+    targetId = ""
+  ) {
+
+    const box =
+      document.getElementById(
+        "form-validation-error"
+      );
+
+    box.innerHTML =
+      "⚠️ " +
+      escapeHtml(message);
+
+    box.style.display =
+      "block";
+
+    if (targetId) {
+
+      const target =
+        document.getElementById(
+          targetId
+        );
+
+      if (target) {
+
+        if (
+          targetId ===
+          "confirmation-container"
+        ) {
+
+          target.classList.add(
+            "invalid-confirmation"
+          );
+
+        } else {
+
+          target.classList.add(
+            "invalid-field"
+          );
+        }
+      }
+    }
+
+    box.scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "center"
+    });
+
+    if (navigator.vibrate) {
+
+      navigator.vibrate(80);
+    }
+  }
+
+
+  function clearFormError() {
+
+    const box =
+      document.getElementById(
+        "form-validation-error"
+      );
+
+    box.style.display =
+      "none";
+
+    box.innerHTML =
+      "";
+  }
+
+
+  function clearValidationStyles() {
+
+    document.getElementById(
+      "product-name"
+    ).classList.remove(
+      "invalid-field"
+    );
+
+    document.getElementById(
+      "amount"
+    ).classList.remove(
+      "invalid-field"
+    );
+
+    document.getElementById(
+      "today-price"
+    ).classList.remove(
+      "invalid-field"
+    );
+
+    document.getElementById(
+      "confirmation-container"
+    ).classList.remove(
+      "invalid-confirmation"
+    );
+  }
+
+
+  function fieldChanged(element) {
+
+    element.classList.remove(
+      "invalid-field"
+    );
+
+    clearFormError();
+  }
+
+
+  function confirmationChanged() {
+
+    document.getElementById(
+      "confirmation-container"
+    ).classList.remove(
+      "invalid-confirmation"
+    );
+
+    clearFormError();
+  }
+
+
+  function productNameChanged() {
+
+    document.getElementById(
+      "product-name"
+    ).classList.remove(
+      "invalid-field"
+    );
+
+    document.getElementById(
+      "confirm-name"
+    ).checked =
+      false;
+
+    document.getElementById(
+      "confirmation-container"
+    ).classList.remove(
+      "invalid-confirmation"
+    );
+
+    clearFormError();
+
+    renderPriceComparisons();
+  }
+
+
+  /* ===================================================
+     CALCULATIONS
+     =================================================== */
+
+  function updateCalculations() {
+
+    const amount =
+      readPositiveNumber(
+        "amount"
+      );
+
+    const todayPrice =
+      readPositiveNumber(
+        "today-price"
+      );
+
+    const total =
+      document.getElementById(
+        "line-total"
+      );
+
+    const differenceBox =
+      document.getElementById(
+        "local-price-difference"
+      );
 
     if (
-      normalizeStore(
-        storeNow
-      ) !==
-      normalizeStore(
-        currentStore
+      amount !== null &&
+      todayPrice !== null
+    ) {
+
+      total.textContent =
+        formatMoney(
+          amount * todayPrice
+        );
+
+    } else {
+
+      total.textContent =
+        "—";
+    }
+
+    if (
+      todayPrice !== null &&
+      isUsablePrice(
+        previousPriceAtStore
       )
     ) {
 
-      throw new Error(
-        "The Current Store changed after opening the scanner. Reload the scanner."
-      );
+      const difference =
+        todayPrice -
+        Number(
+          previousPriceAtStore
+        );
+
+      if (difference < -0.005) {
+
+        differenceBox.innerHTML =
+
+          '<span class="comparison-better">' +
+
+          escapeHtml(
+            formatMoney(
+              Math.abs(difference)
+            )
+          ) +
+
+          " cheaper than your previous " +
+
+          escapeHtml(currentStore) +
+
+          " price.</span>";
+
+      } else if (
+        difference > 0.005
+      ) {
+
+        differenceBox.innerHTML =
+
+          '<span class="comparison-worse">' +
+
+          escapeHtml(
+            formatMoney(difference)
+          ) +
+
+          " more expensive than your previous " +
+
+          escapeHtml(currentStore) +
+
+          " price.</span>";
+
+      } else {
+
+        differenceBox.innerHTML =
+
+          '<span class="comparison-neutral">' +
+
+          "Same as your previous " +
+
+          escapeHtml(currentStore) +
+
+          " price.</span>";
+      }
+
+    } else {
+
+      differenceBox.innerHTML =
+        "";
     }
 
+    renderPriceComparisons();
+  }
+
+
+  /* ===================================================
+     PACKAGE SIZE / PRODUCT FAMILY
+     =================================================== */
+
+  function parseProductSize(
+    productName
+  ) {
+
+    const original =
+      String(
+        productName || ""
+      ).trim();
+
+    if (!original) {
+
+      return {
+        original: "",
+        family: "",
+        baseQuantity: null,
+        dimension: null,
+        displayUnit: null
+      };
+    }
+
+    const regex =
+      /(?:^|\s|\(|\[)(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l)\b/i;
+
+    const match =
+      original.match(regex);
+
+    if (!match) {
+
+      return {
+        original:
+          original,
+
+        family:
+          normalizeProductFamily(
+            original
+          ),
+
+        baseQuantity:
+          null,
+
+        dimension:
+          null,
+
+        displayUnit:
+          null
+      };
+    }
+
+    const amount =
+      Number(
+        match[1].replace(
+          ",",
+          "."
+        )
+      );
+
+    const unit =
+      match[2].toLowerCase();
+
+    let baseQuantity = null;
+    let dimension = null;
+    let displayUnit = null;
+
+    if (unit === "kg") {
+
+      dimension =
+        "mass";
+
+      baseQuantity =
+        amount * 1000;
+
+      displayUnit =
+        "g";
+
+    } else if (unit === "g") {
+
+      dimension =
+        "mass";
+
+      baseQuantity =
+        amount;
+
+      displayUnit =
+        "g";
+
+    } else if (unit === "l") {
+
+      dimension =
+        "volume";
+
+      baseQuantity =
+        amount * 1000;
+
+      displayUnit =
+        "ml";
+
+    } else if (unit === "ml") {
+
+      dimension =
+        "volume";
+
+      baseQuantity =
+        amount;
+
+      displayUnit =
+        "ml";
+    }
+
+    const familyText =
+      original.replace(
+        match[0],
+        " "
+      );
+
+    return {
+
+      original:
+        original,
+
+      family:
+        normalizeProductFamily(
+          familyText
+        ),
+
+      baseQuantity:
+        baseQuantity,
+
+      dimension:
+        dimension,
+
+      displayUnit:
+        displayUnit
+    };
+  }
+
+
+  function normalizeProductFamily(
+    value
+  ) {
+
+    return String(
+      value || ""
+    )
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(
+        /[\u0300-\u036f]/g,
+        ""
+      )
+      .replace(
+        /[^a-z0-9]+/g,
+        " "
+      )
+      .trim()
+      .replace(
+        /\s+/g,
+        " "
+      );
+  }
+
+
+  function normalizeProductIdentity(
+    value
+  ) {
+
+    return normalizeProductFamily(
+      value
+    );
+  }
+
+
+  /* ===================================================
+     CROSS-STORE COMPARISON
+     =================================================== */
+
+  function renderPriceComparisons() {
+
+    const box =
+      document.getElementById(
+        "comparison-results"
+      );
+
+    const currentName =
+      document.getElementById(
+        "product-name"
+      ).value.trim();
+
+    if (!currentName) {
+
+      box.innerHTML =
+        "Enter or confirm the product name to compare prices.";
+
+      lastComparisonSummary =
+        "";
+
+      return;
+    }
+
+    const currentParsed =
+      parseProductSize(
+        currentName
+      );
+
+    const candidates =
+      productDatabase.filter(
+        record => {
+
+          if (
+            !record.product ||
+            !record.store ||
+            !isUsablePrice(
+              record.price
+            )
+          ) {
+            return false;
+          }
+
+          if (
+            normalizeStore(
+              record.store
+            ) ===
+            normalizeStore(
+              currentStore
+            )
+          ) {
+            return false;
+          }
+
+          const parsed =
+            parseProductSize(
+              record.product
+            );
+
+          return (
+            parsed.family ===
+            currentParsed.family
+          );
+        }
+      );
+
+    if (!candidates.length) {
+
+      box.innerHTML =
+        "No comparable prices from other stores are currently stored for this product.";
+
+      lastComparisonSummary =
+        "";
+
+      return;
+    }
+
+    const todayPrice =
+      readPositiveNumber(
+        "today-price"
+      );
+
+    const entries =
+      candidates.map(
+        record =>
+          buildComparisonEntry(
+            currentParsed,
+            todayPrice,
+            record
+          )
+      );
+
+    entries.sort(
+      (a, b) =>
+        a.sortValue -
+        b.sortValue
+    );
+
+    box.innerHTML =
+      entries
+        .map(
+          entry =>
+            entry.html
+        )
+        .join("");
+
+    const summaries =
+      entries.filter(
+        entry =>
+          entry.summary
+      );
+
+    lastComparisonSummary =
+      summaries.length
+        ? summaries[0].summary
+        : "";
+  }
+
+
+  function buildComparisonEntry(
+    currentParsed,
+    todayPrice,
+    record
+  ) {
+
+    const otherParsed =
+      parseProductSize(
+        record.product
+      );
+
+    let sortValue =
+      Number(record.price);
+
+    let normalizedText = "";
+    let comparisonText = "";
+    let comparisonClass =
+      "comparison-neutral";
+
+    let summary = "";
+
+    if (
+      currentParsed.baseQuantity &&
+      otherParsed.baseQuantity &&
+      currentParsed.dimension ===
+        otherParsed.dimension
+    ) {
+
+      const otherPer100 =
+        (
+          Number(record.price) /
+          otherParsed.baseQuantity
+        ) * 100;
+
+      sortValue =
+        otherPer100;
+
+      normalizedText =
+
+        " (" +
+        formatMoney(otherPer100) +
+        " / 100 " +
+        otherParsed.displayUnit +
+        ")";
+
+      summary =
+
+        record.store +
+        ": " +
+        formatMoney(record.price) +
+        " (" +
+        formatMoney(otherPer100) +
+        " / 100 " +
+        otherParsed.displayUnit +
+        ")";
+
+      if (todayPrice !== null) {
+
+        const currentPer100 =
+          (
+            todayPrice /
+            currentParsed.baseQuantity
+          ) * 100;
+
+        const difference =
+          otherPer100 -
+          currentPer100;
+
+        if (difference < -0.005) {
+
+          comparisonClass =
+            "comparison-better";
+
+          comparisonText =
+
+            record.store +
+            " was " +
+            formatMoney(
+              Math.abs(difference)
+            ) +
+            " cheaper per 100 " +
+            otherParsed.displayUnit;
+
+        } else if (
+          difference > 0.005
+        ) {
+
+          comparisonClass =
+            "comparison-worse";
+
+          comparisonText =
+
+            record.store +
+            " was " +
+            formatMoney(difference) +
+            " more expensive per 100 " +
+            otherParsed.displayUnit;
+
+        } else {
+
+          comparisonText =
+            "Essentially the same normalized price.";
+        }
+      }
+
+    } else {
+
+      const sameName =
+        normalizeProductIdentity(
+          currentParsed.original
+        ) ===
+        normalizeProductIdentity(
+          record.product
+        );
+
+      summary =
+
+        record.store +
+        ": " +
+        formatMoney(
+          record.price
+        );
+
+      if (
+        sameName &&
+        todayPrice !== null
+      ) {
+
+        const difference =
+          Number(record.price) -
+          todayPrice;
+
+        if (difference < -0.005) {
+
+          comparisonClass =
+            "comparison-better";
+
+          comparisonText =
+
+            record.store +
+            " was " +
+            formatMoney(
+              Math.abs(difference)
+            ) +
+            " cheaper.";
+
+        } else if (
+          difference > 0.005
+        ) {
+
+          comparisonClass =
+            "comparison-worse";
+
+          comparisonText =
+
+            record.store +
+            " was " +
+            formatMoney(difference) +
+            " more expensive.";
+
+        } else {
+
+          comparisonText =
+            "Same recorded price.";
+        }
+
+      } else {
+
+        comparisonText =
+          "Package-size normalization unavailable.";
+      }
+    }
+
+    const html =
+
+      '<div class="comparison-item">' +
+
+        '<div class="comparison-store">' +
+          escapeHtml(record.store) +
+        "</div>" +
+
+        escapeHtml(record.product) +
+
+        "<br>" +
+
+        escapeHtml(
+          formatMoney(record.price)
+        ) +
+
+        escapeHtml(normalizedText) +
+
+        (
+          comparisonText
+            ? (
+                '<div class="' +
+                comparisonClass +
+                '">' +
+                escapeHtml(
+                  comparisonText
+                ) +
+                "</div>"
+              )
+            : ""
+        ) +
+
+      "</div>";
+
+    return {
+      html:
+        html,
+
+      sortValue:
+        sortValue,
+
+      summary:
+        summary
+    };
+  }
+
+
+  /* ===================================================
+     ADD ITEM
+     =================================================== */
+
+  async function addReviewedItem() {
+
+    clearFormError();
+    clearValidationStyles();
+
+    const productName =
+      document.getElementById(
+        "product-name"
+      ).value.trim();
+
+    const confirmed =
+      document.getElementById(
+        "confirm-name"
+      ).checked;
+
+    const amount =
+      readPositiveNumber(
+        "amount"
+      );
+
+    const todayPrice =
+      readPositiveNumber(
+        "today-price"
+      );
+
+    const notes =
+      document.getElementById(
+        "notes"
+      ).value.trim();
+
+
+    if (!productName) {
+
+      showFormError(
+        "Enter the product name before adding this item.",
+        "product-name"
+      );
+
+      return;
+    }
+
+
+    if (!confirmed) {
+
+      showFormError(
+        "Please check the confirmation box to verify that the product name matches the item in your hand.",
+        "confirmation-container"
+      );
+
+      return;
+    }
+
+
+    if (amount === null) {
+
+      showFormError(
+        "Enter a valid Amount greater than zero.",
+        "amount"
+      );
+
+      return;
+    }
+
+
+    if (todayPrice === null) {
+
+      showFormError(
+        "Enter Today's Unit Price before adding this item.",
+        "today-price"
+      );
+
+      return;
+    }
+
+
+    const button =
+      document.getElementById(
+        "add-item-button"
+      );
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "ADDING...";
+
+    try {
+
+      setStatus(
+        "Writing the complete product to Shopping List...",
+        "working"
+      );
+
+      const storeNow =
+        await readCurrentStore();
+
+      if (
+        normalizeStore(storeNow) !==
+        normalizeStore(currentStore)
+      ) {
+
+        throw new Error(
+          "The Current Store changed. Confirm the store again."
+        );
+      }
+
+      const result =
+        await writeCompleteShoppingItem({
+
+          barcode:
+            currentBarcode,
+
+          product:
+            productName,
+
+          amount:
+            amount,
+
+          previousPrice:
+            previousPriceAtStore,
+
+          todayPrice:
+            todayPrice,
+
+          store:
+            currentStore,
+
+          notes:
+            notes
+
+        });
+
+      showSuccessPanel(
+        result
+      );
+
+      setStatus(
+        "Item added successfully.",
+        "success"
+      );
+
+    } catch (error) {
+
+      handleApiError(error);
+
+      showFormError(
+        error?.message ||
+        "The item could not be added. Please try again."
+      );
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "ADD ITEM TO SHOPPING LIST";
+    }
+  }
+
+
+  /* ===================================================
+     WRITE SHOPPING ROW
+     =================================================== */
+
+  async function writeCompleteShoppingItem(
+    item
+  ) {
 
     const sheetInfo =
       await getShoppingSheetInfo();
 
-
-    const targetRow =
+    const row =
       await findNextEmptyShoppingRow(
         sheetInfo
       );
 
-
-    const lookup =
-      await lookupProduct(
-        barcode,
-        storeNow
-      );
-
-
     const rawData = [
 
       {
-
         range:
-          `'${SHOPPING_SHEET}'!C${targetRow}`,
+          `'${SHOPPING_SHEET}'!B${row}`,
 
         values:
-          [[barcode]]
-
+          [[item.product]]
       },
 
       {
-
         range:
-          `'${SHOPPING_SHEET}'!H${targetRow}`,
+          `'${SHOPPING_SHEET}'!C${row}`,
 
         values:
-          [[lookup.store]]
+          [[item.barcode]]
+      },
 
+      {
+        range:
+          `'${SHOPPING_SHEET}'!D${row}`,
+
+        values:
+          [[item.amount]]
+      },
+
+      {
+        range:
+          `'${SHOPPING_SHEET}'!F${row}`,
+
+        values:
+          [[item.todayPrice]]
+      },
+
+      {
+        range:
+          `'${SHOPPING_SHEET}'!H${row}`,
+
+        values:
+          [[item.store]]
+      },
+
+      {
+        range:
+          `'${SHOPPING_SHEET}'!J${row}`,
+
+        values:
+          [[item.notes]]
       }
 
     ];
 
-
     if (
-      lookup.product
+      isUsablePrice(
+        item.previousPrice
+      )
     ) {
 
       rawData.push({
-
         range:
-          `'${SHOPPING_SHEET}'!B${targetRow}`,
+          `'${SHOPPING_SHEET}'!E${row}`,
 
         values:
-          [[lookup.product]]
-
+          [[
+            Number(
+              item.previousPrice
+            )
+          ]]
       });
-    }
 
-
-    if (
-      lookup.lastPrice !== "" &&
-      lookup.lastPrice !== null &&
-      lookup.lastPrice !== undefined
-    ) {
+    } else {
 
       rawData.push({
-
         range:
-          `'${SHOPPING_SHEET}'!E${targetRow}`,
+          `'${SHOPPING_SHEET}'!E${row}`,
 
         values:
-          [[lookup.lastPrice]]
-
+          [[""]]
       });
     }
-
 
     await sheetsValuesBatchUpdate(
       rawData,
       "RAW"
     );
 
-
     await sheetsValuesBatchUpdate(
-
       [
-
         {
-
           range:
-            `'${SHOPPING_SHEET}'!G${targetRow}`,
+            `'${SHOPPING_SHEET}'!G${row}`,
 
           values:
             [[
-              `=IF(OR(D${targetRow}="",F${targetRow}=""),"",D${targetRow}*F${targetRow})`
+              `=IF(OR(D${row}="",F${row}=""),"",D${row}*F${row})`
             ]]
-
         },
 
         {
-
           range:
-            `'${SHOPPING_SHEET}'!I${targetRow}`,
+            `'${SHOPPING_SHEET}'!I${row}`,
 
           values:
             [[
-              `=IF(OR(E${targetRow}="",F${targetRow}=""),"",F${targetRow}-E${targetRow})`
+              `=IF(OR(E${row}="",F${row}=""),"",F${row}-E${row})`
             ]]
-
         }
-
       ],
-
       "USER_ENTERED"
-
     );
-
 
     return {
 
       row:
-        targetRow,
+        row,
 
-      barcode:
-        barcode,
-
-      store:
-        lookup.store,
+      barcodeCell:
+        `C${row}`,
 
       product:
-        lookup.product,
+        item.product,
 
-      lastPrice:
-        lookup.lastPrice,
+      barcode:
+        item.barcode,
 
-      note:
-        lookup.note
+      amount:
+        item.amount,
 
+      previousPrice:
+        item.previousPrice,
+
+      todayPrice:
+        item.todayPrice,
+
+      lineTotal:
+        item.amount *
+        item.todayPrice,
+
+      priceDifference:
+        isUsablePrice(
+          item.previousPrice
+        )
+          ? (
+              item.todayPrice -
+              Number(
+                item.previousPrice
+              )
+            )
+          : null,
+
+      store:
+        item.store,
+
+      notes:
+        item.notes,
+
+      comparisonSummary:
+        lastComparisonSummary
     };
   }
 
 
-  // ==================================================
-  // SHOPPING SHEET INFO
-  // ==================================================
+  /* ===================================================
+     SUCCESS
+     =================================================== */
+
+  function showSuccessPanel(
+    result
+  ) {
+
+    clearFormError();
+
+    document.getElementById(
+      "item-panel"
+    ).style.display =
+      "none";
+
+    document.getElementById(
+      "success-panel"
+    ).style.display =
+      "block";
+
+    document.getElementById(
+      "success-title"
+    ).innerHTML =
+
+      "✅ Added to row " +
+      escapeHtml(result.row) +
+
+      "<br>" +
+
+      "Barcode written to " +
+      escapeHtml(
+        result.barcodeCell
+      );
+
+    let details =
+
+      '<span class="success-label">Product:</span> ' +
+      escapeHtml(result.product) +
+      "<br>" +
+
+      '<span class="success-label">Barcode:</span> ' +
+      escapeHtml(result.barcode) +
+      "<br>" +
+
+      '<span class="success-label">Amount:</span> ' +
+      escapeHtml(
+        formatQuantity(
+          result.amount
+        )
+      ) +
+      "<br>" +
+
+      '<span class="success-label">Last Unit Price:</span> ' +
+      escapeHtml(
+        isUsablePrice(
+          result.previousPrice
+        )
+          ? formatMoney(
+              result.previousPrice
+            )
+          : "—"
+      ) +
+      "<br>" +
+
+      '<span class="success-label">Today\'s Unit Price:</span> ' +
+      escapeHtml(
+        formatMoney(
+          result.todayPrice
+        )
+      ) +
+      "<br>" +
+
+      '<span class="success-label">Line Total:</span> ' +
+      escapeHtml(
+        formatMoney(
+          result.lineTotal
+        )
+      ) +
+      "<br>";
+
+    if (
+      result.priceDifference !==
+      null
+    ) {
+
+      details +=
+
+        '<span class="success-label">Price Δ:</span> ' +
+
+        escapeHtml(
+          formatSignedMoney(
+            result.priceDifference
+          )
+        ) +
+
+        "<br>";
+    }
+
+    details +=
+
+      '<span class="success-label">Store:</span> ' +
+      escapeHtml(
+        result.store
+      );
+
+    if (result.notes) {
+
+      details +=
+
+        "<br>" +
+
+        '<span class="success-label">Notes:</span> ' +
+
+        escapeHtml(
+          result.notes
+        );
+    }
+
+    if (
+      result.comparisonSummary
+    ) {
+
+      details +=
+
+        "<br><br>" +
+
+        '<span class="success-label">Best comparable stored price:</span> ' +
+
+        escapeHtml(
+          result.comparisonSummary
+        );
+    }
+
+    document.getElementById(
+      "success-details"
+    ).innerHTML =
+      details;
+
+    document.getElementById(
+      "scan-next-button"
+    ).style.display =
+      "block";
+
+    document.getElementById(
+      "success-panel"
+    ).scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "center"
+    });
+
+    if (navigator.vibrate) {
+
+      navigator.vibrate(
+        [80, 50, 80]
+      );
+    }
+  }
+
+
+  /* ===================================================
+     NEXT / CANCEL
+     =================================================== */
+
+  function scanNextItem() {
+
+    resetCurrentItem();
+    resumeScanner();
+
+    document.getElementById(
+      "entry-tools-panel"
+    ).scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "start"
+    });
+  }
+
+
+  function cancelCurrentItem() {
+
+    resetCurrentItem();
+    resumeScanner();
+
+    document.getElementById(
+      "entry-tools-panel"
+    ).scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "start"
+    });
+  }
+
+
+  function resetCurrentItem() {
+
+    currentBarcode = "";
+    barcodeMatches = [];
+    exactStoreMatch = null;
+
+    previousPriceAtStore = "";
+    lastComparisonSummary = "";
+
+    processing = false;
+
+    clearFormError();
+    clearValidationStyles();
+
+    document.getElementById(
+      "item-panel"
+    ).style.display =
+      "none";
+
+    document.getElementById(
+      "success-panel"
+    ).style.display =
+      "none";
+
+    document.getElementById(
+      "scan-next-button"
+    ).style.display =
+      "none";
+
+    document.getElementById(
+      "confirm-name"
+    ).checked =
+      false;
+
+    const addButton =
+      document.getElementById(
+        "add-item-button"
+      );
+
+    addButton.disabled =
+      false;
+
+    addButton.textContent =
+      "ADD ITEM TO SHOPPING LIST";
+
+    document.getElementById(
+      "manual-barcode"
+    ).value =
+      "";
+  }
+
+
+  /* ===================================================
+     SHOP INFO / EMPTY ROW
+     =================================================== */
 
   async function getShoppingSheetInfo() {
 
@@ -1094,18 +3422,13 @@
         "?fields=sheets(properties(sheetId,title,gridProperties(rowCount)))"
       );
 
-
     const sheet =
-      (
-        data.sheets ||
-        []
-      )
-      .find(
-        item =>
-          item.properties?.title ===
-          SHOPPING_SHEET
-      );
-
+      (data.sheets || [])
+        .find(
+          item =>
+            item.properties?.title ===
+            SHOPPING_SHEET
+        );
 
     if (!sheet) {
 
@@ -1113,7 +3436,6 @@
         `Could not find the "${SHOPPING_SHEET}" sheet.`
       );
     }
-
 
     return {
 
@@ -1124,14 +3446,9 @@
         sheet.properties
           .gridProperties
           .rowCount
-
     };
   }
 
-
-  // ==================================================
-  // NEXT EMPTY SHOPPING ROW
-  // ==================================================
 
   async function findNextEmptyShoppingRow(
     sheetInfo
@@ -1140,38 +3457,26 @@
     const range =
       `'${SHOPPING_SHEET}'!A${SHOP_FIRST_ROW}:J${sheetInfo.rowCount}`;
 
-
     const result =
       await sheetsGetValues(
         range,
         "FORMATTED_VALUE"
       );
 
-
     const rows =
-      result.values ||
-      [];
-
+      result.values || [];
 
     for (
-
-      let rowNumber =
-        SHOP_FIRST_ROW;
-
-      rowNumber <=
-        sheetInfo.rowCount;
-
+      let rowNumber = SHOP_FIRST_ROW;
+      rowNumber <= sheetInfo.rowCount;
       rowNumber++
-
     ) {
 
       const values =
         rows[
           rowNumber -
           SHOP_FIRST_ROW
-        ] ||
-        [];
-
+        ] || [];
 
       if (
         isShoppingRowEmpty(
@@ -1183,21 +3488,14 @@
       }
     }
 
-
     await extendShoppingSheet(
-
       sheetInfo.sheetId,
-
       sheetInfo.rowCount,
-
       SHOP_GROWTH_CHUNK
-
     );
 
-
     return (
-      sheetInfo.rowCount +
-      1
+      sheetInfo.rowCount + 1
     );
   }
 
@@ -1208,49 +3506,27 @@
 
     const done =
       String(
-        row[0] ??
-        ""
+        row[0] ?? ""
       )
       .trim()
       .toUpperCase() ===
       "TRUE";
 
-
     return (
-
       !done &&
-
-      blank(
-        row[1]
-      ) &&
-
-      blank(
-        row[2]
-      ) &&
-
-      blank(
-        row[3]
-      ) &&
-
-      blank(
-        row[5]
-      ) &&
-
-      blank(
-        row[7]
-      ) &&
-
-      blank(
-        row[9]
-      )
-
+      blank(row[1]) &&
+      blank(row[2]) &&
+      blank(row[3]) &&
+      blank(row[5]) &&
+      blank(row[7]) &&
+      blank(row[9])
     );
   }
 
 
-  // ==================================================
-  // EXTEND SHOPPING SHEET
-  // ==================================================
+  /* ===================================================
+     GROW SHOPPING SHEET
+     =================================================== */
 
   async function extendShoppingSheet(
     sheetId,
@@ -1264,16 +3540,11 @@
         oldRowCount - 1
       );
 
-
     await sheetsRequest(
-
       ":batchUpdate",
-
       {
-
         method:
           "POST",
-
 
         body:
           JSON.stringify({
@@ -1281,7 +3552,6 @@
             requests: [
 
               {
-
                 appendDimension: {
 
                   sheetId:
@@ -1292,13 +3562,10 @@
 
                   length:
                     amount
-
                 }
-
               },
 
               {
-
                 copyPaste: {
 
                   source: {
@@ -1310,17 +3577,14 @@
                       sourceStartRow,
 
                     endRowIndex:
-                      sourceStartRow +
-                      1,
+                      sourceStartRow + 1,
 
                     startColumnIndex:
                       0,
 
                     endColumnIndex:
                       10
-
                   },
-
 
                   destination: {
 
@@ -1331,31 +3595,24 @@
                       oldRowCount,
 
                     endRowIndex:
-                      oldRowCount +
-                      amount,
+                      oldRowCount + amount,
 
                     startColumnIndex:
                       0,
 
                     endColumnIndex:
                       10
-
                   },
-
 
                   pasteType:
                     "PASTE_FORMAT",
 
-
                   pasteOrientation:
                     "NORMAL"
-
                 }
-
               },
 
               {
-
                 copyPaste: {
 
                   source: {
@@ -1367,17 +3624,14 @@
                       sourceStartRow,
 
                     endRowIndex:
-                      sourceStartRow +
-                      1,
+                      sourceStartRow + 1,
 
                     startColumnIndex:
                       0,
 
                     endColumnIndex:
                       1
-
                   },
-
 
                   destination: {
 
@@ -1388,186 +3642,32 @@
                       oldRowCount,
 
                     endRowIndex:
-                      oldRowCount +
-                      amount,
+                      oldRowCount + amount,
 
                     startColumnIndex:
                       0,
 
                     endColumnIndex:
                       1
-
                   },
-
 
                   pasteType:
                     "PASTE_DATA_VALIDATION",
 
-
                   pasteOrientation:
                     "NORMAL"
-
                 }
-
               }
-
             ]
-
           })
-
       }
     );
   }
 
 
-  // ==================================================
-  // PRODUCT LOOKUP
-  // ==================================================
-
-  async function lookupProduct(
-    barcode,
-    store
-  ) {
-
-    const range =
-      `'${PRODUCTS_SHEET}'!A5:D`;
-
-
-    const result =
-      await sheetsGetValues(
-        range,
-        "UNFORMATTED_VALUE"
-      );
-
-
-    const rows =
-      result.values ||
-      [];
-
-
-    const matches =
-      rows.filter(
-        row =>
-          String(
-            row[0] ??
-            ""
-          ).trim() ===
-          String(
-            barcode
-          ).trim()
-      );
-
-
-    if (
-      matches.length ===
-      0
-    ) {
-
-      return {
-
-        product:
-          "",
-
-        lastPrice:
-          "",
-
-        store:
-          store,
-
-        note:
-          "New barcode"
-
-      };
-    }
-
-
-    const exact =
-      matches.find(
-        row =>
-          normalizeStore(
-            row[3]
-          ) ===
-          normalizeStore(
-            store
-          )
-      );
-
-
-    if (exact) {
-
-      return {
-
-        product:
-          String(
-            exact[1] ??
-            ""
-          ).trim(),
-
-        lastPrice:
-          exact[2] ??
-          "",
-
-        store:
-          String(
-            exact[3] ??
-            store
-          ).trim() ||
-          store,
-
-        note:
-          ""
-
-      };
-    }
-
-
-    if (
-      matches.length ===
-      1
-    ) {
-
-      return {
-
-        product:
-          String(
-            matches[0][1] ??
-            ""
-          ).trim(),
-
-        lastPrice:
-          "",
-
-        store:
-          store,
-
-        note:
-          "Known barcode, new store combination"
-
-      };
-    }
-
-
-    return {
-
-      product:
-        "",
-
-      lastPrice:
-        "",
-
-      store:
-        store,
-
-      note:
-        "Barcode exists at multiple stores; enter Product manually"
-
-    };
-  }
-
-
-  // ==================================================
-  // SHEETS API HELPERS
-  // ==================================================
+  /* ===================================================
+     SHEETS API
+     =================================================== */
 
   async function sheetsGetValues(
     range,
@@ -1579,13 +3679,10 @@
         range
       );
 
-
     return sheetsRequest(
-
       `/values/${encodedRange}?valueRenderOption=${encodeURIComponent(
         valueRenderOption
       )}`
-
     );
   }
 
@@ -1596,14 +3693,10 @@
   ) {
 
     return sheetsRequest(
-
       "/values:batchUpdate",
-
       {
-
         method:
           "POST",
-
 
         body:
           JSON.stringify({
@@ -1613,11 +3706,8 @@
 
             data:
               data
-
           })
-
       }
-
     );
   }
 
@@ -1630,33 +3720,26 @@
     if (!accessToken) {
 
       throw new Error(
-        "Google authorization has expired. Reconnect Google Sheets."
+        "Google authorization expired. Reconnect Google Sheets."
       );
     }
-
 
     const url =
       `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
         SPREADSHEET_ID
       )}${path}`;
 
-
     const headers =
       new Headers(
-        options.headers ||
-        {}
+        options.headers || {}
       );
-
 
     headers.set(
       "Authorization",
       `Bearer ${accessToken}`
     );
 
-
-    if (
-      options.body
-    ) {
+    if (options.body) {
 
       headers.set(
         "Content-Type",
@@ -1664,60 +3747,42 @@
       );
     }
 
-
     const response =
       await fetch(
-
         url,
-
         {
-
           ...options,
-
           headers:
             headers
-
         }
-
       );
 
-
     if (
-      response.status ===
-      401
+      response.status === 401
     ) {
 
-      accessToken =
-        "";
-
+      accessToken = "";
 
       const button =
         document.getElementById(
           "connect-button"
         );
 
-
       button.style.display =
         "block";
-
 
       button.disabled =
         false;
 
-
       button.textContent =
         "RECONNECT GOOGLE SHEETS";
-
 
       throw new Error(
         "Google authorization expired. Tap RECONNECT GOOGLE SHEETS."
       );
     }
 
-
-    let payload =
-      null;
-
+    let payload = null;
 
     try {
 
@@ -1728,182 +3793,212 @@
 
       payload =
         null;
-
     }
-
 
     if (!response.ok) {
 
-      const message =
-
-        payload?.error?.message ||
-
-        `Google Sheets API returned HTTP ${response.status}.`;
-
-
       throw new Error(
-        message
+        payload?.error?.message ||
+        `Google Sheets API returned HTTP ${response.status}.`
       );
     }
 
-
-    return (
-      payload ||
-      {}
-    );
+    return payload || {};
   }
 
 
-  // ==================================================
-  // SUCCESS / NEXT
-  // ==================================================
+  /* ===================================================
+     HELPERS
+     =================================================== */
 
-  function showScanSuccess(
-    result
+  function normalizeNumericValue(
+    value
   ) {
 
     if (
-      navigator.vibrate
+      value === undefined ||
+      value === null ||
+      value === ""
     ) {
-
-      navigator.vibrate(
-        100
-      );
+      return "";
     }
 
+    const number =
+      Number(value);
 
-    const productText =
-
-      result.product
-
-        ? escapeHtml(
-            result.product
-          )
-
-        : "New / unidentified product";
-
-
-    const priceText =
-
-      result.lastPrice !== "" &&
-      result.lastPrice !== null &&
-      result.lastPrice !== undefined
-
-        ? (
-            "<br>Last price: <b>" +
-            escapeHtml(
-              formatPrice(
-                result.lastPrice
-              )
-            ) +
-            "</b>"
-          )
-
-        : "";
-
-
-    const noteText =
-
-      result.note
-
-        ? (
-            "<br><br>⚠️ " +
-            escapeHtml(
-              result.note
-            )
-          )
-
-        : "";
-
-
-    setStatus(
-
-      "✅ Added to row <b>" +
-        result.row +
-        "</b>" +
-
-      '<div class="product">' +
-        productText +
-      "</div>" +
-
-      '<div class="details">' +
-
-        "Barcode: " +
-        escapeHtml(
-          result.barcode
-        ) +
-
-        "<br>Store: " +
-        escapeHtml(
-          result.store
-        ) +
-
-        priceText +
-
-        noteText +
-
-      "</div>",
-
-      "success"
-    );
-
-
-    const button =
-      document.getElementById(
-        "next-button"
-      );
-
-
-    button.textContent =
-      "SCAN NEXT ITEM";
-
-
-    button.style.display =
-      "block";
+    return Number.isFinite(number)
+      ? number
+      : "";
   }
 
 
-  function scanNext() {
+  function readPositiveNumber(
+    elementId
+  ) {
 
-    const button =
+    const raw =
       document.getElementById(
-        "next-button"
-      );
+        elementId
+      ).value;
 
-
-    button.style.display =
-      "none";
-
-
-    button.textContent =
-      "SCAN NEXT ITEM";
-
-
-    processing =
-      false;
-
-
-    setStatus(
-      "Point the camera at the next barcode."
-    );
-
-
-    try {
-
-      scanner.resume();
-
-    } catch (error) {
-
-      fail(
-        "Camera could not resume. Reload this page."
-      );
+    if (raw === "") {
+      return null;
     }
+
+    const number =
+      Number(raw);
+
+    if (
+      !Number.isFinite(number) ||
+      number <= 0
+    ) {
+      return null;
+    }
+
+    return number;
   }
 
 
-  // ==================================================
-  // UI HELPERS
-  // ==================================================
+  function isUsablePrice(
+    value
+  ) {
+
+    return (
+      value !== "" &&
+      value !== null &&
+      value !== undefined &&
+      Number.isFinite(
+        Number(value)
+      )
+    );
+  }
+
+
+  function normalizeStore(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .trim()
+      .toLowerCase();
+  }
+
+
+  function blank(
+    value
+  ) {
+
+    return (
+      value === undefined ||
+      value === null ||
+      String(value).trim() === ""
+    );
+  }
+
+
+  function formatMoney(
+    value
+  ) {
+
+    const number =
+      Number(value);
+
+    if (!Number.isFinite(number)) {
+      return "—";
+    }
+
+    return (
+      "$" +
+      number.toFixed(2)
+    );
+  }
+
+
+  function formatSignedMoney(
+    value
+  ) {
+
+    const number =
+      Number(value);
+
+    if (!Number.isFinite(number)) {
+      return "—";
+    }
+
+    if (number > 0) {
+      return "+" + formatMoney(number);
+    }
+
+    if (number < 0) {
+      return "-" + formatMoney(
+        Math.abs(number)
+      );
+    }
+
+    return "$0.00";
+  }
+
+
+  function formatQuantity(
+    value
+  ) {
+
+    const number =
+      Number(value);
+
+    if (!Number.isFinite(number)) {
+
+      return String(
+        value ?? ""
+      );
+    }
+
+    return number
+      .toFixed(3)
+      .replace(
+        /\.?0+$/,
+        ""
+      );
+  }
+
+
+  function setStatus(
+    message,
+    type = ""
+  ) {
+
+    const box =
+      document.getElementById(
+        "status"
+      );
+
+    box.className = "";
+
+    if (type) {
+
+      box.classList.add(
+        "status-" + type
+      );
+    }
+
+    box.innerHTML =
+      message;
+  }
+
+
+  function fail(
+    message
+  ) {
+
+    setStatus(
+      "❌ " +
+      escapeHtml(message),
+      "error"
+    );
+  }
+
 
   function handleApiError(
     error
@@ -1919,130 +4014,18 @@
   }
 
 
-  function setStatus(
-    message,
-    className = ""
-  ) {
-
-    const status =
-      document.getElementById(
-        "status"
-      );
-
-
-    status.className =
-      className;
-
-
-    status.innerHTML =
-      message;
-  }
-
-
-  function fail(
-    message
-  ) {
-
-    setStatus(
-
-      "❌ " +
-      escapeHtml(
-        message
-      ),
-
-      "error"
-
-    );
-  }
-
-
-  function normalizeStore(
-    value
-  ) {
-
-    return String(
-      value ??
-      ""
-    )
-      .trim()
-      .toLowerCase();
-  }
-
-
-  function blank(
-    value
-  ) {
-
-    return (
-      value === undefined ||
-      value === null ||
-      String(
-        value
-      ).trim() === ""
-    );
-  }
-
-
-  function formatPrice(
-    value
-  ) {
-
-    const number =
-      Number(
-        value
-      );
-
-
-    if (
-      Number.isFinite(
-        number
-      )
-    ) {
-
-      return (
-        "$" +
-        number.toFixed(
-          2
-        )
-      );
-    }
-
-
-    return String(
-      value ??
-      ""
-    );
-  }
-
-
   function escapeHtml(
     value
   ) {
 
     return String(
-      value ??
-      ""
+      value ?? ""
     )
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
-      );
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
 </script>
