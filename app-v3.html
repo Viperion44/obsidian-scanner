@@ -63,8 +63,8 @@
       background: #242833;
     }
 
-    .center {
-      text-align: center;
+    .hidden {
+      display: none !important;
     }
 
     .small-label {
@@ -84,10 +84,6 @@
       color: #aeb4c0;
     }
 
-    .hidden {
-      display: none !important;
-    }
-
     button {
       width: 100%;
       margin-top: 12px;
@@ -103,6 +99,14 @@
 
     button.secondary {
       background: #3b414d;
+    }
+
+    button.finish {
+      background: #17633c;
+    }
+
+    button.danger {
+      background: #702a34;
     }
 
     button:disabled {
@@ -456,6 +460,176 @@
       font-weight: bold;
     }
 
+    /* FINISH REVIEW */
+
+    .finish-header {
+      margin-bottom: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+      text-align: center;
+    }
+
+    .finish-store {
+      margin-top: 4px;
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .finish-times {
+      margin-top: 7px;
+      color: #b9c0ca;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .finish-list {
+      overflow: hidden;
+      margin-bottom: 14px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .finish-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid #3d424d;
+    }
+
+    .finish-item:last-child {
+      border-bottom: none;
+    }
+
+    .finish-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .finish-product {
+      flex: 1;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .finish-line-total {
+      white-space: nowrap;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .finish-item-sub {
+      margin-top: 4px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .finish-item-promo {
+      margin-top: 5px;
+      color: #7cdf98;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .finish-summary {
+      margin-bottom: 14px;
+      padding: 15px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .finish-summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 5px 0;
+      font-size: 14px;
+    }
+
+    .finish-summary-row span:first-child {
+      color: #aeb4c0;
+    }
+
+    .finish-summary-row span:last-child {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .finish-total-row {
+      margin-top: 7px;
+      padding-top: 11px;
+      border-top: 1px solid #4a505c;
+      font-size: 20px;
+    }
+
+    .finish-budget-good {
+      color: #75df91;
+    }
+
+    .finish-budget-bad {
+      color: #ff9393;
+    }
+
+    .finish-warning {
+      margin-bottom: 14px;
+      padding: 13px;
+      border-radius: 11px;
+      background: #493c20;
+      color: #ffe1a1;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* FINISHED RECEIPT */
+
+    #finished-panel {
+      padding: 17px;
+      border-radius: 13px;
+      background: #173d25;
+    }
+
+    .finished-title {
+      margin-bottom: 8px;
+      text-align: center;
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    .finished-subtitle {
+      margin-bottom: 16px;
+      text-align: center;
+      color: #bee2c9;
+      font-size: 13px;
+    }
+
+    .finished-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .finished-stat {
+      padding: 11px;
+      border-radius: 9px;
+      background: #12301e;
+    }
+
+    .finished-stat-label {
+      color: #a9d7b7;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .finished-stat-value {
+      margin-top: 4px;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
     .help {
       margin-top: 20px;
       color: #939aa5;
@@ -502,7 +676,9 @@
   </div>
 
 
-  <!-- HOME -->
+  <!-- =================================================
+       HOME
+       ================================================= -->
 
   <div
     id="home-panel"
@@ -660,7 +836,9 @@
   </div>
 
 
-  <!-- ACTIVE TRIP -->
+  <!-- =================================================
+       ACTIVE TRIP
+       ================================================= -->
 
   <div
     id="active-trip-panel"
@@ -744,6 +922,14 @@
         <span id="active-trip-id">—</span>
       </div>
 
+      <button
+        class="finish"
+        type="button"
+        onclick="openFinishReview()"
+      >
+        REVIEW &amp; FINISH TRIP
+      </button>
+
     </div>
 
 
@@ -781,7 +967,9 @@
   </div>
 
 
-  <!-- PRODUCT REVIEW -->
+  <!-- =================================================
+       PRODUCT REVIEW
+       ================================================= -->
 
   <div
     id="item-panel"
@@ -902,7 +1090,7 @@
       </div>
 
 
-      <!-- PRICING / PROMOTION -->
+      <!-- TODAY'S PRICING -->
 
       <div class="promo-card">
 
@@ -928,7 +1116,7 @@
           >
 
           <div class="hint">
-            The normal price shown on the shelf before any promotion.
+            Normal price shown on the shelf before any promotion.
           </div>
 
         </div>
@@ -944,6 +1132,7 @@
             id="promo-status"
             onchange="promotionStatusChanged()"
           >
+
             <option value="NONE">
               No promotion
             </option>
@@ -955,6 +1144,7 @@
             <option value="IGNORED">
               Promotion available, not used
             </option>
+
           </select>
 
         </div>
@@ -1126,7 +1316,7 @@
           </div>
 
 
-          <!-- SPECIAL UNIT -->
+          <!-- SPECIAL UNIT PRICE -->
 
           <div
             id="promo-special-unit"
@@ -1338,7 +1528,9 @@
   </div>
 
 
-  <!-- SUCCESS -->
+  <!-- =================================================
+       ITEM SUCCESS
+       ================================================= -->
 
   <div
     id="success-panel"
@@ -1359,6 +1551,212 @@
       onclick="scanNextItem()"
     >
       SCAN NEXT ITEM
+    </button>
+
+  </div>
+
+
+  <!-- =================================================
+       FINISH REVIEW
+       ================================================= -->
+
+  <div
+    id="finish-review-panel"
+    class="hidden"
+  >
+
+    <div class="finish-header">
+
+      <div class="small-label">
+        FINAL TRIP REVIEW
+      </div>
+
+      <div
+        id="finish-review-store"
+        class="finish-store"
+      >
+        —
+      </div>
+
+      <div
+        id="finish-review-times"
+        class="finish-times"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div
+      id="finish-review-list"
+      class="finish-list"
+    ></div>
+
+
+    <div class="finish-summary">
+
+      <div class="finish-summary-row">
+        <span>Items</span>
+        <span id="finish-review-count">0</span>
+      </div>
+
+      <div class="finish-summary-row">
+        <span>Regular value</span>
+        <span id="finish-review-regular">$0.00</span>
+      </div>
+
+      <div class="finish-summary-row">
+        <span>Promotion savings</span>
+        <span
+          id="finish-review-savings"
+          class="savings-positive"
+        >
+          $0.00
+        </span>
+      </div>
+
+      <div class="finish-summary-row finish-total-row">
+        <span>FINAL TOTAL</span>
+        <span id="finish-review-total">$0.00</span>
+      </div>
+
+      <div
+        id="finish-budget-section"
+        class="hidden"
+      >
+
+        <div class="finish-summary-row">
+          <span>Budget</span>
+          <span id="finish-review-budget">—</span>
+        </div>
+
+        <div class="finish-summary-row">
+          <span id="finish-budget-label">Remaining</span>
+          <span id="finish-budget-result">—</span>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="finish-warning">
+      Nothing is archived or cleared until you tap
+      <b>CONFIRM &amp; FINISH TRIP</b>.
+      You can still return to shopping.
+    </div>
+
+
+    <button
+      id="confirm-finish-button"
+      class="finish"
+      type="button"
+      onclick="confirmFinishTrip()"
+    >
+      CONFIRM &amp; FINISH TRIP
+    </button>
+
+
+    <button
+      class="secondary"
+      type="button"
+      onclick="backToShoppingFromFinish()"
+    >
+      BACK TO SHOPPING
+    </button>
+
+  </div>
+
+
+  <!-- =================================================
+       FINISHED RECEIPT
+       ================================================= -->
+
+  <div
+    id="finished-panel"
+    class="hidden"
+  >
+
+    <div class="finished-title">
+      ✅ Trip finished
+    </div>
+
+    <div
+      id="finished-subtitle"
+      class="finished-subtitle"
+    >
+      —
+    </div>
+
+
+    <div class="finished-grid">
+
+      <div class="finished-stat">
+        <div class="finished-stat-label">
+          Store
+        </div>
+        <div
+          id="finished-store"
+          class="finished-stat-value"
+        >
+          —
+        </div>
+      </div>
+
+      <div class="finished-stat">
+        <div class="finished-stat-label">
+          Items
+        </div>
+        <div
+          id="finished-items"
+          class="finished-stat-value"
+        >
+          —
+        </div>
+      </div>
+
+      <div class="finished-stat">
+        <div class="finished-stat-label">
+          Total
+        </div>
+        <div
+          id="finished-total"
+          class="finished-stat-value"
+        >
+          —
+        </div>
+      </div>
+
+      <div class="finished-stat">
+        <div class="finished-stat-label">
+          Saved
+        </div>
+        <div
+          id="finished-savings"
+          class="finished-stat-value"
+        >
+          —
+        </div>
+      </div>
+
+    </div>
+
+
+    <div
+      id="finished-trip-id"
+      class="hint"
+      style="text-align:center;"
+    >
+      —
+    </div>
+
+
+    <button
+      type="button"
+      onclick="returnHomeAfterFinish()"
+    >
+      DONE
     </button>
 
   </div>
@@ -1392,11 +1790,20 @@
   const TRIPS_SHEET =
     "Trips";
 
+  const TRIP_HISTORY_SHEET =
+    "Trip History";
+
   const CURRENT_STORE_CELL =
     "M21";
 
   const SHOP_FIRST_ROW =
     5;
+
+  const PRODUCTS_FIRST_ROW =
+    5;
+
+  const TRIP_HISTORY_FIRST_ROW =
+    2;
 
   const params =
     new URLSearchParams(
@@ -1433,6 +1840,9 @@
   let previousPriceAtStore = "";
 
   let currentPricing = null;
+
+  let finishReviewItems = [];
+  let finishReviewTotals = null;
 
 
   window.addEventListener(
@@ -1546,7 +1956,8 @@
       );
 
     button.disabled = true;
-    button.textContent = "CONNECTING...";
+    button.textContent =
+      "CONNECTING...";
 
     setStatus(
       "Waiting for Google authorization...",
@@ -1654,6 +2065,8 @@
     hide("active-trip-panel");
     hide("item-panel");
     hide("success-panel");
+    hide("finish-review-panel");
+    hide("finished-panel");
 
     show("home-panel");
 
@@ -1830,7 +2243,7 @@
       };
 
       const row =
-        await appendTrip(
+        await writeNewTrip(
           trip
         );
 
@@ -1869,45 +2282,67 @@
   }
 
 
-  async function appendTrip(
+  async function writeNewTrip(
     trip
   ) {
 
+    const row =
+      await findNextTripRow();
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${TRIPS_SHEET}'!A${row}:H${row}`,
+
+          values:
+            [[
+              trip.tripId,
+              trip.store,
+              trip.start,
+              trip.end,
+              trip.status,
+              trip.budget,
+              trip.finalTotal,
+              trip.itemCount
+            ]]
+        }
+      ],
+      "RAW"
+    );
+
+    return row;
+  }
+
+
+  async function findNextTripRow() {
+
     const result =
-      await sheetsAppendValues(
-        `'${TRIPS_SHEET}'!A2:H`,
-        [[
-          trip.tripId,
-          trip.store,
-          trip.start,
-          trip.end,
-          trip.status,
-          trip.budget,
-          trip.finalTotal,
-          trip.itemCount
-        ]],
-        "RAW"
+      await sheetsGetValues(
+        `'${TRIPS_SHEET}'!A2:A`,
+        "FORMATTED_VALUE"
       );
 
-    const updatedRange =
-      result.updates?.updatedRange ||
-      "";
+    const rows =
+      result.values || [];
 
-    const match =
-      updatedRange.match(
-        /!A(\d+):/
-      );
+    for (
+      let i = 0;
+      i < rows.length;
+      i++
+    ) {
 
-    if (!match) {
+      if (
+        blank(
+          rows[i]?.[0]
+        )
+      ) {
 
-      throw new Error(
-        "Trip was created, but its row could not be identified."
-      );
+        return i + 2;
+      }
     }
 
-    return Number(
-      match[1]
-    );
+    return rows.length + 2;
   }
 
 
@@ -1949,6 +2384,8 @@
     hide("home-panel");
     hide("item-panel");
     hide("success-panel");
+    hide("finish-review-panel");
+    hide("finished-panel");
 
     show("active-trip-panel");
 
@@ -2009,7 +2446,7 @@
 
 
   /* ===================================================
-     OPEN TRIP
+     FIND OPEN TRIP
      =================================================== */
 
   async function findOpenTrip() {
@@ -2035,7 +2472,9 @@
           .trim()
           .toUpperCase();
 
-        if (status !== "OPEN") {
+        if (
+          status !== "OPEN"
+        ) {
           return;
         }
 
@@ -2081,6 +2520,7 @@
 
           sheetRow:
             index + 2
+
         });
       }
     );
@@ -2185,10 +2625,38 @@
 
 
   /* ===================================================
-     SUMMARY
+     ACTIVE TRIP SUMMARY
      =================================================== */
 
   async function refreshTripSummary() {
+
+    const items =
+      await loadCurrentShoppingItems();
+
+    const totals =
+      calculateTripTotals(
+        items
+      );
+
+    document.getElementById(
+      "active-item-count"
+    ).textContent =
+      items.length;
+
+    document.getElementById(
+      "active-total"
+    ).textContent =
+      formatMoney(
+        totals.actualTotal
+      );
+  }
+
+
+  /* ===================================================
+     LOAD CURRENT SHOPPING ITEMS
+     =================================================== */
+
+  async function loadCurrentShoppingItems() {
 
     const result =
       await sheetsGetValues(
@@ -2199,11 +2667,10 @@
     const rows =
       result.values || [];
 
-    let itemCount = 0;
-    let total = 0;
+    const items = [];
 
     rows.forEach(
-      row => {
+      function(row, index) {
 
         const product =
           String(
@@ -2222,39 +2689,217 @@
           return;
         }
 
-        itemCount++;
+        const effectiveUnitPrice =
+          normalizeNumericValue(
+            row[5]
+          );
 
         const lineTotal =
-          Number(
+          normalizeNumericValue(
             row[6]
           );
 
+        const shelfUnitPrice =
+          isUsableNumber(
+            row[10]
+          )
+            ? Number(
+                row[10]
+              )
+            : effectiveUnitPrice;
+
+        const regularLineTotal =
+          isUsableNumber(
+            row[14]
+          )
+            ? Number(
+                row[14]
+              )
+            : lineTotal;
+
+        const savings =
+          isUsableNumber(
+            row[15]
+          )
+            ? Number(
+                row[15]
+              )
+            : Math.max(
+                0,
+                Number(
+                  regularLineTotal || 0
+                ) -
+                Number(
+                  lineTotal || 0
+                )
+              );
+
+        items.push({
+
+          sheetRow:
+            index +
+            SHOP_FIRST_ROW,
+
+          product:
+            product,
+
+          barcode:
+            barcode,
+
+          amount:
+            normalizeNumericValue(
+              row[3]
+            ),
+
+          previousPrice:
+            normalizeNumericValue(
+              row[4]
+            ),
+
+          effectiveUnitPrice:
+            effectiveUnitPrice,
+
+          lineTotal:
+            lineTotal,
+
+          store:
+            String(
+              row[7] ?? ""
+            ).trim(),
+
+          priceDelta:
+            normalizeNumericValue(
+              row[8]
+            ),
+
+          notes:
+            String(
+              row[9] ?? ""
+            ).trim(),
+
+          shelfUnitPrice:
+            shelfUnitPrice,
+
+          promoApplied:
+            String(
+              row[11] ?? ""
+            ).trim(),
+
+          promoType:
+            String(
+              row[12] ?? ""
+            ).trim(),
+
+          promoDetails:
+            String(
+              row[13] ?? ""
+            ).trim(),
+
+          regularLineTotal:
+            regularLineTotal,
+
+          savings:
+            savings,
+
+          promoQuantity:
+            normalizeNumericValue(
+              row[16]
+            ),
+
+          promoTotal:
+            normalizeNumericValue(
+              row[17]
+            )
+
+        });
+      }
+    );
+
+    return items;
+  }
+
+
+  function calculateTripTotals(
+    items
+  ) {
+
+    let actualTotal = 0;
+    let regularTotal = 0;
+    let savings = 0;
+
+    items.forEach(
+      item => {
+
         if (
-          Number.isFinite(
-            lineTotal
+          isUsableNumber(
+            item.lineTotal
           )
         ) {
 
-          total +=
-            lineTotal;
+          actualTotal +=
+            Number(
+              item.lineTotal
+            );
+        }
+
+        if (
+          isUsableNumber(
+            item.regularLineTotal
+          )
+        ) {
+
+          regularTotal +=
+            Number(
+              item.regularLineTotal
+            );
+
+        } else if (
+          isUsableNumber(
+            item.lineTotal
+          )
+        ) {
+
+          regularTotal +=
+            Number(
+              item.lineTotal
+            );
+        }
+
+        if (
+          isUsableNumber(
+            item.savings
+          )
+        ) {
+
+          savings +=
+            Number(
+              item.savings
+            );
         }
       }
     );
 
-    document.getElementById(
-      "active-item-count"
-    ).textContent =
-      itemCount;
+    return {
+      actualTotal:
+        roundMoney(
+          actualTotal
+        ),
 
-    document.getElementById(
-      "active-total"
-    ).textContent =
-      formatMoney(total);
+      regularTotal:
+        roundMoney(
+          regularTotal
+        ),
+
+      savings:
+        roundMoney(
+          savings
+        )
+    };
   }
 
 
   /* ===================================================
-     PRODUCT DATABASE
+     PRODUCTS DATABASE
      =================================================== */
 
   async function loadProductDatabase() {
@@ -2275,7 +2920,8 @@
           return {
 
             sheetRow:
-              index + 5,
+              index +
+              PRODUCTS_FIRST_ROW,
 
             barcode:
               String(
@@ -2339,6 +2985,7 @@
               String(
                 row[12] ?? ""
               ).trim()
+
           };
         }
       )
@@ -2409,6 +3056,7 @@
         Html5QrcodeSupportedFormats.CODABAR,
         Html5QrcodeSupportedFormats.DATA_MATRIX,
         Html5QrcodeSupportedFormats.QR_CODE
+
       ]
     };
 
@@ -2456,8 +3104,12 @@
 
     try {
 
-      scanner.pause(true);
-      scannerPaused = true;
+      scanner.pause(
+        true
+      );
+
+      scannerPaused =
+        true;
 
     } catch (error) {}
   }
@@ -2474,10 +3126,14 @@
 
     try {
 
-      if (scannerPaused) {
+      if (
+        scannerPaused
+      ) {
 
         scanner.resume();
-        scannerPaused = false;
+
+        scannerPaused =
+          false;
       }
 
     } catch (error) {
@@ -2486,6 +3142,48 @@
         "Camera could not resume. Reload this page."
       );
     }
+  }
+
+
+  async function stopScanner() {
+
+    if (
+      !scanner ||
+      !scannerStarted
+    ) {
+
+      scanner =
+        null;
+
+      scannerStarted =
+        false;
+
+      scannerPaused =
+        false;
+
+      return;
+    }
+
+    try {
+
+      await scanner.stop();
+
+    } catch (error) {}
+
+    try {
+
+      scanner.clear();
+
+    } catch (error) {}
+
+    scanner =
+      null;
+
+    scannerStarted =
+      false;
+
+    scannerPaused =
+      false;
   }
 
 
@@ -2553,7 +3251,7 @@
 
 
   /* ===================================================
-     LOOKUP
+     BARCODE LOOKUP
      =================================================== */
 
   async function beginBarcodeLookup(
@@ -2568,7 +3266,8 @@
       return;
     }
 
-    processing = true;
+    processing =
+      true;
 
     currentBarcode =
       barcode;
@@ -2606,8 +3305,13 @@
       ).value =
         "";
 
-      hide("active-trip-panel");
-      show("item-panel");
+      hide(
+        "active-trip-panel"
+      );
+
+      show(
+        "item-panel"
+      );
 
       document.getElementById(
         "item-panel"
@@ -2620,10 +3324,15 @@
 
     } catch (error) {
 
-      processing = false;
-      currentBarcode = "";
+      processing =
+        false;
 
-      handleApiError(error);
+      currentBarcode =
+        "";
+
+      handleApiError(
+        error
+      );
     }
   }
 
@@ -2674,11 +3383,18 @@
         ? exactStoreMatch.price
         : "";
 
-    let suggestedProduct = "";
-    let badgeText = "";
-    let badgeClass = "";
+    let suggestedProduct =
+      "";
 
-    if (exactStoreMatch) {
+    let badgeText =
+      "";
+
+    let badgeClass =
+      "";
+
+    if (
+      exactStoreMatch
+    ) {
 
       suggestedProduct =
         exactStoreMatch.product;
@@ -2716,11 +3432,15 @@
                     record.product
                   )
               )
-              .filter(Boolean)
+              .filter(
+                Boolean
+              )
           )
         ];
 
-      if (names.length === 1) {
+      if (
+        names.length === 1
+      ) {
 
         suggestedProduct =
           barcodeMatches[0].product;
@@ -2764,7 +3484,9 @@
       ) +
 
       "<br><b>Barcode:</b> " +
-      escapeHtml(barcode) +
+      escapeHtml(
+        barcode
+      ) +
 
       "<br><b>Store:</b> " +
       escapeHtml(
@@ -2820,11 +3542,13 @@
         : "No previous price for this barcode at this store";
 
     clearValidationStyles();
+
     clearFormError();
 
     renderBarcodeReuseWarning();
 
     updatePricing();
+
     renderPriceComparisons();
   }
 
@@ -2847,7 +3571,9 @@
           )
       );
 
-    if (!otherMatches.length) {
+    if (
+      !otherMatches.length
+    ) {
 
       box.classList.add(
         "hidden"
@@ -2902,7 +3628,9 @@
             return text;
           }
         )
-        .join("<br>");
+        .join(
+          "<br>"
+        );
   }
 
 
@@ -2967,7 +3695,9 @@
         "promo-status"
       ).value;
 
-    if (status === "NONE") {
+    if (
+      status === "NONE"
+    ) {
 
       hide(
         "promo-options"
@@ -2983,6 +3713,7 @@
     }
 
     clearFormError();
+
     updatePricing();
   }
 
@@ -2999,6 +3730,7 @@
     );
 
     clearFormError();
+
     updatePricing();
   }
 
@@ -3016,10 +3748,14 @@
     ]
       .forEach(
         id =>
-          hide(id)
+          hide(
+            id
+          )
       );
 
-    if (type === "X_FOR_Y") {
+    if (
+      type === "X_FOR_Y"
+    ) {
 
       show(
         "promo-x-for-y"
@@ -3201,7 +3937,9 @@
     };
 
 
-    if (!base.validBase) {
+    if (
+      !base.validBase
+    ) {
 
       return base;
     }
@@ -3215,8 +3953,7 @@
     /* NO PROMOTION */
 
     if (
-      promoStatus ===
-      "NONE"
+      promoStatus === "NONE"
     ) {
 
       base.actualLineTotal =
@@ -3249,8 +3986,7 @@
     /* X FOR Y */
 
     if (
-      promoType ===
-      "X_FOR_Y"
+      promoType === "X_FOR_Y"
     ) {
 
       const quantity =
@@ -3280,16 +4016,16 @@
       base.promoDetails =
         `${formatPlainNumber(quantity)} for ${formatMoney(total)}`;
 
-      if (promoNote) {
+      if (
+        promoNote
+      ) {
 
         base.promoDetails +=
           ` — ${promoNote}`;
       }
 
-
       if (
-        promoStatus ===
-        "APPLIED"
+        promoStatus === "APPLIED"
       ) {
 
         const fullBundles =
@@ -3323,11 +4059,10 @@
     }
 
 
-    /* BUY X GET Y FREE */
+    /* BUY X GET Y */
 
     else if (
-      promoType ===
-      "BUY_X_GET_Y"
+      promoType === "BUY_X_GET_Y"
     ) {
 
       const buyQty =
@@ -3358,16 +4093,16 @@
       base.promoDetails =
         `Buy ${formatPlainNumber(buyQty)}, get ${formatPlainNumber(freeQty)} free`;
 
-      if (promoNote) {
+      if (
+        promoNote
+      ) {
 
         base.promoDetails +=
           ` — ${promoNote}`;
       }
 
-
       if (
-        promoStatus ===
-        "APPLIED"
+        promoStatus === "APPLIED"
       ) {
 
         const fullGroups =
@@ -3402,11 +4137,10 @@
     }
 
 
-    /* PERCENT */
+    /* PERCENTAGE */
 
     else if (
-      promoType ===
-      "PERCENT"
+      promoType === "PERCENT"
     ) {
 
       const percent =
@@ -3425,16 +4159,16 @@
       base.promoDetails =
         `${formatPlainNumber(percent)}% off`;
 
-      if (promoNote) {
+      if (
+        promoNote
+      ) {
 
         base.promoDetails +=
           ` — ${promoNote}`;
       }
 
-
       if (
-        promoStatus ===
-        "APPLIED"
+        promoStatus === "APPLIED"
       ) {
 
         base.actualLineTotal =
@@ -3455,11 +4189,10 @@
     }
 
 
-    /* SPECIAL UNIT PRICE */
+    /* SPECIAL UNIT */
 
     else if (
-      promoType ===
-      "SPECIAL_UNIT"
+      promoType === "SPECIAL_UNIT"
     ) {
 
       const threshold =
@@ -3489,16 +4222,16 @@
       base.promoDetails =
         `${formatPlainNumber(threshold)}+ at ${formatMoney(specialPrice)} each`;
 
-      if (promoNote) {
+      if (
+        promoNote
+      ) {
 
         base.promoDetails +=
           ` — ${promoNote}`;
       }
 
-
       if (
-        promoStatus ===
-        "APPLIED" &&
+        promoStatus === "APPLIED" &&
         amount >= threshold
       ) {
 
@@ -3517,8 +4250,7 @@
     /* MANUAL */
 
     else if (
-      promoType ===
-      "MANUAL"
+      promoType === "MANUAL"
     ) {
 
       const manualTotal =
@@ -3527,8 +4259,7 @@
         );
 
       if (
-        promoStatus ===
-        "APPLIED" &&
+        promoStatus === "APPLIED" &&
         manualTotal === null
       ) {
 
@@ -3540,8 +4271,7 @@
         "Manual promotion";
 
       if (
-        promoStatus ===
-        "APPLIED"
+        promoStatus === "APPLIED"
       ) {
 
         base.actualLineTotal =
@@ -3577,6 +4307,26 @@
         0,
         base.regularLineTotal -
         base.actualLineTotal
+      );
+
+    base.actualLineTotal =
+      roundMoney(
+        base.actualLineTotal
+      );
+
+    base.regularLineTotal =
+      roundMoney(
+        base.regularLineTotal
+      );
+
+    base.effectiveUnitPrice =
+      roundMoneyMore(
+        base.effectiveUnitPrice
+      );
+
+    base.savings =
+      roundMoney(
+        base.savings
       );
 
     base.valid =
@@ -3678,7 +4428,9 @@
         "Other / manual"
     };
 
-    return labels[value] || "";
+    return labels[
+      value
+    ] || "";
   }
 
 
@@ -3694,6 +4446,7 @@
       false;
 
     clearFormError();
+
     clearValidationStyles();
 
     renderPriceComparisons();
@@ -3712,7 +4465,9 @@
         "product-name"
       ).value.trim();
 
-    if (!name) {
+    if (
+      !name
+    ) {
 
       box.textContent =
         "Enter or confirm the product name to compare prices.";
@@ -3743,7 +4498,9 @@
           )
       );
 
-    if (!matches.length) {
+    if (
+      !matches.length
+    ) {
 
       box.textContent =
         "No comparable prices from other stores are stored for this product.";
@@ -3777,7 +4534,9 @@
 
             "</div>"
         )
-        .join("");
+        .join(
+          ""
+        );
   }
 
 
@@ -3804,14 +4563,18 @@
     box.style.display =
       "block";
 
-    if (targetId) {
+    if (
+      targetId
+    ) {
 
       const target =
         document.getElementById(
           targetId
         );
 
-      if (target) {
+      if (
+        target
+      ) {
 
         if (
           targetId ===
@@ -3887,7 +4650,9 @@
               id
             );
 
-          if (element) {
+          if (
+            element
+          ) {
 
             element.classList.remove(
               "invalid-field"
@@ -3935,6 +4700,7 @@
   async function addReviewedItem() {
 
     clearFormError();
+
     clearValidationStyles();
 
     const product =
@@ -3963,7 +4729,9 @@
       ).value.trim();
 
 
-    if (!product) {
+    if (
+      !product
+    ) {
 
       showFormError(
         "Enter the product name.",
@@ -3974,7 +4742,9 @@
     }
 
 
-    if (!confirmed) {
+    if (
+      !confirmed
+    ) {
 
       showFormError(
         "Confirm that the product name matches the item.",
@@ -3985,7 +4755,9 @@
     }
 
 
-    if (amount === null) {
+    if (
+      amount === null
+    ) {
 
       showFormError(
         "Enter a valid amount greater than zero.",
@@ -3996,7 +4768,9 @@
     }
 
 
-    if (shelfPrice === null) {
+    if (
+      shelfPrice === null
+    ) {
 
       showFormError(
         "Enter the shelf unit price.",
@@ -4011,7 +4785,9 @@
       calculatePricing();
 
 
-    if (!currentPricing.valid) {
+    if (
+      !currentPricing.valid
+    ) {
 
       const promoStatus =
         document.getElementById(
@@ -4152,7 +4928,9 @@
       ).innerHTML =
 
         '<span class="success-label">Product:</span> ' +
-        escapeHtml(product) +
+        escapeHtml(
+          product
+        ) +
         "<br>" +
 
         '<span class="success-label">Barcode:</span> ' +
@@ -4255,7 +5033,7 @@
 
 
   /* ===================================================
-     WRITE ITEM TO SHOPPING LIST
+     WRITE ACTIVE ITEM
      =================================================== */
 
   async function writeShoppingItem(
@@ -4339,7 +5117,9 @@
             `'${SHOPPING_SHEET}'!H${row}`,
 
           values:
-            [[item.store]]
+            [[
+              item.store
+            ]]
         },
 
         {
@@ -4347,7 +5127,9 @@
             `'${SHOPPING_SHEET}'!J${row}`,
 
           values:
-            [[item.notes]]
+            [[
+              item.notes
+            ]]
         },
 
         {
@@ -4459,7 +5241,7 @@
 
 
   /* ===================================================
-     NEXT / CANCEL
+     NEXT / CANCEL ITEM
      =================================================== */
 
   function scanNextItem() {
@@ -4505,22 +5287,1279 @@
 
   function resetCurrentItem() {
 
-    currentBarcode = "";
-    barcodeMatches = [];
-    exactStoreMatch = null;
-    previousPriceAtStore = "";
+    currentBarcode =
+      "";
 
-    currentPricing = null;
+    barcodeMatches =
+      [];
 
-    processing = false;
+    exactStoreMatch =
+      null;
+
+    previousPriceAtStore =
+      "";
+
+    currentPricing =
+      null;
+
+    processing =
+      false;
 
     clearFormError();
+
     clearValidationStyles();
 
     document.getElementById(
       "manual-barcode"
     ).value =
       "";
+  }
+
+
+  /* ===================================================
+     FINISH REVIEW
+     =================================================== */
+
+  async function openFinishReview() {
+
+    if (
+      !activeTrip
+    ) {
+
+      fail(
+        "No active trip exists."
+      );
+
+      return;
+    }
+
+    try {
+
+      setStatus(
+        "Preparing final trip review...",
+        "working"
+      );
+
+      pauseScanner();
+
+      const items =
+        await loadCurrentShoppingItems();
+
+      if (
+        !items.length
+      ) {
+
+        resumeScanner();
+
+        fail(
+          "This trip has no items yet."
+        );
+
+        return;
+      }
+
+      finishReviewItems =
+        items;
+
+      finishReviewTotals =
+        calculateTripTotals(
+          items
+        );
+
+      renderFinishReview();
+
+      hide(
+        "active-trip-panel"
+      );
+
+      show(
+        "finish-review-panel"
+      );
+
+      setStatus(
+        "Review the final list before finishing.",
+        "success"
+      );
+
+      document.getElementById(
+        "finish-review-panel"
+      ).scrollIntoView({
+        behavior:
+          "smooth",
+        block:
+          "start"
+      });
+
+    } catch (error) {
+
+      resumeScanner();
+
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  function renderFinishReview() {
+
+    document.getElementById(
+      "finish-review-store"
+    ).textContent =
+      activeTrip.store;
+
+    const now =
+      new Date();
+
+    document.getElementById(
+      "finish-review-times"
+    ).innerHTML =
+
+      "Started: " +
+      escapeHtml(
+        formatTimeOnly(
+          activeTrip.start
+        )
+      ) +
+
+      "<br>Review time: " +
+      escapeHtml(
+        formatTimeOnly(
+          now
+        )
+      );
+
+
+    const list =
+      document.getElementById(
+        "finish-review-list"
+      );
+
+    list.innerHTML =
+      finishReviewItems
+        .map(
+          item => {
+
+            let promoHtml =
+              "";
+
+            if (
+              item.promoApplied === "YES" &&
+              item.promoDetails
+            ) {
+
+              promoHtml =
+
+                '<div class="finish-item-promo">' +
+
+                "🏷️ " +
+                escapeHtml(
+                  item.promoDetails
+                );
+
+              if (
+                isUsableNumber(
+                  item.savings
+                ) &&
+                Number(
+                  item.savings
+                ) > 0
+              ) {
+
+                promoHtml +=
+
+                  " • Saved " +
+                  escapeHtml(
+                    formatMoney(
+                      item.savings
+                    )
+                  );
+              }
+
+              promoHtml +=
+                "</div>";
+
+            } else if (
+              item.promoApplied === "NO" &&
+              item.promoDetails
+            ) {
+
+              promoHtml =
+
+                '<div class="finish-item-sub">' +
+
+                "Promo available but not used: " +
+                escapeHtml(
+                  item.promoDetails
+                ) +
+
+                "</div>";
+            }
+
+
+            return (
+
+              '<div class="finish-item">' +
+
+                '<div class="finish-item-top">' +
+
+                  '<div class="finish-product">' +
+                    escapeHtml(
+                      item.product ||
+                      item.barcode
+                    ) +
+                  "</div>" +
+
+                  '<div class="finish-line-total">' +
+                    escapeHtml(
+                      formatMoney(
+                        item.lineTotal
+                      )
+                    ) +
+                  "</div>" +
+
+                "</div>" +
+
+                '<div class="finish-item-sub">' +
+
+                  escapeHtml(
+                    formatPlainNumber(
+                      item.amount
+                    )
+                  ) +
+
+                  " × " +
+
+                  escapeHtml(
+                    formatMoney(
+                      item.effectiveUnitPrice
+                    )
+                  ) +
+
+                  " effective unit price" +
+
+                "</div>" +
+
+                promoHtml +
+
+              "</div>"
+            );
+          }
+        )
+        .join(
+          ""
+        );
+
+
+    document.getElementById(
+      "finish-review-count"
+    ).textContent =
+      finishReviewItems.length;
+
+
+    document.getElementById(
+      "finish-review-regular"
+    ).textContent =
+      formatMoney(
+        finishReviewTotals.regularTotal
+      );
+
+
+    document.getElementById(
+      "finish-review-savings"
+    ).textContent =
+      formatMoney(
+        finishReviewTotals.savings
+      );
+
+
+    document.getElementById(
+      "finish-review-total"
+    ).textContent =
+      formatMoney(
+        finishReviewTotals.actualTotal
+      );
+
+
+    const budgetSection =
+      document.getElementById(
+        "finish-budget-section"
+      );
+
+
+    if (
+      isUsableNumber(
+        activeTrip.budget
+      )
+    ) {
+
+      budgetSection.classList.remove(
+        "hidden"
+      );
+
+      const budget =
+        Number(
+          activeTrip.budget
+        );
+
+      const difference =
+        roundMoney(
+          budget -
+          finishReviewTotals.actualTotal
+        );
+
+      document.getElementById(
+        "finish-review-budget"
+      ).textContent =
+        formatMoney(
+          budget
+        );
+
+      const label =
+        document.getElementById(
+          "finish-budget-label"
+        );
+
+      const result =
+        document.getElementById(
+          "finish-budget-result"
+        );
+
+      result.classList.remove(
+        "finish-budget-good",
+        "finish-budget-bad"
+      );
+
+      if (
+        difference >= 0
+      ) {
+
+        label.textContent =
+          "Remaining";
+
+        result.textContent =
+          formatMoney(
+            difference
+          );
+
+        result.classList.add(
+          "finish-budget-good"
+        );
+
+      } else {
+
+        label.textContent =
+          "Over budget";
+
+        result.textContent =
+          formatMoney(
+            Math.abs(
+              difference
+            )
+          );
+
+        result.classList.add(
+          "finish-budget-bad"
+        );
+      }
+
+    } else {
+
+      budgetSection.classList.add(
+        "hidden"
+      );
+    }
+  }
+
+
+  function backToShoppingFromFinish() {
+
+    finishReviewItems =
+      [];
+
+    finishReviewTotals =
+      null;
+
+    hide(
+      "finish-review-panel"
+    );
+
+    show(
+      "active-trip-panel"
+    );
+
+    resumeScanner();
+
+    setStatus(
+      "Trip active. Continue shopping.",
+      "success"
+    );
+  }
+
+
+  /* ===================================================
+     CONFIRM FINISH TRIP
+     =================================================== */
+
+  async function confirmFinishTrip() {
+
+    if (
+      !activeTrip
+    ) {
+
+      fail(
+        "No active trip exists."
+      );
+
+      return;
+    }
+
+    const button =
+      document.getElementById(
+        "confirm-finish-button"
+      );
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "FINISHING TRIP...";
+
+    try {
+
+      setStatus(
+        "Archiving trip...",
+        "working"
+      );
+
+
+      /*
+        Reload immediately before finishing so
+        final data is never based only on the UI copy.
+      */
+
+      const items =
+        await loadCurrentShoppingItems();
+
+      if (
+        !items.length
+      ) {
+
+        throw new Error(
+          "No shopping items were found."
+        );
+      }
+
+      const totals =
+        calculateTripTotals(
+          items
+        );
+
+      const finishDate =
+        new Date();
+
+      const finishIso =
+        localIsoWithOffset(
+          finishDate
+        );
+
+
+      /*
+        1. Archive item-level history.
+      */
+
+      await archiveTripHistory(
+        items,
+        finishIso
+      );
+
+
+      /*
+        2. Rebuild product/price database using
+           full Trip History, preserving manual notes.
+      */
+
+      await rebuildProductsDatabase();
+
+
+      /*
+        3. Mark trip FINISHED.
+      */
+
+      await updateFinishedTripRow(
+        finishIso,
+        totals.actualTotal,
+        items.length
+      );
+
+
+      /*
+        4. Clear active cart and current store.
+      */
+
+      await clearActiveShoppingList();
+
+
+      /*
+        5. Release camera.
+      */
+
+      await stopScanner();
+
+
+      activeTrip.end =
+        finishIso;
+
+      activeTrip.status =
+        "FINISHED";
+
+      activeTrip.finalTotal =
+        totals.actualTotal;
+
+      activeTrip.itemCount =
+        items.length;
+
+
+      renderFinishedReceipt(
+        items,
+        totals,
+        finishIso
+      );
+
+
+      openTripCandidate =
+        null;
+
+      finishReviewItems =
+        [];
+
+      finishReviewTotals =
+        null;
+
+
+      hide(
+        "finish-review-panel"
+      );
+
+      show(
+        "finished-panel"
+      );
+
+
+      setStatus(
+        "Trip finished successfully.",
+        "success"
+      );
+
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "CONFIRM & FINISH TRIP";
+
+
+      document.getElementById(
+        "finished-panel"
+      ).scrollIntoView({
+        behavior:
+          "smooth",
+        block:
+          "start"
+      });
+
+
+    } catch (error) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "CONFIRM & FINISH TRIP";
+
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  /* ===================================================
+     ARCHIVE TRIP HISTORY
+     =================================================== */
+
+  async function archiveTripHistory(
+    items,
+    finishIso
+  ) {
+
+    const existingResult =
+      await sheetsGetValues(
+        `'${TRIP_HISTORY_SHEET}'!A2:A`,
+        "FORMATTED_VALUE"
+      );
+
+    const existingRows =
+      existingResult.values ||
+      [];
+
+    const existingCount =
+      existingRows.filter(
+        row =>
+          String(
+            row?.[0] ?? ""
+          ).trim() ===
+          activeTrip.tripId
+      ).length;
+
+
+    if (
+      existingCount ===
+      items.length
+    ) {
+
+      /*
+        Allows a safe retry if history was already
+        written but a later finish step failed.
+      */
+
+      return;
+    }
+
+
+    if (
+      existingCount !== 0
+    ) {
+
+      throw new Error(
+        "Only part of this trip is already present in Trip History. Finish was stopped to avoid duplicate records."
+      );
+    }
+
+
+    const startRow =
+      await findNextTripHistoryRow();
+
+
+    const output =
+      items.map(
+        item => [
+
+          activeTrip.tripId,
+          finishIso,
+          activeTrip.store,
+          item.barcode,
+          item.product,
+          item.amount,
+          item.effectiveUnitPrice,
+          item.lineTotal,
+          item.notes,
+          item.shelfUnitPrice,
+          item.promoApplied,
+          item.promoType,
+          item.promoDetails,
+          item.regularLineTotal,
+          item.savings,
+          item.promoQuantity,
+          item.promoTotal
+
+        ]
+      );
+
+
+    const endRow =
+      startRow +
+      output.length -
+      1;
+
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${TRIP_HISTORY_SHEET}'!A${startRow}:Q${endRow}`,
+
+          values:
+            output
+        }
+      ],
+      "RAW"
+    );
+  }
+
+
+  async function findNextTripHistoryRow() {
+
+    const result =
+      await sheetsGetValues(
+        `'${TRIP_HISTORY_SHEET}'!A2:A`,
+        "FORMATTED_VALUE"
+      );
+
+    const rows =
+      result.values ||
+      [];
+
+    for (
+      let i = 0;
+      i < rows.length;
+      i++
+    ) {
+
+      if (
+        blank(
+          rows[i]?.[0]
+        )
+      ) {
+
+        return i + 2;
+      }
+    }
+
+    return rows.length + 2;
+  }
+
+
+  /* ===================================================
+     REBUILD PRODUCTS DATABASE
+     =================================================== */
+
+  async function rebuildProductsDatabase() {
+
+    const oldProducts =
+      await loadProductDatabase();
+
+    const preservedNotes =
+      new Map();
+
+
+    oldProducts.forEach(
+      record => {
+
+        const key =
+          makeProductStoreKey(
+            record.barcode,
+            record.store
+          );
+
+        if (
+          record.notes
+        ) {
+
+          preservedNotes.set(
+            key,
+            record.notes
+          );
+        }
+      }
+    );
+
+
+    const historyResult =
+      await sheetsGetValues(
+        `'${TRIP_HISTORY_SHEET}'!A2:Q`,
+        "UNFORMATTED_VALUE"
+      );
+
+    const historyRows =
+      historyResult.values ||
+      [];
+
+    const database =
+      new Map();
+
+
+    historyRows.forEach(
+      row => {
+
+        const store =
+          String(
+            row[2] ?? ""
+          ).trim();
+
+        const barcode =
+          String(
+            row[3] ?? ""
+          ).trim();
+
+        const product =
+          String(
+            row[4] ?? ""
+          ).trim();
+
+        const effectivePrice =
+          normalizeNumericValue(
+            row[6]
+          );
+
+        if (
+          !barcode ||
+          !store
+        ) {
+
+          return;
+        }
+
+        const key =
+          makeProductStoreKey(
+            barcode,
+            store
+          );
+
+
+        if (
+          !database.has(
+            key
+          )
+        ) {
+
+          database.set(
+            key,
+            {
+              barcode:
+                barcode,
+
+              product:
+                product,
+
+              lastPrice:
+                effectivePrice,
+
+              store:
+                store,
+
+              lastPurchased:
+                row[1] ?? "",
+
+              lowest:
+                isUsableNumber(
+                  effectivePrice
+                )
+                  ? Number(
+                      effectivePrice
+                    )
+                  : "",
+
+              highest:
+                isUsableNumber(
+                  effectivePrice
+                )
+                  ? Number(
+                      effectivePrice
+                    )
+                  : "",
+
+              notes:
+                preservedNotes.get(
+                  key
+                ) || "",
+
+              lastShelfPrice:
+                isUsableNumber(
+                  row[9]
+                )
+                  ? Number(
+                      row[9]
+                    )
+                  : effectivePrice,
+
+              lastEffectivePrice:
+                effectivePrice,
+
+              lastPromoApplied:
+                String(
+                  row[10] ?? ""
+                ).trim(),
+
+              lastPromoType:
+                String(
+                  row[11] ?? ""
+                ).trim(),
+
+              lastPromoDetails:
+                String(
+                  row[12] ?? ""
+                ).trim()
+            }
+          );
+
+        } else {
+
+          const record =
+            database.get(
+              key
+            );
+
+
+          /*
+            Rows are chronological append order,
+            therefore the later row becomes the
+            current/last record.
+          */
+
+          record.product =
+            product ||
+            record.product;
+
+          record.lastPrice =
+            effectivePrice;
+
+          record.lastPurchased =
+            row[1] ??
+            record.lastPurchased;
+
+          record.lastShelfPrice =
+            isUsableNumber(
+              row[9]
+            )
+              ? Number(
+                  row[9]
+                )
+              : effectivePrice;
+
+          record.lastEffectivePrice =
+            effectivePrice;
+
+          record.lastPromoApplied =
+            String(
+              row[10] ?? ""
+            ).trim();
+
+          record.lastPromoType =
+            String(
+              row[11] ?? ""
+            ).trim();
+
+          record.lastPromoDetails =
+            String(
+              row[12] ?? ""
+            ).trim();
+
+
+          if (
+            isUsableNumber(
+              effectivePrice
+            )
+          ) {
+
+            const price =
+              Number(
+                effectivePrice
+              );
+
+            if (
+              !isUsableNumber(
+                record.lowest
+              ) ||
+              price <
+                Number(
+                  record.lowest
+                )
+            ) {
+
+              record.lowest =
+                price;
+            }
+
+            if (
+              !isUsableNumber(
+                record.highest
+              ) ||
+              price >
+                Number(
+                  record.highest
+                )
+            ) {
+
+              record.highest =
+                price;
+            }
+          }
+        }
+      }
+    );
+
+
+    const output =
+      Array.from(
+        database.values()
+      )
+      .sort(
+        (a, b) => {
+
+          const productCompare =
+            String(
+              a.product
+            ).localeCompare(
+              String(
+                b.product
+              )
+            );
+
+          if (
+            productCompare !== 0
+          ) {
+
+            return productCompare;
+          }
+
+          return String(
+            a.store
+          ).localeCompare(
+            String(
+              b.store
+            )
+          );
+        }
+      )
+      .map(
+        record => [
+
+          record.barcode,
+          record.product,
+          record.lastPrice,
+          record.store,
+          record.lastPurchased,
+          record.lowest,
+          record.highest,
+          record.notes,
+          record.lastShelfPrice,
+          record.lastEffectivePrice,
+          record.lastPromoApplied,
+          record.lastPromoType,
+          record.lastPromoDetails
+
+        ]
+      );
+
+
+    /*
+      Clear old values only.
+      Formatting remains intact.
+    */
+
+    await sheetsClearValues(
+      `'${PRODUCTS_SHEET}'!A5:M`
+    );
+
+
+    if (
+      output.length
+    ) {
+
+      const endRow =
+        PRODUCTS_FIRST_ROW +
+        output.length -
+        1;
+
+      await sheetsValuesBatchUpdate(
+        [
+          {
+            range:
+              `'${PRODUCTS_SHEET}'!A${PRODUCTS_FIRST_ROW}:M${endRow}`,
+
+            values:
+              output
+          }
+        ],
+        "RAW"
+      );
+    }
+
+
+    /*
+      Refresh in-memory DB immediately.
+    */
+
+    productDatabase =
+      await loadProductDatabase();
+
+    populateKnownStores();
+  }
+
+
+  function makeProductStoreKey(
+    barcode,
+    store
+  ) {
+
+    return (
+      String(
+        barcode ?? ""
+      ).trim() +
+      "||" +
+      normalizeStore(
+        store
+      )
+    );
+  }
+
+
+  /* ===================================================
+     UPDATE FINISHED TRIP
+     =================================================== */
+
+  async function updateFinishedTripRow(
+    finishIso,
+    finalTotal,
+    itemCount
+  ) {
+
+    if (
+      !activeTrip.sheetRow
+    ) {
+
+      throw new Error(
+        "The Trips row for this active trip is unknown."
+      );
+    }
+
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${TRIPS_SHEET}'!D${activeTrip.sheetRow}:H${activeTrip.sheetRow}`,
+
+          values:
+            [[
+              finishIso,
+              "FINISHED",
+              activeTrip.budget,
+              finalTotal,
+              itemCount
+            ]]
+        }
+      ],
+      "RAW"
+    );
+  }
+
+
+  /* ===================================================
+     CLEAR ACTIVE SHOPPING LIST
+     =================================================== */
+
+  async function clearActiveShoppingList() {
+
+    await sheetsClearValues(
+      `'${SHOPPING_SHEET}'!A${SHOP_FIRST_ROW}:R`
+    );
+
+    /*
+      Explicitly clear the compatibility/current-store
+      backend cell as well.
+    */
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`,
+
+          values:
+            [[""]]
+        }
+      ],
+      "RAW"
+    );
+  }
+
+
+  /* ===================================================
+     FINISHED RECEIPT
+     =================================================== */
+
+  function renderFinishedReceipt(
+    items,
+    totals,
+    finishIso
+  ) {
+
+    document.getElementById(
+      "finished-subtitle"
+    ).textContent =
+
+      formatTimeOnly(
+        activeTrip.start
+      ) +
+      " – " +
+      formatTimeOnly(
+        finishIso
+      ) +
+      " • " +
+      formatDuration(
+        activeTrip.start,
+        finishIso
+      );
+
+
+    document.getElementById(
+      "finished-store"
+    ).textContent =
+      activeTrip.store;
+
+
+    document.getElementById(
+      "finished-items"
+    ).textContent =
+      items.length;
+
+
+    document.getElementById(
+      "finished-total"
+    ).textContent =
+      formatMoney(
+        totals.actualTotal
+      );
+
+
+    document.getElementById(
+      "finished-savings"
+    ).textContent =
+      formatMoney(
+        totals.savings
+      );
+
+
+    document.getElementById(
+      "finished-trip-id"
+    ).textContent =
+      "Trip ID: " +
+      activeTrip.tripId;
+  }
+
+
+  async function returnHomeAfterFinish() {
+
+    activeTrip =
+      null;
+
+    openTripCandidate =
+      null;
+
+    resetCurrentItem();
+
+    document.getElementById(
+      "start-store"
+    ).value =
+      "";
+
+    document.getElementById(
+      "start-budget"
+    ).value =
+      "";
+
+    hide(
+      "finished-panel"
+    );
+
+    showHome();
+
+    setStatus(
+      "Trip saved. Ready to start another trip.",
+      "success"
+    );
   }
 
 
@@ -4543,7 +6582,9 @@
             SHOPPING_SHEET
         );
 
-    if (!sheet) {
+    if (
+      !sheet
+    ) {
 
       throw new Error(
         `Could not find "${SHOPPING_SHEET}".`
@@ -4574,11 +6615,16 @@
       );
 
     const rows =
-      result.values || [];
+      result.values ||
+      [];
 
     for (
-      let rowNumber = SHOP_FIRST_ROW;
-      rowNumber <= sheetInfo.rowCount;
+      let rowNumber =
+        SHOP_FIRST_ROW;
+
+      rowNumber <=
+        sheetInfo.rowCount;
+
       rowNumber++
     ) {
 
@@ -4609,12 +6655,24 @@
   ) {
 
     return (
-      blank(row[1]) &&
-      blank(row[2]) &&
-      blank(row[3]) &&
-      blank(row[5]) &&
-      blank(row[7]) &&
-      blank(row[9])
+      blank(
+        row[1]
+      ) &&
+      blank(
+        row[2]
+      ) &&
+      blank(
+        row[3]
+      ) &&
+      blank(
+        row[5]
+      ) &&
+      blank(
+        row[7]
+      ) &&
+      blank(
+        row[9]
+      )
     );
   }
 
@@ -4666,10 +6724,8 @@
   }
 
 
-  async function sheetsAppendValues(
-    range,
-    values,
-    valueInputOption
+  async function sheetsClearValues(
+    range
   ) {
 
     const encodedRange =
@@ -4678,18 +6734,13 @@
       );
 
     return sheetsRequest(
-      `/values/${encodedRange}:append?valueInputOption=${encodeURIComponent(
-        valueInputOption
-      )}&insertDataOption=INSERT_ROWS`,
+      `/values/${encodedRange}:clear`,
       {
         method:
           "POST",
 
         body:
-          JSON.stringify({
-            values:
-              values
-          })
+          JSON.stringify({})
       }
     );
   }
@@ -4700,7 +6751,9 @@
     options = {}
   ) {
 
-    if (!accessToken) {
+    if (
+      !accessToken
+    ) {
 
       throw new Error(
         "Google authorization expired."
@@ -4722,7 +6775,9 @@
       `Bearer ${accessToken}`
     );
 
-    if (options.body) {
+    if (
+      options.body
+    ) {
 
       headers.set(
         "Content-Type",
@@ -4740,7 +6795,8 @@
         }
       );
 
-    let payload = null;
+    let payload =
+      null;
 
     try {
 
@@ -4750,7 +6806,9 @@
     } catch (error) {}
 
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
 
       throw new Error(
         payload?.error?.message ||
@@ -4763,7 +6821,7 @@
 
 
   /* ===================================================
-     TRIP ID / DATE
+     DATE / TRIP ID
      =================================================== */
 
   function createTripId(
@@ -4825,11 +6883,12 @@
 
     const pad =
       value =>
-        String(value)
-          .padStart(
-            2,
-            "0"
-          );
+        String(
+          value
+        ).padStart(
+          2,
+          "0"
+        );
 
     const offsetMinutes =
       -date.getTimezoneOffset();
@@ -4847,20 +6906,23 @@
     const offsetHours =
       pad(
         Math.floor(
-          abs / 60
+          abs /
+          60
         )
       );
 
     const offsetMins =
       pad(
-        abs % 60
+        abs %
+        60
       );
 
     return (
       date.getFullYear() +
       "-" +
       pad(
-        date.getMonth() + 1
+        date.getMonth() +
+        1
       ) +
       "-" +
       pad(
@@ -4890,12 +6952,18 @@
     value
   ) {
 
-    if (!value) {
+    if (
+      !value
+    ) {
       return "—";
     }
 
     const date =
-      new Date(value);
+      value instanceof Date
+        ? value
+        : new Date(
+            value
+          );
 
     if (
       Number.isNaN(
@@ -4909,6 +6977,107 @@
     }
 
     return date.toLocaleString();
+  }
+
+
+  function formatTimeOnly(
+    value
+  ) {
+
+    const date =
+      value instanceof Date
+        ? value
+        : new Date(
+            value
+          );
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return "—";
+    }
+
+    return date.toLocaleTimeString(
+      [],
+      {
+        hour:
+          "numeric",
+
+        minute:
+          "2-digit"
+      }
+    );
+  }
+
+
+  function formatDuration(
+    startValue,
+    endValue
+  ) {
+
+    const start =
+      new Date(
+        startValue
+      );
+
+    const end =
+      new Date(
+        endValue
+      );
+
+    if (
+      Number.isNaN(
+        start.getTime()
+      ) ||
+      Number.isNaN(
+        end.getTime()
+      )
+    ) {
+
+      return "—";
+    }
+
+    const totalMinutes =
+      Math.max(
+        0,
+        Math.round(
+          (
+            end.getTime() -
+            start.getTime()
+          ) /
+          60000
+        )
+      );
+
+    const hours =
+      Math.floor(
+        totalMinutes /
+        60
+      );
+
+    const minutes =
+      totalMinutes %
+      60;
+
+    if (
+      hours > 0
+    ) {
+
+      return (
+        hours +
+        "h " +
+        minutes +
+        "m"
+      );
+    }
+
+    return (
+      minutes +
+      " min"
+    );
   }
 
 
@@ -4960,7 +7129,9 @@
       value || ""
     )
       .toLowerCase()
-      .normalize("NFD")
+      .normalize(
+        "NFD"
+      )
       .replace(
         /[\u0300-\u036f]/g,
         ""
@@ -4984,7 +7155,9 @@
     return (
       value === undefined ||
       value === null ||
-      String(value).trim() === ""
+      String(
+        value
+      ).trim() === ""
     );
   }
 
@@ -5041,7 +7214,9 @@
         elementId
       ).value;
 
-    if (raw === "") {
+    if (
+      raw === ""
+    ) {
 
       return null;
     }
@@ -5062,6 +7237,40 @@
     }
 
     return number;
+  }
+
+
+  function roundMoney(
+    value
+  ) {
+
+    return Math.round(
+      (
+        Number(
+          value
+        ) +
+        Number.EPSILON
+      ) *
+      100
+    ) /
+    100;
+  }
+
+
+  function roundMoneyMore(
+    value
+  ) {
+
+    return Math.round(
+      (
+        Number(
+          value
+        ) +
+        Number.EPSILON
+      ) *
+      10000
+    ) /
+    10000;
   }
 
 
@@ -5113,7 +7322,9 @@
     }
 
     return number
-      .toFixed(3)
+      .toFixed(
+        3
+      )
       .replace(
         /\.?0+$/,
         ""
@@ -5134,7 +7345,9 @@
     box.className =
       "";
 
-    if (type) {
+    if (
+      type
+    ) {
 
       box.classList.add(
         "status-" +
