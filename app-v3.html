@@ -1,0 +1,3845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Obsidian Shopping V3</title>
+
+  <script
+    src="https://accounts.google.com/gsi/client"
+    defer
+  ></script>
+
+  <script
+    src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
+    defer
+  ></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #111318;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 8px 0 3px;
+      text-align: center;
+      font-size: 27px;
+    }
+
+    .subtitle {
+      margin-bottom: 16px;
+      text-align: center;
+      color: #aeb4c0;
+      font-size: 13px;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .small-label {
+      color: #aeb4c0;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .big-value {
+      margin-top: 5px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .muted {
+      color: #aeb4c0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 15px;
+      border: none;
+      border-radius: 11px;
+      background: #7137b5;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #3b414d;
+    }
+
+    button.danger {
+      background: #6d2831;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #555c69;
+      border-radius: 9px;
+      background: #151820;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 17px;
+    }
+
+    textarea {
+      min-height: 75px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: 2px solid #8650c5;
+      border-color: transparent;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #c9ced7;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .hint {
+      margin-top: 6px;
+      color: #9fa6b1;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    #status {
+      margin-bottom: 14px;
+      padding: 14px;
+      border-radius: 11px;
+      background: #242833;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .status-working {
+      background: #493c20 !important;
+    }
+
+    .status-success {
+      background: #173d25 !important;
+    }
+
+    .status-error {
+      background: #511e25 !important;
+    }
+
+    .trip-card {
+      border: 1px solid #454b58;
+    }
+
+    .trip-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 11px;
+      margin-top: 13px;
+    }
+
+    .trip-stat {
+      padding: 11px;
+      border-radius: 9px;
+      background: #191d25;
+    }
+
+    .trip-stat-label {
+      margin-bottom: 4px;
+      color: #9fa6b1;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .trip-stat-value {
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    #reader {
+      overflow: hidden;
+      width: 100%;
+      min-height: 240px;
+      margin-bottom: 14px;
+      border-radius: 13px;
+      background: #000000;
+    }
+
+    .manual-card {
+      padding: 15px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .manual-title {
+      margin-bottom: 8px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .manual-row {
+      display: flex;
+      gap: 9px;
+    }
+
+    .manual-row input {
+      flex: 1;
+    }
+
+    .manual-row button {
+      width: auto;
+      min-width: 110px;
+      margin-top: 0;
+      padding: 12px 15px;
+    }
+
+    .item-card {
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .item-heading {
+      margin-bottom: 12px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .known-badge,
+    .new-badge,
+    .warning-badge {
+      display: inline-block;
+      margin-bottom: 11px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .known-badge {
+      background: #205c35;
+    }
+
+    .new-badge {
+      background: #33445e;
+    }
+
+    .warning-badge {
+      background: #78551f;
+    }
+
+    .barcode-summary {
+      margin-bottom: 15px;
+      color: #d3d8df;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    .readonly {
+      padding: 12px;
+      border-radius: 9px;
+      background: #191d25;
+      line-height: 1.45;
+    }
+
+    .large-price {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .confirmation-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 11px;
+      padding: 12px;
+      border-radius: 9px;
+      background: #191d25;
+    }
+
+    .confirmation-row input {
+      width: 22px;
+      height: 22px;
+      margin: 0;
+      flex: 0 0 auto;
+    }
+
+    .confirmation-row label {
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .calc-box {
+      margin-top: 12px;
+      padding: 13px;
+      border-radius: 9px;
+      background: #191d25;
+      line-height: 1.6;
+    }
+
+    .calc-main {
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .comparison-card {
+      margin-top: 14px;
+      padding: 15px;
+      border-radius: 13px;
+      background: #202530;
+    }
+
+    .comparison-title {
+      margin-bottom: 8px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .comparison-item {
+      margin-top: 8px;
+      padding: 11px;
+      border-radius: 9px;
+      background: #171b22;
+      line-height: 1.5;
+    }
+
+    .comparison-better {
+      color: #75df91;
+    }
+
+    .comparison-worse {
+      color: #ff9393;
+    }
+
+    .reuse-warning {
+      margin-bottom: 14px;
+      padding: 13px;
+      border-radius: 9px;
+      background: #65491c;
+      color: #ffe2a1;
+      line-height: 1.5;
+    }
+
+    #form-validation-error {
+      display: none;
+      margin-top: 14px;
+      padding: 14px;
+      border: 2px solid #d9515d;
+      border-radius: 11px;
+      background: #511e25;
+      font-weight: bold;
+      line-height: 1.45;
+    }
+
+    .invalid-field {
+      border: 2px solid #e45c68 !important;
+    }
+
+    .invalid-confirmation {
+      border: 2px solid #e45c68;
+      background: #3f1d23;
+    }
+
+    #success-panel {
+      padding: 17px;
+      border-radius: 13px;
+      background: #173d25;
+    }
+
+    .success-title {
+      margin-bottom: 12px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .success-details {
+      line-height: 1.7;
+    }
+
+    .success-label {
+      color: #bde2c8;
+      font-weight: bold;
+    }
+
+    .help {
+      margin-top: 20px;
+      color: #939aa5;
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .manual-row {
+        display: block;
+      }
+
+      .manual-row button {
+        width: 100%;
+        margin-top: 9px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🛒 Obsidian Shopping</h1>
+
+  <div class="subtitle">
+    V3 development build
+  </div>
+
+
+  <!-- AUTH -->
+
+  <button
+    id="connect-button"
+    type="button"
+    onclick="connectGoogle()"
+  >
+    CONNECT GOOGLE SHEETS
+  </button>
+
+
+  <div id="status">
+    Connect Google Sheets to begin.
+  </div>
+
+
+  <!-- HOME -->
+
+  <div
+    id="home-panel"
+    class="hidden"
+  >
+
+    <!-- EXISTING OPEN TRIP -->
+
+    <div
+      id="resume-card"
+      class="card trip-card hidden"
+    >
+
+      <div class="small-label">
+        OPEN TRIP FOUND
+      </div>
+
+      <div
+        id="resume-store"
+        class="big-value"
+      >
+        —
+      </div>
+
+      <div class="trip-grid">
+
+        <div class="trip-stat">
+          <div class="trip-stat-label">
+            Trip ID
+          </div>
+
+          <div
+            id="resume-trip-id"
+            class="trip-stat-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="trip-stat">
+          <div class="trip-stat-label">
+            Started
+          </div>
+
+          <div
+            id="resume-start"
+            class="trip-stat-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="trip-stat">
+          <div class="trip-stat-label">
+            Budget
+          </div>
+
+          <div
+            id="resume-budget"
+            class="trip-stat-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="trip-stat">
+          <div class="trip-stat-label">
+            Status
+          </div>
+
+          <div class="trip-stat-value">
+            OPEN
+          </div>
+        </div>
+
+      </div>
+
+      <button
+        type="button"
+        onclick="resumeOpenTrip()"
+      >
+        RESUME SHOPPING
+      </button>
+
+    </div>
+
+
+    <!-- START NEW -->
+
+    <div
+      id="new-trip-card"
+      class="card"
+    >
+
+      <div class="small-label">
+        START NEW TRIP
+      </div>
+
+      <div
+        style="
+          margin-top:7px;
+          margin-bottom:14px;
+          font-size:21px;
+          font-weight:bold;
+        "
+      >
+        Where are you shopping?
+      </div>
+
+      <div class="field">
+
+        <label for="start-store">
+          Store
+        </label>
+
+        <input
+          id="start-store"
+          type="text"
+          list="known-stores"
+          autocomplete="off"
+          placeholder="Choose a store or type a new one"
+        >
+
+        <datalist id="known-stores"></datalist>
+
+      </div>
+
+      <div class="field">
+
+        <label for="start-budget">
+          Budget
+        </label>
+
+        <input
+          id="start-budget"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="Optional"
+        >
+
+        <div class="hint">
+          Leave blank if you do not want a budget for this trip.
+        </div>
+
+      </div>
+
+      <button
+        id="start-trip-button"
+        type="button"
+        onclick="startNewTrip()"
+      >
+        START TRIP
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- ACTIVE TRIP -->
+
+  <div
+    id="active-trip-panel"
+    class="hidden"
+  >
+
+    <div class="card trip-card">
+
+      <div class="small-label">
+        ACTIVE TRIP
+      </div>
+
+      <div
+        id="active-store"
+        class="big-value"
+      >
+        —
+      </div>
+
+      <div class="trip-grid">
+
+        <div class="trip-stat">
+          <div class="trip-stat-label">
+            Started
+          </div>
+
+          <div
+            id="active-start"
+            class="trip-stat-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="trip-stat">
+          <div class="trip-stat-label">
+            Budget
+          </div>
+
+          <div
+            id="active-budget"
+            class="trip-stat-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="trip-stat">
+          <div class="trip-stat-label">
+            Items
+          </div>
+
+          <div
+            id="active-item-count"
+            class="trip-stat-value"
+          >
+            0
+          </div>
+        </div>
+
+        <div class="trip-stat">
+          <div class="trip-stat-label">
+            Current Total
+          </div>
+
+          <div
+            id="active-total"
+            class="trip-stat-value"
+          >
+            $0.00
+          </div>
+        </div>
+
+      </div>
+
+      <div
+        class="hint"
+        style="margin-top:13px;"
+      >
+        Trip ID:
+        <span id="active-trip-id">—</span>
+      </div>
+
+    </div>
+
+
+    <!-- SCANNER -->
+
+    <div id="reader"></div>
+
+    <div class="manual-card">
+
+      <div class="manual-title">
+        ⌨️ Enter barcode manually
+      </div>
+
+      <div class="manual-row">
+
+        <input
+          id="manual-barcode"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="Enter barcode"
+          onkeydown="manualBarcodeKeyDown(event)"
+        >
+
+        <button
+          type="button"
+          onclick="submitManualBarcode()"
+        >
+          LOOK UP
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- PRODUCT REVIEW -->
+
+  <div
+    id="item-panel"
+    class="hidden"
+  >
+
+    <div class="item-card">
+
+      <div
+        id="match-badge"
+        class="new-badge"
+      >
+        BARCODE
+      </div>
+
+      <div class="item-heading">
+        Review Product
+      </div>
+
+      <div
+        id="barcode-summary"
+        class="barcode-summary"
+      ></div>
+
+      <div
+        id="reuse-warning"
+        class="reuse-warning hidden"
+      ></div>
+
+
+      <div class="field">
+
+        <label for="product-name">
+          Product
+        </label>
+
+        <input
+          id="product-name"
+          type="text"
+          autocomplete="off"
+          placeholder="Example: Oikos Pro Yogurt 900 g"
+          oninput="productNameChanged()"
+        >
+
+        <div
+          id="confirmation-container"
+          class="confirmation-row"
+        >
+
+          <input
+            id="confirm-name"
+            type="checkbox"
+            onchange="confirmationChanged()"
+          >
+
+          <label for="confirm-name">
+            I confirm that this product name matches
+            the item I am holding.
+          </label>
+
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label>
+          Barcode
+        </label>
+
+        <div
+          id="form-barcode"
+          class="readonly"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="amount">
+          Amount
+        </label>
+
+        <input
+          id="amount"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.001"
+          value="1"
+          oninput="fieldChanged(this); updateCalculations();"
+        >
+
+        <div class="hint">
+          Pieces or kilograms.
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label>
+          Last Unit Price
+        </label>
+
+        <div
+          id="previous-price"
+          class="readonly large-price"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="today-price">
+          Today's Unit Price
+        </label>
+
+        <input
+          id="today-price"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+          oninput="fieldChanged(this); updateCalculations();"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label>
+          Store
+        </label>
+
+        <div
+          id="form-store"
+          class="readonly"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="notes">
+          Notes
+        </label>
+
+        <textarea
+          id="notes"
+          placeholder="Optional"
+        ></textarea>
+
+      </div>
+
+
+      <div class="calc-box">
+
+        <div>
+          Line Total
+        </div>
+
+        <div
+          id="line-total"
+          class="calc-main"
+        >
+          —
+        </div>
+
+        <div
+          id="local-price-difference"
+          style="margin-top:7px;"
+        ></div>
+
+      </div>
+
+    </div>
+
+
+    <div class="comparison-card">
+
+      <div class="comparison-title">
+        🏪 Price Comparison
+      </div>
+
+      <div id="comparison-results">
+        Enter or confirm the product name to compare prices.
+      </div>
+
+    </div>
+
+
+    <div id="form-validation-error"></div>
+
+
+    <button
+      id="add-item-button"
+      type="button"
+      onclick="addReviewedItem()"
+    >
+      ADD ITEM TO TRIP
+    </button>
+
+
+    <button
+      class="secondary"
+      type="button"
+      onclick="cancelCurrentItem()"
+    >
+      CANCEL / ENTER ANOTHER BARCODE
+    </button>
+
+  </div>
+
+
+  <!-- SUCCESS -->
+
+  <div
+    id="success-panel"
+    class="hidden"
+  >
+
+    <div class="success-title">
+      ✅ Item added
+    </div>
+
+    <div
+      id="success-details"
+      class="success-details"
+    ></div>
+
+    <button
+      type="button"
+      onclick="scanNextItem()"
+    >
+      SCAN NEXT ITEM
+    </button>
+
+  </div>
+
+
+  <div class="help">
+    V3 development copy. The live app is still index.html.
+  </div>
+
+</div>
+
+
+<script>
+
+  /* ===================================================
+     CONFIG
+     =================================================== */
+
+  const GOOGLE_CLIENT_ID =
+    "357419603703-8no49j1eunhv6g82kkb89tqa84ab7krl.apps.googleusercontent.com";
+
+  const SHEETS_SCOPE =
+    "https://www.googleapis.com/auth/spreadsheets";
+
+  const SHOPPING_SHEET =
+    "Shopping List";
+
+  const PRODUCTS_SHEET =
+    "Products";
+
+  const TRIPS_SHEET =
+    "Trips";
+
+  const CURRENT_STORE_CELL =
+    "M21";
+
+  const SHOP_FIRST_ROW =
+    5;
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  const SPREADSHEET_ID =
+    String(
+      params.get("sid") || ""
+    ).trim();
+
+
+  /* ===================================================
+     STATE
+     =================================================== */
+
+  let tokenClient = null;
+  let accessToken = "";
+
+  let scanner = null;
+  let scannerStarted = false;
+  let scannerPaused = false;
+
+  let productDatabase = [];
+
+  let activeTrip = null;
+  let openTripCandidate = null;
+
+  let processing = false;
+
+  let currentBarcode = "";
+  let barcodeMatches = [];
+  let exactStoreMatch = null;
+  let previousPriceAtStore = "";
+
+  let lastComparisonSummary = "";
+
+
+  window.addEventListener(
+    "DOMContentLoaded",
+    initializePage
+  );
+
+
+  /* ===================================================
+     INITIALIZATION
+     =================================================== */
+
+  function initializePage() {
+
+    if (!SPREADSHEET_ID) {
+
+      fail(
+        "This app must be opened with a spreadsheet ID in the URL."
+      );
+
+      document.getElementById(
+        "connect-button"
+      ).disabled = true;
+
+      return;
+    }
+
+    waitForGoogleIdentity();
+  }
+
+
+  function waitForGoogleIdentity() {
+
+    let attempts = 0;
+
+    const timer =
+      setInterval(
+        function() {
+
+          attempts++;
+
+          if (
+            window.google &&
+            google.accounts &&
+            google.accounts.oauth2
+          ) {
+
+            clearInterval(timer);
+
+            tokenClient =
+              google.accounts.oauth2
+                .initTokenClient({
+
+                  client_id:
+                    GOOGLE_CLIENT_ID,
+
+                  scope:
+                    SHEETS_SCOPE,
+
+                  include_granted_scopes:
+                    true,
+
+                  callback:
+                    handleTokenResponse,
+
+                  error_callback:
+                    handleOAuthError
+
+                });
+
+            setStatus(
+              "Ready. Tap CONNECT GOOGLE SHEETS."
+            );
+
+            return;
+          }
+
+          if (attempts >= 50) {
+
+            clearInterval(timer);
+
+            fail(
+              "Google authorization did not load. Reload this page."
+            );
+          }
+
+        },
+        100
+      );
+  }
+
+
+  /* ===================================================
+     AUTH
+     =================================================== */
+
+  function connectGoogle() {
+
+    if (!tokenClient) {
+
+      fail(
+        "Google authorization is not ready yet."
+      );
+
+      return;
+    }
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+    button.disabled = true;
+    button.textContent = "CONNECTING...";
+
+    setStatus(
+      "Waiting for Google authorization...",
+      "working"
+    );
+
+    tokenClient.requestAccessToken();
+  }
+
+
+  async function handleTokenResponse(
+    response
+  ) {
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+    if (
+      !response ||
+      response.error ||
+      !response.access_token
+    ) {
+
+      button.disabled = false;
+      button.textContent =
+        "CONNECT GOOGLE SHEETS";
+
+      fail(
+        response?.error ||
+        "Google did not return an access token."
+      );
+
+      return;
+    }
+
+    accessToken =
+      response.access_token;
+
+    try {
+
+      setStatus(
+        "Loading shopping data...",
+        "working"
+      );
+
+      productDatabase =
+        await loadProductDatabase();
+
+      populateKnownStores();
+
+      openTripCandidate =
+        await findOpenTrip();
+
+      button.style.display =
+        "none";
+
+      showHome();
+
+      setStatus(
+        openTripCandidate
+          ? "Open trip found."
+          : "Ready to start a shopping trip.",
+        "success"
+      );
+
+    } catch (error) {
+
+      button.disabled = false;
+      button.textContent =
+        "RECONNECT GOOGLE SHEETS";
+
+      handleApiError(error);
+    }
+  }
+
+
+  function handleOAuthError(
+    error
+  ) {
+
+    const button =
+      document.getElementById(
+        "connect-button"
+      );
+
+    button.disabled = false;
+    button.textContent =
+      "CONNECT GOOGLE SHEETS";
+
+    fail(
+      error?.type ||
+      "Google authorization failed."
+    );
+  }
+
+
+  /* ===================================================
+     HOME
+     =================================================== */
+
+  function showHome() {
+
+    hide(
+      "active-trip-panel"
+    );
+
+    hide(
+      "item-panel"
+    );
+
+    hide(
+      "success-panel"
+    );
+
+    show(
+      "home-panel"
+    );
+
+    const resumeCard =
+      document.getElementById(
+        "resume-card"
+      );
+
+    if (openTripCandidate) {
+
+      resumeCard.classList.remove(
+        "hidden"
+      );
+
+      document.getElementById(
+        "resume-store"
+      ).textContent =
+        openTripCandidate.store;
+
+      document.getElementById(
+        "resume-trip-id"
+      ).textContent =
+        openTripCandidate.tripId;
+
+      document.getElementById(
+        "resume-start"
+      ).textContent =
+        formatDateTime(
+          openTripCandidate.start
+        );
+
+      document.getElementById(
+        "resume-budget"
+      ).textContent =
+        isUsableNumber(
+          openTripCandidate.budget
+        )
+          ? formatMoney(
+              openTripCandidate.budget
+            )
+          : "No budget";
+
+    } else {
+
+      resumeCard.classList.add(
+        "hidden"
+      );
+    }
+  }
+
+
+  /* ===================================================
+     START TRIP
+     =================================================== */
+
+  async function startNewTrip() {
+
+    const store =
+      document.getElementById(
+        "start-store"
+      ).value.trim();
+
+    const budgetRaw =
+      document.getElementById(
+        "start-budget"
+      ).value.trim();
+
+    if (!store) {
+
+      fail(
+        "Enter or select the store."
+      );
+
+      return;
+    }
+
+    let budget = "";
+
+    if (budgetRaw !== "") {
+
+      budget =
+        Number(budgetRaw);
+
+      if (
+        !Number.isFinite(budget) ||
+        budget < 0
+      ) {
+
+        fail(
+          "Budget must be a valid number."
+        );
+
+        return;
+      }
+    }
+
+    try {
+
+      const existingOpenTrip =
+        await findOpenTrip();
+
+      if (existingOpenTrip) {
+
+        openTripCandidate =
+          existingOpenTrip;
+
+        showHome();
+
+        fail(
+          "There is already an OPEN trip. Resume that trip instead of starting another."
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          "start-trip-button"
+        );
+
+      button.disabled = true;
+      button.textContent =
+        "STARTING...";
+
+      setStatus(
+        "Creating trip...",
+        "working"
+      );
+
+      const now =
+        new Date();
+
+      const trip = {
+
+        tripId:
+          createTripId(now),
+
+        store:
+          store,
+
+        start:
+          localIsoWithOffset(now),
+
+        end:
+          "",
+
+        status:
+          "OPEN",
+
+        budget:
+          budget,
+
+        finalTotal:
+          "",
+
+        itemCount:
+          "",
+
+        sheetRow:
+          null
+      };
+
+      const row =
+        await appendTrip(
+          trip
+        );
+
+      trip.sheetRow =
+        row;
+
+      await writeCurrentStore(
+        store
+      );
+
+      activeTrip =
+        trip;
+
+      openTripCandidate =
+        trip;
+
+      button.disabled = false;
+      button.textContent =
+        "START TRIP";
+
+      await enterActiveTrip();
+
+    } catch (error) {
+
+      const button =
+        document.getElementById(
+          "start-trip-button"
+        );
+
+      button.disabled = false;
+      button.textContent =
+        "START TRIP";
+
+      handleApiError(error);
+    }
+  }
+
+
+  async function appendTrip(
+    trip
+  ) {
+
+    const result =
+      await sheetsAppendValues(
+        `'${TRIPS_SHEET}'!A2:H`,
+        [[
+          trip.tripId,
+          trip.store,
+          trip.start,
+          trip.end,
+          trip.status,
+          trip.budget,
+          trip.finalTotal,
+          trip.itemCount
+        ]],
+        "RAW"
+      );
+
+    const updatedRange =
+      result.updates?.updatedRange ||
+      "";
+
+    const match =
+      updatedRange.match(
+        /!A(\d+):/
+      );
+
+    if (!match) {
+
+      throw new Error(
+        "Trip was created, but its row could not be identified."
+      );
+    }
+
+    return Number(
+      match[1]
+    );
+  }
+
+
+  /* ===================================================
+     RESUME TRIP
+     =================================================== */
+
+  async function resumeOpenTrip() {
+
+    if (!openTripCandidate) {
+
+      fail(
+        "No open trip was found."
+      );
+
+      return;
+    }
+
+    activeTrip =
+      openTripCandidate;
+
+    try {
+
+      await writeCurrentStore(
+        activeTrip.store
+      );
+
+      await enterActiveTrip();
+
+    } catch (error) {
+
+      handleApiError(error);
+    }
+  }
+
+
+  async function enterActiveTrip() {
+
+    hide(
+      "home-panel"
+    );
+
+    show(
+      "active-trip-panel"
+    );
+
+    document.getElementById(
+      "active-store"
+    ).textContent =
+      activeTrip.store;
+
+    document.getElementById(
+      "active-start"
+    ).textContent =
+      formatDateTime(
+        activeTrip.start
+      );
+
+    document.getElementById(
+      "active-budget"
+    ).textContent =
+      isUsableNumber(
+        activeTrip.budget
+      )
+        ? formatMoney(
+            activeTrip.budget
+          )
+        : "No budget";
+
+    document.getElementById(
+      "active-trip-id"
+    ).textContent =
+      activeTrip.tripId;
+
+    document.getElementById(
+      "form-store"
+    ).textContent =
+      activeTrip.store;
+
+    await refreshTripSummary();
+
+    if (!scannerStarted) {
+
+      setStatus(
+        "Starting rear camera...",
+        "working"
+      );
+
+      await startRearCamera();
+
+    } else {
+
+      resumeScanner();
+    }
+
+    setStatus(
+      "Trip active. Scan a barcode or enter one manually.",
+      "success"
+    );
+  }
+
+
+  /* ===================================================
+     FIND OPEN TRIP
+     =================================================== */
+
+  async function findOpenTrip() {
+
+    const result =
+      await sheetsGetValues(
+        `'${TRIPS_SHEET}'!A2:H`,
+        "UNFORMATTED_VALUE"
+      );
+
+    const rows =
+      result.values || [];
+
+    const openTrips = [];
+
+    rows.forEach(
+      function(row, index) {
+
+        const status =
+          String(
+            row[4] ?? ""
+          )
+          .trim()
+          .toUpperCase();
+
+        if (status !== "OPEN") {
+          return;
+        }
+
+        openTrips.push({
+
+          tripId:
+            String(
+              row[0] ?? ""
+            ).trim(),
+
+          store:
+            String(
+              row[1] ?? ""
+            ).trim(),
+
+          start:
+            String(
+              row[2] ?? ""
+            ).trim(),
+
+          end:
+            String(
+              row[3] ?? ""
+            ).trim(),
+
+          status:
+            status,
+
+          budget:
+            normalizeNumericValue(
+              row[5]
+            ),
+
+          finalTotal:
+            normalizeNumericValue(
+              row[6]
+            ),
+
+          itemCount:
+            normalizeNumericValue(
+              row[7]
+            ),
+
+          sheetRow:
+            index + 2
+
+        });
+      }
+    );
+
+    if (!openTrips.length) {
+      return null;
+    }
+
+    return openTrips[
+      openTrips.length - 1
+    ];
+  }
+
+
+  /* ===================================================
+     STORE LIST
+     =================================================== */
+
+  function populateKnownStores() {
+
+    const stores =
+      new Map();
+
+    productDatabase.forEach(
+      record => {
+
+        const store =
+          String(
+            record.store || ""
+          ).trim();
+
+        if (!store) {
+          return;
+        }
+
+        const key =
+          normalizeStore(
+            store
+          );
+
+        if (!stores.has(key)) {
+
+          stores.set(
+            key,
+            store
+          );
+        }
+      }
+    );
+
+    const datalist =
+      document.getElementById(
+        "known-stores"
+      );
+
+    datalist.innerHTML =
+      "";
+
+    Array.from(
+      stores.values()
+    )
+    .sort(
+      (a, b) =>
+        a.localeCompare(b)
+    )
+    .forEach(
+      store => {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value =
+          store;
+
+        datalist.appendChild(
+          option
+        );
+      }
+    );
+  }
+
+
+  async function writeCurrentStore(
+    store
+  ) {
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`,
+
+          values:
+            [[store]]
+        }
+      ],
+      "RAW"
+    );
+  }
+
+
+  /* ===================================================
+     TRIP SUMMARY
+     =================================================== */
+
+  async function refreshTripSummary() {
+
+    const result =
+      await sheetsGetValues(
+        `'${SHOPPING_SHEET}'!A${SHOP_FIRST_ROW}:R`,
+        "UNFORMATTED_VALUE"
+      );
+
+    const rows =
+      result.values || [];
+
+    let itemCount = 0;
+    let total = 0;
+
+    rows.forEach(
+      row => {
+
+        const product =
+          String(
+            row[1] ?? ""
+          ).trim();
+
+        const barcode =
+          String(
+            row[2] ?? ""
+          ).trim();
+
+        if (
+          !product &&
+          !barcode
+        ) {
+          return;
+        }
+
+        itemCount++;
+
+        const lineTotal =
+          Number(
+            row[6]
+          );
+
+        if (
+          Number.isFinite(
+            lineTotal
+          )
+        ) {
+
+          total +=
+            lineTotal;
+        }
+      }
+    );
+
+    document.getElementById(
+      "active-item-count"
+    ).textContent =
+      itemCount;
+
+    document.getElementById(
+      "active-total"
+    ).textContent =
+      formatMoney(total);
+  }
+
+
+  /* ===================================================
+     PRODUCTS DATABASE
+     =================================================== */
+
+  async function loadProductDatabase() {
+
+    const result =
+      await sheetsGetValues(
+        `'${PRODUCTS_SHEET}'!A5:M`,
+        "UNFORMATTED_VALUE"
+      );
+
+    const rows =
+      result.values || [];
+
+    return rows
+      .map(
+        function(row, index) {
+
+          return {
+
+            sheetRow:
+              index + 5,
+
+            barcode:
+              String(
+                row[0] ?? ""
+              ).trim(),
+
+            product:
+              String(
+                row[1] ?? ""
+              ).trim(),
+
+            price:
+              normalizeNumericValue(
+                row[2]
+              ),
+
+            store:
+              String(
+                row[3] ?? ""
+              ).trim(),
+
+            lastPurchased:
+              row[4] ?? "",
+
+            lowestPrice:
+              normalizeNumericValue(
+                row[5]
+              ),
+
+            highestPrice:
+              normalizeNumericValue(
+                row[6]
+              ),
+
+            notes:
+              String(
+                row[7] ?? ""
+              ).trim(),
+
+            lastShelfPrice:
+              normalizeNumericValue(
+                row[8]
+              ),
+
+            lastEffectivePrice:
+              normalizeNumericValue(
+                row[9]
+              ),
+
+            lastPromoApplied:
+              String(
+                row[10] ?? ""
+              ).trim(),
+
+            lastPromoType:
+              String(
+                row[11] ?? ""
+              ).trim(),
+
+            lastPromoDetails:
+              String(
+                row[12] ?? ""
+              ).trim()
+
+          };
+        }
+      )
+      .filter(
+        record =>
+          record.barcode ||
+          record.product ||
+          record.store
+      );
+  }
+
+
+  /* ===================================================
+     CAMERA
+     =================================================== */
+
+  async function startRearCamera() {
+
+    if (!window.Html5Qrcode) {
+
+      throw new Error(
+        "Barcode scanner library did not load."
+      );
+    }
+
+    scanner =
+      new Html5Qrcode(
+        "reader"
+      );
+
+    const config = {
+
+      fps:
+        12,
+
+      qrbox:
+        function(width, height) {
+
+          return {
+
+            width:
+              Math.floor(
+                width * 0.88
+              ),
+
+            height:
+              Math.min(
+                180,
+                Math.floor(
+                  height * 0.35
+                )
+              )
+          };
+        },
+
+      aspectRatio:
+        1.2,
+
+      formatsToSupport: [
+
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.CODABAR,
+        Html5QrcodeSupportedFormats.DATA_MATRIX,
+        Html5QrcodeSupportedFormats.QR_CODE
+
+      ]
+    };
+
+    try {
+
+      await scanner.start(
+        {
+          facingMode: {
+            exact:
+              "environment"
+          }
+        },
+        config,
+        barcodeDetected,
+        function() {}
+      );
+
+    } catch (error) {
+
+      await scanner.start(
+        {
+          facingMode:
+            "environment"
+        },
+        config,
+        barcodeDetected,
+        function() {}
+      );
+    }
+
+    scannerStarted = true;
+    scannerPaused = false;
+  }
+
+
+  function pauseScanner() {
+
+    if (
+      !scannerStarted ||
+      scannerPaused ||
+      !scanner
+    ) {
+      return;
+    }
+
+    try {
+
+      scanner.pause(true);
+      scannerPaused = true;
+
+    } catch (error) {}
+  }
+
+
+  function resumeScanner() {
+
+    if (
+      !scannerStarted ||
+      !scanner
+    ) {
+      return;
+    }
+
+    try {
+
+      if (scannerPaused) {
+
+        scanner.resume();
+        scannerPaused = false;
+      }
+
+    } catch (error) {
+
+      fail(
+        "Camera could not resume. Reload this page."
+      );
+    }
+  }
+
+
+  async function barcodeDetected(
+    decodedText
+  ) {
+
+    const barcode =
+      String(
+        decodedText || ""
+      ).trim();
+
+    if (!barcode) {
+      return;
+    }
+
+    await beginBarcodeLookup(
+      barcode,
+      "camera"
+    );
+  }
+
+
+  /* ===================================================
+     MANUAL BARCODE
+     =================================================== */
+
+  function manualBarcodeKeyDown(
+    event
+  ) {
+
+    if (
+      event.key ===
+      "Enter"
+    ) {
+
+      event.preventDefault();
+
+      submitManualBarcode();
+    }
+  }
+
+
+  async function submitManualBarcode() {
+
+    const barcode =
+      document.getElementById(
+        "manual-barcode"
+      ).value.trim();
+
+    if (!barcode) {
+
+      fail(
+        "Enter a barcode first."
+      );
+
+      return;
+    }
+
+    await beginBarcodeLookup(
+      barcode,
+      "manual"
+    );
+  }
+
+
+  /* ===================================================
+     BARCODE LOOKUP
+     =================================================== */
+
+  async function beginBarcodeLookup(
+    barcode,
+    source
+  ) {
+
+    if (
+      processing ||
+      !activeTrip
+    ) {
+      return;
+    }
+
+    processing = true;
+
+    currentBarcode =
+      barcode;
+
+    pauseScanner();
+
+    clearFormError();
+
+    try {
+
+      const storeNow =
+        await readCurrentStore();
+
+      if (
+        normalizeStore(
+          storeNow
+        ) !==
+        normalizeStore(
+          activeTrip.store
+        )
+      ) {
+
+        throw new Error(
+          "The current store in Shopping List does not match the active trip."
+        );
+      }
+
+      prepareProductForm(
+        barcode,
+        source
+      );
+
+      document.getElementById(
+        "manual-barcode"
+      ).value =
+        "";
+
+      hide(
+        "active-trip-panel"
+      );
+
+      show(
+        "item-panel"
+      );
+
+      document.getElementById(
+        "item-panel"
+      ).scrollIntoView({
+        behavior:
+          "smooth",
+        block:
+          "start"
+      });
+
+    } catch (error) {
+
+      processing = false;
+      currentBarcode = "";
+
+      handleApiError(error);
+    }
+  }
+
+
+  async function readCurrentStore() {
+
+    const result =
+      await sheetsGetValues(
+        `'${SHOPPING_SHEET}'!${CURRENT_STORE_CELL}`,
+        "FORMATTED_VALUE"
+      );
+
+    return String(
+      result.values?.[0]?.[0] ?? ""
+    ).trim();
+  }
+
+
+  /* ===================================================
+     PRODUCT FORM
+     =================================================== */
+
+  function prepareProductForm(
+    barcode,
+    source
+  ) {
+
+    barcodeMatches =
+      productDatabase.filter(
+        record =>
+          record.barcode ===
+          barcode
+      );
+
+    exactStoreMatch =
+      barcodeMatches.find(
+        record =>
+          normalizeStore(
+            record.store
+          ) ===
+          normalizeStore(
+            activeTrip.store
+          )
+      ) || null;
+
+    previousPriceAtStore =
+      exactStoreMatch
+        ? exactStoreMatch.price
+        : "";
+
+    let suggestedProduct = "";
+    let badgeText = "";
+    let badgeClass = "";
+
+    if (exactStoreMatch) {
+
+      suggestedProduct =
+        exactStoreMatch.product;
+
+      badgeText =
+        "KNOWN BARCODE + STORE";
+
+      badgeClass =
+        "known-badge";
+
+    } else if (
+      barcodeMatches.length === 1
+    ) {
+
+      suggestedProduct =
+        barcodeMatches[0].product;
+
+      badgeText =
+        "BARCODE KNOWN AT ANOTHER STORE";
+
+      badgeClass =
+        "warning-badge";
+
+    } else if (
+      barcodeMatches.length > 1
+    ) {
+
+      const names =
+        [
+          ...new Set(
+            barcodeMatches
+              .map(
+                record =>
+                  normalizeProductIdentity(
+                    record.product
+                  )
+              )
+              .filter(Boolean)
+          )
+        ];
+
+      if (names.length === 1) {
+
+        suggestedProduct =
+          barcodeMatches[0].product;
+      }
+
+      badgeText =
+        "BARCODE HAS MULTIPLE RECORDS";
+
+      badgeClass =
+        "warning-badge";
+
+    } else {
+
+      badgeText =
+        "NEW BARCODE";
+
+      badgeClass =
+        "new-badge";
+    }
+
+    const badge =
+      document.getElementById(
+        "match-badge"
+      );
+
+    badge.textContent =
+      badgeText;
+
+    badge.className =
+      badgeClass;
+
+    document.getElementById(
+      "barcode-summary"
+    ).innerHTML =
+
+      "<b>Entered by:</b> " +
+      escapeHtml(
+        source === "camera"
+          ? "Camera"
+          : "Manual entry"
+      ) +
+
+      "<br><b>Barcode:</b> " +
+      escapeHtml(barcode) +
+
+      "<br><b>Store:</b> " +
+      escapeHtml(
+        activeTrip.store
+      );
+
+    document.getElementById(
+      "form-barcode"
+    ).textContent =
+      barcode;
+
+    document.getElementById(
+      "form-store"
+    ).textContent =
+      activeTrip.store;
+
+    document.getElementById(
+      "product-name"
+    ).value =
+      suggestedProduct;
+
+    document.getElementById(
+      "confirm-name"
+    ).checked =
+      false;
+
+    document.getElementById(
+      "amount"
+    ).value =
+      "1";
+
+    document.getElementById(
+      "today-price"
+    ).value =
+      "";
+
+    document.getElementById(
+      "notes"
+    ).value =
+      "";
+
+    document.getElementById(
+      "previous-price"
+    ).textContent =
+      isUsableNumber(
+        previousPriceAtStore
+      )
+        ? formatMoney(
+            previousPriceAtStore
+          )
+        : "No previous price for this barcode at this store";
+
+    clearValidationStyles();
+    clearFormError();
+
+    renderBarcodeReuseWarning();
+
+    updateCalculations();
+    renderPriceComparisons();
+  }
+
+
+  function renderBarcodeReuseWarning() {
+
+    const box =
+      document.getElementById(
+        "reuse-warning"
+      );
+
+    const otherMatches =
+      barcodeMatches.filter(
+        record =>
+          normalizeStore(
+            record.store
+          ) !==
+          normalizeStore(
+            activeTrip.store
+          )
+      );
+
+    if (!otherMatches.length) {
+
+      box.classList.add(
+        "hidden"
+      );
+
+      box.innerHTML =
+        "";
+
+      return;
+    }
+
+    box.classList.remove(
+      "hidden"
+    );
+
+    box.innerHTML =
+
+      "⚠️ <b>This barcode also exists at another store.</b><br><br>" +
+
+      otherMatches
+        .map(
+          record => {
+
+            let text =
+
+              "<b>" +
+              escapeHtml(
+                record.store
+              ) +
+              "</b>: " +
+
+              escapeHtml(
+                record.product
+              );
+
+            if (
+              isUsableNumber(
+                record.price
+              )
+            ) {
+
+              text +=
+
+                " — " +
+                escapeHtml(
+                  formatMoney(
+                    record.price
+                  )
+                );
+            }
+
+            return text;
+          }
+        )
+        .join("<br>");
+  }
+
+
+  /* ===================================================
+     CALCULATIONS
+     =================================================== */
+
+  function updateCalculations() {
+
+    const amount =
+      readPositiveNumber(
+        "amount"
+      );
+
+    const price =
+      readPositiveNumber(
+        "today-price"
+      );
+
+    document.getElementById(
+      "line-total"
+    ).textContent =
+      (
+        amount !== null &&
+        price !== null
+      )
+        ? formatMoney(
+            amount * price
+          )
+        : "—";
+
+    const diffBox =
+      document.getElementById(
+        "local-price-difference"
+      );
+
+    if (
+      price !== null &&
+      isUsableNumber(
+        previousPriceAtStore
+      )
+    ) {
+
+      const diff =
+        price -
+        Number(
+          previousPriceAtStore
+        );
+
+      if (diff > 0.005) {
+
+        diffBox.innerHTML =
+          '<span class="comparison-worse">' +
+          escapeHtml(
+            formatMoney(diff)
+          ) +
+          " more expensive than last time.</span>";
+
+      } else if (
+        diff < -0.005
+      ) {
+
+        diffBox.innerHTML =
+          '<span class="comparison-better">' +
+          escapeHtml(
+            formatMoney(
+              Math.abs(diff)
+            )
+          ) +
+          " cheaper than last time.</span>";
+
+      } else {
+
+        diffBox.textContent =
+          "Same price as last time.";
+      }
+
+    } else {
+
+      diffBox.innerHTML =
+        "";
+    }
+
+    renderPriceComparisons();
+  }
+
+
+  /* ===================================================
+     PRICE COMPARISON
+     =================================================== */
+
+  function productNameChanged() {
+
+    document.getElementById(
+      "confirm-name"
+    ).checked =
+      false;
+
+    clearFormError();
+    clearValidationStyles();
+
+    renderPriceComparisons();
+  }
+
+
+  function renderPriceComparisons() {
+
+    const box =
+      document.getElementById(
+        "comparison-results"
+      );
+
+    const name =
+      document.getElementById(
+        "product-name"
+      ).value.trim();
+
+    if (!name) {
+
+      box.textContent =
+        "Enter or confirm the product name to compare prices.";
+
+      return;
+    }
+
+    const normalized =
+      normalizeProductIdentity(
+        name
+      );
+
+    const matches =
+      productDatabase.filter(
+        record =>
+          normalizeProductIdentity(
+            record.product
+          ) ===
+            normalized &&
+          normalizeStore(
+            record.store
+          ) !==
+            normalizeStore(
+              activeTrip.store
+            ) &&
+          isUsableNumber(
+            record.price
+          )
+      );
+
+    if (!matches.length) {
+
+      box.textContent =
+        "No comparable prices from other stores are stored for this product.";
+
+      return;
+    }
+
+    box.innerHTML =
+      matches
+        .map(
+          record =>
+
+            '<div class="comparison-item">' +
+
+              "<b>" +
+              escapeHtml(
+                record.store
+              ) +
+              "</b><br>" +
+
+              escapeHtml(
+                record.product
+              ) +
+              "<br>" +
+
+              escapeHtml(
+                formatMoney(
+                  record.price
+                )
+              ) +
+
+            "</div>"
+        )
+        .join("");
+  }
+
+
+  /* ===================================================
+     VALIDATION
+     =================================================== */
+
+  function showFormError(
+    message,
+    targetId = ""
+  ) {
+
+    const box =
+      document.getElementById(
+        "form-validation-error"
+      );
+
+    box.innerHTML =
+      "⚠️ " +
+      escapeHtml(
+        message
+      );
+
+    box.style.display =
+      "block";
+
+    if (targetId) {
+
+      const target =
+        document.getElementById(
+          targetId
+        );
+
+      if (target) {
+
+        if (
+          targetId ===
+          "confirmation-container"
+        ) {
+
+          target.classList.add(
+            "invalid-confirmation"
+          );
+
+        } else {
+
+          target.classList.add(
+            "invalid-field"
+          );
+        }
+      }
+    }
+
+    box.scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "center"
+    });
+  }
+
+
+  function clearFormError() {
+
+    const box =
+      document.getElementById(
+        "form-validation-error"
+      );
+
+    box.style.display =
+      "none";
+
+    box.innerHTML =
+      "";
+  }
+
+
+  function clearValidationStyles() {
+
+    [
+      "product-name",
+      "amount",
+      "today-price"
+    ]
+      .forEach(
+        id => {
+
+          document.getElementById(
+            id
+          ).classList.remove(
+            "invalid-field"
+          );
+        }
+      );
+
+    document.getElementById(
+      "confirmation-container"
+    ).classList.remove(
+      "invalid-confirmation"
+    );
+  }
+
+
+  function confirmationChanged() {
+
+    clearFormError();
+
+    document.getElementById(
+      "confirmation-container"
+    ).classList.remove(
+      "invalid-confirmation"
+    );
+  }
+
+
+  function fieldChanged(
+    element
+  ) {
+
+    clearFormError();
+
+    element.classList.remove(
+      "invalid-field"
+    );
+  }
+
+
+  /* ===================================================
+     ADD ITEM
+     =================================================== */
+
+  async function addReviewedItem() {
+
+    clearFormError();
+    clearValidationStyles();
+
+    const product =
+      document.getElementById(
+        "product-name"
+      ).value.trim();
+
+    const confirmed =
+      document.getElementById(
+        "confirm-name"
+      ).checked;
+
+    const amount =
+      readPositiveNumber(
+        "amount"
+      );
+
+    const price =
+      readPositiveNumber(
+        "today-price"
+      );
+
+    const notes =
+      document.getElementById(
+        "notes"
+      ).value.trim();
+
+    if (!product) {
+
+      showFormError(
+        "Enter the product name.",
+        "product-name"
+      );
+
+      return;
+    }
+
+    if (!confirmed) {
+
+      showFormError(
+        "Confirm that the product name matches the item.",
+        "confirmation-container"
+      );
+
+      return;
+    }
+
+    if (amount === null) {
+
+      showFormError(
+        "Enter a valid amount greater than zero.",
+        "amount"
+      );
+
+      return;
+    }
+
+    if (price === null) {
+
+      showFormError(
+        "Enter today's unit price.",
+        "today-price"
+      );
+
+      return;
+    }
+
+    const button =
+      document.getElementById(
+        "add-item-button"
+      );
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "ADDING...";
+
+    try {
+
+      const result =
+        await writeShoppingItem({
+
+          product:
+            product,
+
+          barcode:
+            currentBarcode,
+
+          amount:
+            amount,
+
+          previousPrice:
+            previousPriceAtStore,
+
+          todayPrice:
+            price,
+
+          store:
+            activeTrip.store,
+
+          notes:
+            notes
+
+        });
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "ADD ITEM TO TRIP";
+
+      hide(
+        "item-panel"
+      );
+
+      show(
+        "success-panel"
+      );
+
+      document.getElementById(
+        "success-details"
+      ).innerHTML =
+
+        '<span class="success-label">Product:</span> ' +
+        escapeHtml(product) +
+        "<br>" +
+
+        '<span class="success-label">Barcode:</span> ' +
+        escapeHtml(
+          currentBarcode
+        ) +
+        "<br>" +
+
+        '<span class="success-label">Amount:</span> ' +
+        escapeHtml(amount) +
+        "<br>" +
+
+        '<span class="success-label">Unit price:</span> ' +
+        escapeHtml(
+          formatMoney(price)
+        ) +
+        "<br>" +
+
+        '<span class="success-label">Line total:</span> ' +
+        escapeHtml(
+          formatMoney(
+            amount * price
+          )
+        ) +
+        "<br>" +
+
+        '<span class="success-label">Shopping List row:</span> ' +
+        escapeHtml(
+          result.row
+        );
+
+      await refreshTripSummary();
+
+      document.getElementById(
+        "success-panel"
+      ).scrollIntoView({
+        behavior:
+          "smooth",
+        block:
+          "start"
+      });
+
+    } catch (error) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "ADD ITEM TO TRIP";
+
+      handleApiError(error);
+
+      showFormError(
+        error?.message ||
+        "Could not add item."
+      );
+    }
+  }
+
+
+  async function writeShoppingItem(
+    item
+  ) {
+
+    const sheetInfo =
+      await getShoppingSheetInfo();
+
+    const row =
+      await findNextEmptyShoppingRow(
+        sheetInfo
+      );
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${SHOPPING_SHEET}'!B${row}`,
+
+          values:
+            [[item.product]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!C${row}`,
+
+          values:
+            [[item.barcode]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!D${row}`,
+
+          values:
+            [[item.amount]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!E${row}`,
+
+          values:
+            [[
+              isUsableNumber(
+                item.previousPrice
+              )
+                ? Number(
+                    item.previousPrice
+                  )
+                : ""
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!F${row}`,
+
+          values:
+            [[item.todayPrice]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!H${row}`,
+
+          values:
+            [[item.store]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!J${row}`,
+
+          values:
+            [[item.notes]]
+        }
+      ],
+      "RAW"
+    );
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${SHOPPING_SHEET}'!G${row}`,
+
+          values:
+            [[
+              `=IF(OR(D${row}="",F${row}=""),"",D${row}*F${row})`
+            ]]
+        },
+
+        {
+          range:
+            `'${SHOPPING_SHEET}'!I${row}`,
+
+          values:
+            [[
+              `=IF(OR(E${row}="",F${row}=""),"",F${row}-E${row})`
+            ]]
+        }
+      ],
+      "USER_ENTERED"
+    );
+
+    return {
+      row:
+        row
+    };
+  }
+
+
+  /* ===================================================
+     NEXT / CANCEL
+     =================================================== */
+
+  function scanNextItem() {
+
+    resetCurrentItem();
+
+    hide(
+      "success-panel"
+    );
+
+    show(
+      "active-trip-panel"
+    );
+
+    resumeScanner();
+
+    document.getElementById(
+      "active-trip-panel"
+    ).scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "start"
+    });
+  }
+
+
+  function cancelCurrentItem() {
+
+    resetCurrentItem();
+
+    hide(
+      "item-panel"
+    );
+
+    show(
+      "active-trip-panel"
+    );
+
+    resumeScanner();
+  }
+
+
+  function resetCurrentItem() {
+
+    currentBarcode = "";
+    barcodeMatches = [];
+    exactStoreMatch = null;
+    previousPriceAtStore = "";
+
+    processing = false;
+
+    clearFormError();
+    clearValidationStyles();
+
+    document.getElementById(
+      "manual-barcode"
+    ).value =
+      "";
+  }
+
+
+  /* ===================================================
+     SHOPPING LIST ROW
+     =================================================== */
+
+  async function getShoppingSheetInfo() {
+
+    const data =
+      await sheetsRequest(
+        "?fields=sheets(properties(sheetId,title,gridProperties(rowCount)))"
+      );
+
+    const sheet =
+      (data.sheets || [])
+        .find(
+          item =>
+            item.properties?.title ===
+            SHOPPING_SHEET
+        );
+
+    if (!sheet) {
+
+      throw new Error(
+        `Could not find "${SHOPPING_SHEET}".`
+      );
+    }
+
+    return {
+
+      sheetId:
+        sheet.properties.sheetId,
+
+      rowCount:
+        sheet.properties.gridProperties.rowCount
+    };
+  }
+
+
+  async function findNextEmptyShoppingRow(
+    sheetInfo
+  ) {
+
+    const result =
+      await sheetsGetValues(
+        `'${SHOPPING_SHEET}'!A${SHOP_FIRST_ROW}:R${sheetInfo.rowCount}`,
+        "FORMATTED_VALUE"
+      );
+
+    const rows =
+      result.values || [];
+
+    for (
+      let rowNumber = SHOP_FIRST_ROW;
+      rowNumber <= sheetInfo.rowCount;
+      rowNumber++
+    ) {
+
+      const row =
+        rows[
+          rowNumber -
+          SHOP_FIRST_ROW
+        ] || [];
+
+      if (
+        isShoppingRowEmpty(
+          row
+        )
+      ) {
+
+        return rowNumber;
+      }
+    }
+
+    throw new Error(
+      "No empty Shopping List row is available yet."
+    );
+  }
+
+
+  function isShoppingRowEmpty(
+    row
+  ) {
+
+    return (
+      blank(row[1]) &&
+      blank(row[2]) &&
+      blank(row[3]) &&
+      blank(row[5]) &&
+      blank(row[7]) &&
+      blank(row[9])
+    );
+  }
+
+
+  /* ===================================================
+     SHEETS API
+     =================================================== */
+
+  async function sheetsGetValues(
+    range,
+    valueRenderOption
+  ) {
+
+    const encodedRange =
+      encodeURIComponent(
+        range
+      );
+
+    return sheetsRequest(
+      `/values/${encodedRange}?valueRenderOption=${encodeURIComponent(
+        valueRenderOption
+      )}`
+    );
+  }
+
+
+  async function sheetsValuesBatchUpdate(
+    data,
+    valueInputOption
+  ) {
+
+    return sheetsRequest(
+      "/values:batchUpdate",
+      {
+        method:
+          "POST",
+
+        body:
+          JSON.stringify({
+
+            valueInputOption:
+              valueInputOption,
+
+            data:
+              data
+          })
+      }
+    );
+  }
+
+
+  async function sheetsAppendValues(
+    range,
+    values,
+    valueInputOption
+  ) {
+
+    const encodedRange =
+      encodeURIComponent(
+        range
+      );
+
+    return sheetsRequest(
+      `/values/${encodedRange}:append?valueInputOption=${encodeURIComponent(
+        valueInputOption
+      )}&insertDataOption=INSERT_ROWS`,
+      {
+        method:
+          "POST",
+
+        body:
+          JSON.stringify({
+
+            values:
+              values
+          })
+      }
+    );
+  }
+
+
+  async function sheetsRequest(
+    path,
+    options = {}
+  ) {
+
+    if (!accessToken) {
+
+      throw new Error(
+        "Google authorization expired."
+      );
+    }
+
+    const url =
+      `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
+        SPREADSHEET_ID
+      )}${path}`;
+
+    const headers =
+      new Headers(
+        options.headers || {}
+      );
+
+    headers.set(
+      "Authorization",
+      `Bearer ${accessToken}`
+    );
+
+    if (options.body) {
+
+      headers.set(
+        "Content-Type",
+        "application/json"
+      );
+    }
+
+    const response =
+      await fetch(
+        url,
+        {
+          ...options,
+          headers:
+            headers
+        }
+      );
+
+    let payload = null;
+
+    try {
+
+      payload =
+        await response.json();
+
+    } catch (error) {}
+
+    if (!response.ok) {
+
+      throw new Error(
+        payload?.error?.message ||
+        `Google Sheets API returned HTTP ${response.status}.`
+      );
+    }
+
+    return payload || {};
+  }
+
+
+  /* ===================================================
+     TRIP ID / DATE
+     =================================================== */
+
+  function createTripId(
+    date
+  ) {
+
+    const y =
+      date.getFullYear();
+
+    const m =
+      String(
+        date.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      );
+
+    const d =
+      String(
+        date.getDate()
+      ).padStart(
+        2,
+        "0"
+      );
+
+    const hh =
+      String(
+        date.getHours()
+      ).padStart(
+        2,
+        "0"
+      );
+
+    const mm =
+      String(
+        date.getMinutes()
+      ).padStart(
+        2,
+        "0"
+      );
+
+    const ss =
+      String(
+        date.getSeconds()
+      ).padStart(
+        2,
+        "0"
+      );
+
+    return (
+      `TRIP-${y}${m}${d}-${hh}${mm}${ss}`
+    );
+  }
+
+
+  function localIsoWithOffset(
+    date
+  ) {
+
+    const pad =
+      value =>
+        String(value)
+          .padStart(
+            2,
+            "0"
+          );
+
+    const offsetMinutes =
+      -date.getTimezoneOffset();
+
+    const sign =
+      offsetMinutes >= 0
+        ? "+"
+        : "-";
+
+    const abs =
+      Math.abs(
+        offsetMinutes
+      );
+
+    const offsetHours =
+      pad(
+        Math.floor(
+          abs / 60
+        )
+      );
+
+    const offsetMins =
+      pad(
+        abs % 60
+      );
+
+    return (
+      date.getFullYear() +
+      "-" +
+      pad(
+        date.getMonth() + 1
+      ) +
+      "-" +
+      pad(
+        date.getDate()
+      ) +
+      "T" +
+      pad(
+        date.getHours()
+      ) +
+      ":" +
+      pad(
+        date.getMinutes()
+      ) +
+      ":" +
+      pad(
+        date.getSeconds()
+      ) +
+      sign +
+      offsetHours +
+      ":" +
+      offsetMins
+    );
+  }
+
+
+  function formatDateTime(
+    value
+  ) {
+
+    if (!value) {
+      return "—";
+    }
+
+    const date =
+      new Date(value);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return String(value);
+    }
+
+    return date.toLocaleString();
+  }
+
+
+  /* ===================================================
+     HELPERS
+     =================================================== */
+
+  function show(
+    id
+  ) {
+
+    document.getElementById(
+      id
+    ).classList.remove(
+      "hidden"
+    );
+  }
+
+
+  function hide(
+    id
+  ) {
+
+    document.getElementById(
+      id
+    ).classList.add(
+      "hidden"
+    );
+  }
+
+
+  function normalizeStore(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .trim()
+      .toLowerCase();
+  }
+
+
+  function normalizeProductIdentity(
+    value
+  ) {
+
+    return String(
+      value || ""
+    )
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(
+        /[\u0300-\u036f]/g,
+        ""
+      )
+      .replace(
+        /[^a-z0-9]+/g,
+        " "
+      )
+      .trim()
+      .replace(
+        /\s+/g,
+        " "
+      );
+  }
+
+
+  function blank(
+    value
+  ) {
+
+    return (
+      value === undefined ||
+      value === null ||
+      String(value).trim() === ""
+    );
+  }
+
+
+  function normalizeNumericValue(
+    value
+  ) {
+
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+
+      return "";
+    }
+
+    const number =
+      Number(value);
+
+    return Number.isFinite(number)
+      ? number
+      : "";
+  }
+
+
+  function isUsableNumber(
+    value
+  ) {
+
+    return (
+      value !== "" &&
+      value !== null &&
+      value !== undefined &&
+      Number.isFinite(
+        Number(value)
+      )
+    );
+  }
+
+
+  function readPositiveNumber(
+    elementId
+  ) {
+
+    const raw =
+      document.getElementById(
+        elementId
+      ).value;
+
+    if (raw === "") {
+      return null;
+    }
+
+    const number =
+      Number(raw);
+
+    if (
+      !Number.isFinite(number) ||
+      number <= 0
+    ) {
+
+      return null;
+    }
+
+    return number;
+  }
+
+
+  function formatMoney(
+    value
+  ) {
+
+    const number =
+      Number(value);
+
+    if (
+      !Number.isFinite(number)
+    ) {
+
+      return "—";
+    }
+
+    return (
+      "$" +
+      number.toFixed(2)
+    );
+  }
+
+
+  function setStatus(
+    message,
+    type = ""
+  ) {
+
+    const box =
+      document.getElementById(
+        "status"
+      );
+
+    box.className =
+      "";
+
+    if (type) {
+
+      box.classList.add(
+        "status-" + type
+      );
+    }
+
+    box.innerHTML =
+      message;
+  }
+
+
+  function fail(
+    message
+  ) {
+
+    setStatus(
+      "❌ " +
+      escapeHtml(message),
+      "error"
+    );
+  }
+
+
+  function handleApiError(
+    error
+  ) {
+
+    fail(
+      error?.message ||
+      String(
+        error ||
+        "Unknown error"
+      )
+    );
+  }
+
+
+  function escapeHtml(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+</script>
+
+</body>
+</html>
