@@ -1347,6 +1347,66 @@
       line-height: 1.35;
     }
 
+    /* V4 Wrong Product Flow */
+    .wrong-product-button {
+      margin-top: 10px;
+      background: #3b414d;
+    }
+
+    .wrong-product-panel {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid #4b5260;
+      border-radius: 12px;
+      background: #1f232b;
+    }
+
+    .wrong-product-title {
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .wrong-product-hint {
+      margin-top: 5px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .wrong-product-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .wrong-product-actions button {
+      margin: 0;
+    }
+
+    .wrong-product-correct {
+      background: #7137b5;
+    }
+
+    .wrong-product-forward {
+      background: #4a3a61;
+    }
+
+    .wrong-product-cancel {
+      background: #3b414d;
+    }
+
+    .wrong-product-mode {
+      margin-top: 9px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      background: #2b2138;
+      color: #d9c4f5;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1430,7 +1490,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 product change modes test
+    V4 wrong product flow test
   </div>
 
   <button
@@ -1792,6 +1852,63 @@
           </label>
 
         </div>
+
+        <button
+          id="wrong-product-button"
+          class="wrong-product-button hidden"
+          type="button"
+          onclick="openWrongProductPanel()"
+        >
+          THIS ISN'T THE PRODUCT I'M HOLDING
+        </button>
+
+        <div
+          id="wrong-product-panel"
+          class="wrong-product-panel hidden"
+        >
+
+          <div class="wrong-product-title">
+            What happened?
+          </div>
+
+          <div class="wrong-product-hint">
+            Choose how this barcode should be treated at this store.
+          </div>
+
+          <div class="wrong-product-actions">
+
+            <button
+              class="wrong-product-correct"
+              type="button"
+              onclick="startWrongProductCorrection('historical')"
+            >
+              CORRECT THE OLD RECORD
+            </button>
+
+            <button
+              class="wrong-product-forward"
+              type="button"
+              onclick="startWrongProductCorrection('forward')"
+            >
+              NEW PRODUCT FROM THIS TRIP ON
+            </button>
+
+            <button
+              class="wrong-product-cancel"
+              type="button"
+              onclick="closeWrongProductPanel()"
+            >
+              CANCEL
+            </button>
+
+          </div>
+
+        </div>
+
+        <div
+          id="wrong-product-mode"
+          class="wrong-product-mode hidden"
+        ></div>
 
       </div>
 
@@ -3117,6 +3234,9 @@
   let toastHideTimer = null;
   let toastRemoveTimer = null;
   let productChangeModeResolver = null;
+
+  let wrongProductMode = null;
+  let wrongProductOriginalName = "";
 
 
   window.addEventListener(
@@ -4765,6 +4885,8 @@
 
     renderBarcodeReuseWarning();
 
+    configureWrongProductFlow();
+
     updatePricing();
 
     renderPriceComparisons();
@@ -6014,6 +6136,10 @@
 
     try {
 
+      await applyWrongProductChangeIfNeeded(
+        product
+      );
+
       const result =
         await writeShoppingItem({
 
@@ -6073,6 +6199,8 @@
       button.textContent =
         "ADD ITEM TO TRIP";
 
+
+      resetWrongProductFlow();
 
       hide(
         "item-panel"
@@ -8676,6 +8804,345 @@
       );
     }
   }
+
+  function resetWrongProductFlow() {
+
+    wrongProductMode =
+      null;
+
+    wrongProductOriginalName =
+      "";
+
+    const button =
+      document.getElementById(
+        "wrong-product-button"
+      );
+
+    const panel =
+      document.getElementById(
+        "wrong-product-panel"
+      );
+
+    const modeBox =
+      document.getElementById(
+        "wrong-product-mode"
+      );
+
+    if (button) {
+      button.classList.add(
+        "hidden"
+      );
+    }
+
+    if (panel) {
+      panel.classList.add(
+        "hidden"
+      );
+    }
+
+    if (modeBox) {
+      modeBox.classList.add(
+        "hidden"
+      );
+      modeBox.textContent =
+        "";
+    }
+  }
+
+
+  function configureWrongProductFlow() {
+
+    const button =
+      document.getElementById(
+        "wrong-product-button"
+      );
+
+    const panel =
+      document.getElementById(
+        "wrong-product-panel"
+      );
+
+    const modeBox =
+      document.getElementById(
+        "wrong-product-mode"
+      );
+
+    wrongProductMode =
+      null;
+
+    wrongProductOriginalName =
+      exactStoreMatch
+        ? String(
+            exactStoreMatch.product || ""
+          ).trim()
+        : "";
+
+    panel.classList.add(
+      "hidden"
+    );
+
+    modeBox.classList.add(
+      "hidden"
+    );
+
+    modeBox.textContent =
+      "";
+
+    if (
+      exactStoreMatch
+    ) {
+      button.classList.remove(
+        "hidden"
+      );
+    } else {
+      button.classList.add(
+        "hidden"
+      );
+    }
+  }
+
+
+  function openWrongProductPanel() {
+
+    document.getElementById(
+      "wrong-product-panel"
+    ).classList.remove(
+      "hidden"
+    );
+
+    document.getElementById(
+      "wrong-product-panel"
+    ).scrollIntoView({
+      behavior:
+        "smooth",
+      block:
+        "nearest"
+    });
+  }
+
+
+  function closeWrongProductPanel() {
+
+    document.getElementById(
+      "wrong-product-panel"
+    ).classList.add(
+      "hidden"
+    );
+  }
+
+
+  function startWrongProductCorrection(
+    mode
+  ) {
+
+    if (
+      !exactStoreMatch
+    ) {
+      return;
+    }
+
+    wrongProductMode =
+      mode;
+
+    wrongProductOriginalName =
+      String(
+        exactStoreMatch.product || ""
+      ).trim();
+
+    const productInput =
+      document.getElementById(
+        "product-name"
+      );
+
+    const modeBox =
+      document.getElementById(
+        "wrong-product-mode"
+      );
+
+    productInput.value =
+      "";
+
+    document.getElementById(
+      "confirm-name"
+    ).checked =
+      false;
+
+    document.getElementById(
+      "wrong-product-panel"
+    ).classList.add(
+      "hidden"
+    );
+
+    modeBox.textContent =
+      mode === "historical"
+        ? "Historical correction selected: past matching records will be corrected too."
+        : "Forward-only change selected: past shopping history will remain untouched.";
+
+    modeBox.classList.remove(
+      "hidden"
+    );
+
+    productInput.focus();
+
+    showSuccessToast(
+      mode === "historical"
+        ? "Correct old product record"
+        : "New product from this trip on",
+      "Enter the product name you are holding, confirm it, and continue adding the item."
+    );
+  }
+
+
+  async function applyWrongProductChangeIfNeeded(
+    newProductName
+  ) {
+
+    if (
+      !wrongProductMode ||
+      !exactStoreMatch
+    ) {
+      return;
+    }
+
+    const oldProductName =
+      wrongProductOriginalName ||
+      String(
+        exactStoreMatch.product || ""
+      ).trim();
+
+    const newName =
+      String(
+        newProductName || ""
+      ).trim();
+
+    if (
+      !newName ||
+      newName ===
+        oldProductName
+    ) {
+
+      wrongProductMode =
+        null;
+
+      return;
+    }
+
+
+    const updates = [
+      {
+        range:
+          `'${PRODUCTS_SHEET}'!B${exactStoreMatch.sheetRow}`,
+        values:
+          [[newName]]
+      }
+    ];
+
+    let historicalMatches =
+      0;
+
+
+    if (
+      wrongProductMode ===
+      "historical"
+    ) {
+
+      const historyResult =
+        await sheetsGetValues(
+          `'${TRIP_HISTORY_SHEET}'!A2:Q`,
+          "UNFORMATTED_VALUE"
+        );
+
+      const rows =
+        historyResult.values || [];
+
+      rows.forEach(
+        (row, index) => {
+
+          const rowStore =
+            String(
+              row[2] ?? ""
+            ).trim();
+
+          const rowBarcode =
+            String(
+              row[3] ?? ""
+            ).trim();
+
+          const rowProduct =
+            String(
+              row[4] ?? ""
+            ).trim();
+
+          if (
+            rowBarcode ===
+              currentBarcode &&
+            normalizeStore(
+              rowStore
+            ) ===
+              normalizeStore(
+                activeTrip.store
+              ) &&
+            rowProduct ===
+              oldProductName
+          ) {
+
+            historicalMatches +=
+              1;
+
+            updates.push(
+              {
+                range:
+                  `'${TRIP_HISTORY_SHEET}'!E${index + 2}`,
+                values:
+                  [[newName]]
+              }
+            );
+          }
+        }
+      );
+    }
+
+
+    await sheetsValuesBatchUpdate(
+      updates,
+      "USER_ENTERED"
+    );
+
+
+    exactStoreMatch.product =
+      newName;
+
+    const dbRecord =
+      productDatabase.find(
+        record =>
+          record.sheetRow ===
+            exactStoreMatch.sheetRow
+      );
+
+    if (
+      dbRecord
+    ) {
+      dbRecord.product =
+        newName;
+    }
+
+
+    showSuccessToast(
+      wrongProductMode ===
+        "historical"
+        ? "Product identity corrected"
+        : "New product identity saved",
+      wrongProductMode ===
+        "historical"
+        ? `${historicalMatches} matching historical item record${historicalMatches === 1 ? "" : "s"} corrected too.`
+        : "Past shopping history was left unchanged."
+    );
+
+
+    wrongProductMode =
+      null;
+  }
+
 
   function previewFutureSection(
     sectionName
