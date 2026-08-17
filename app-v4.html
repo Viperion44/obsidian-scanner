@@ -1915,7 +1915,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 final-review add-item fix
+    V4 zero-item history fix
   </div>
 
   <button
@@ -11698,6 +11698,7 @@
 
     const [
       tripsResult,
+      tripsFormattedResult,
       historyResult,
       historyDatesResult
     ] =
@@ -11706,6 +11707,11 @@
           sheetsGetValues(
             `'${TRIPS_SHEET}'!A2:H`,
             "UNFORMATTED_VALUE"
+          ),
+
+          sheetsGetValues(
+            `'${TRIPS_SHEET}'!A2:H`,
+            "FORMATTED_VALUE"
           ),
 
           sheetsGetValues(
@@ -11724,7 +11730,8 @@
       buildHistoryTrips(
         tripsResult.values || [],
         historyResult.values || [],
-        historyDatesResult.values || []
+        historyDatesResult.values || [],
+        tripsFormattedResult.values || []
       );
 
     renderHistoryTripList();
@@ -11734,7 +11741,8 @@
   function buildHistoryTrips(
     tripRows,
     historyRows,
-    formattedDateRows
+    formattedDateRows,
+    formattedTripRows = []
   ) {
 
     const historyGroups =
@@ -11917,7 +11925,7 @@
 
 
     tripRows.forEach(
-      function(row) {
+      function(row, tripIndex) {
 
         const tripId =
           String(
@@ -11996,12 +12004,16 @@
 
             start:
               String(
-                row[2] ?? ""
+                formattedTripRows[tripIndex]?.[2] ??
+                row[2] ??
+                ""
               ).trim(),
 
             end:
               String(
-                row[3] ?? ""
+                formattedTripRows[tripIndex]?.[3] ??
+                row[3] ??
+                ""
               ).trim(),
 
             fallbackDate:
@@ -12786,6 +12798,7 @@
 
     const [
       tripsResult,
+      tripsFormattedResult,
       historyResult,
       historyDatesResult
     ] =
@@ -12794,6 +12807,11 @@
           sheetsGetValues(
             `'${TRIPS_SHEET}'!A2:H`,
             "UNFORMATTED_VALUE"
+          ),
+
+          sheetsGetValues(
+            `'${TRIPS_SHEET}'!A2:H`,
+            "FORMATTED_VALUE"
           ),
 
           sheetsGetValues(
@@ -12812,7 +12830,8 @@
       buildHistoryTrips(
         tripsResult.values || [],
         historyResult.values || [],
-        historyDatesResult.values || []
+        historyDatesResult.values || [],
+        tripsFormattedResult.values || []
       );
 
     renderReports(
@@ -13454,6 +13473,7 @@
     const [
       productsResult,
       tripsResult,
+      tripsFormattedResult,
       historyResult,
       historyDatesResult
     ] =
@@ -13466,6 +13486,10 @@
           sheetsGetValues(
             `'${TRIPS_SHEET}'!A2:H`,
             "UNFORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${TRIPS_SHEET}'!A2:H`,
+            "FORMATTED_VALUE"
           ),
           sheetsGetValues(
             `'${TRIP_HISTORY_SHEET}'!A2:Q`,
@@ -13558,7 +13582,8 @@
       buildHistoryTrips(
         tripsResult.values || [],
         historyResult.values || [],
-        historyDatesResult.values || []
+        historyDatesResult.values || [],
+        tripsFormattedResult.values || []
       );
   }
 
