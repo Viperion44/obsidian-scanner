@@ -4348,7 +4348,7 @@
       >
         <span class="management-action-icon">🏪</span>
         <span class="management-action-title">Stores</span>
-        <span class="management-action-desc">Review stores found in your data.</span>
+        <span class="management-action-desc">Add, edit, activate, or deactivate saved stores.</span>
       </button>
 
       <button
@@ -4519,10 +4519,53 @@
 
     </div>
 
+    <div
+      id="management-store-editor"
+      class="management-editor-card hidden"
+    >
+
+      <div id="management-store-editor-title" class="management-editor-title">
+        Add Store
+      </div>
+
+      <label for="management-store-name">Store Name</label>
+      <input id="management-store-name" type="text" autocomplete="off" placeholder="Example: Walmart">
+
+      <label for="management-store-branch">Branch Name (optional)</label>
+      <input id="management-store-branch" type="text" autocomplete="off" placeholder="Example: Universidad">
+
+      <label for="management-store-address">Address (optional)</label>
+      <textarea id="management-store-address" rows="3" autocomplete="street-address" placeholder="Street, neighborhood, city, etc."></textarea>
+
+      <label for="management-store-type">Store Type</label>
+      <select id="management-store-type">
+        <option value="Physical">Physical</option>
+        <option value="Online">Online</option>
+        <option value="Manual">Manual</option>
+      </select>
+
+      <label for="management-store-notes">Notes (optional)</label>
+      <textarea id="management-store-notes" rows="3" autocomplete="off"></textarea>
+
+      <div class="management-editor-note">
+        Manual entry is the permanent fallback. Google Place ID, coordinates, business status, hours, and Maps URL stay blank for now and will be populated by later V5 location stages.
+      </div>
+
+      <div class="management-editor-actions">
+        <button class="management-cancel-button" type="button" onclick="cancelManagementStoreEdit()">
+          CANCEL
+        </button>
+        <button id="management-save-store-button" class="management-save-button" type="button" onclick="saveManagementStoreEdit()">
+          SAVE STORE
+        </button>
+      </div>
+
+    </div>
+
   </div>
 
   <div class="help">
-    V4 development copy. The live app is still index.html.
+    V5 development copy. The live app is still index.html.
   </div>
 
 </div>
@@ -4885,6 +4928,9 @@
   const TRIP_PAYMENTS_SHEET =
     "Trip Payments";
 
+  const STORES_SHEET =
+    "Stores";
+
   const CURRENT_STORE_CELL =
     "U21";
 
@@ -4958,8 +5004,10 @@
   let managementTrips = [];
   let managementHistoryRows = [];
   let managementPaymentMethods = [];
+  let managementStores = [];
   let managementEditingProductIndex = null;
   let managementEditingPaymentIndex = null;
+  let managementEditingStoreIndex = null;
 
   let budgetWarningAcknowledged = false;
 
@@ -19277,6 +19325,10 @@
 
   async function openManagementSection() {
 
+    cancelManagementStoreEdit(
+      true
+    );
+
     if (
       !accessToken
     ) {
@@ -19349,7 +19401,8 @@
       tripsFormattedResult,
       historyResult,
       historyDatesResult,
-      paymentMethodsResult
+      paymentMethodsResult,
+      storesResult
     ] =
       await Promise.all(
         [
@@ -19375,6 +19428,10 @@
           ),
           sheetsGetValues(
             `'${PAYMENT_METHODS_SHEET}'!A2:H`,
+            "UNFORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${STORES_SHEET}'!A2:M`,
             "UNFORMATTED_VALUE"
           )
         ]
@@ -19474,6 +19531,38 @@
         )
         .filter(Boolean);
 
+    managementStores =
+      (storesResult.values || [])
+        .map(
+          (row, index) => {
+            const id = String(row[0] ?? "").trim();
+            const name = String(row[1] ?? "").trim();
+            if (!id && !name) {
+              return null;
+            }
+            const activeRaw = row[12];
+            return {
+              sheetRow: index + 2,
+              id,
+              name,
+              branchName: String(row[2] ?? "").trim(),
+              address: String(row[3] ?? "").trim(),
+              type: String(row[4] ?? "Manual").trim() || "Manual",
+              googlePlaceId: String(row[5] ?? "").trim(),
+              latitude: row[6] ?? "",
+              longitude: row[7] ?? "",
+              businessStatus: String(row[8] ?? "").trim(),
+              openingHours: String(row[9] ?? "").trim(),
+              googleMapsUrl: String(row[10] ?? "").trim(),
+              notes: String(row[11] ?? "").trim(),
+              active:
+                activeRaw === true ||
+                String(activeRaw ?? "").trim().toUpperCase() === "TRUE"
+            };
+          }
+        )
+        .filter(Boolean);
+
     managementHistoryRows =
       (historyResult.values || [])
         .map(
@@ -19527,6 +19616,9 @@
       true
     );
     cancelManagementPaymentEdit(
+      true
+    );
+    cancelManagementStoreEdit(
       true
     );
 
@@ -20095,6 +20187,9 @@
     cancelManagementPaymentEdit(
       true
     );
+    cancelManagementStoreEdit(
+      true
+    );
 
     const box =
       document.getElementById(
@@ -20400,153 +20495,333 @@
     cancelManagementPaymentEdit(
       true
     );
-
-    const stores =
-      new Map();
-
-    managementProducts.forEach(
-      record => {
-
-        const store =
-          String(
-            record.lastStore || ""
-          ).trim();
-
-        if (!store) {
-          return;
-        }
-
-        const key =
-          normalizeStore(
-            store
-          );
-
-        if (
-          !stores.has(
-            key
-          )
-        ) {
-          stores.set(
-            key,
-            {
-              store:
-                store,
-              products:
-                0
-            }
-          );
-        }
-
-        stores.get(
-          key
-        ).products +=
-          1;
-      }
+    cancelManagementStoreEdit(
+      true
     );
-
-    managementTrips.forEach(
-      trip => {
-
-        const store =
-          String(
-            trip.store || ""
-          ).trim();
-
-        if (!store) {
-          return;
-        }
-
-        const key =
-          normalizeStore(
-            store
-          );
-
-        if (
-          !stores.has(
-            key
-          )
-        ) {
-          stores.set(
-            key,
-            {
-              store:
-                store,
-              products:
-                0
-            }
-          );
-        }
-      }
-    );
-
-    const rows =
-      Array.from(
-        stores.values()
-      )
-      .sort(
-        (a, b) =>
-          a.store.localeCompare(
-            b.store
-          )
-      );
 
     const box =
       document.getElementById(
         "management-content"
       );
 
-    if (
-      !rows.length
-    ) {
-      box.innerHTML =
-        '<div class="management-section-title">Stores</div>' +
-        '<div class="management-empty">No store records are stored yet.</div>';
-      return;
-    }
+    const rows =
+      managementStores
+        .map(
+          (record, originalIndex) => ({
+            record,
+            originalIndex
+          })
+        )
+        .sort(
+          (a, b) => {
+            if (a.record.active !== b.record.active) {
+              return a.record.active ? -1 : 1;
+            }
+            return String(a.record.name || "").localeCompare(
+              String(b.record.name || "")
+            );
+          }
+        );
 
     box.innerHTML =
       '<div class="management-section-title">Stores</div>' +
-      rows
-        .map(
-          record => {
+      '<button class="management-save-button" type="button" style="margin:0 0 12px;width:100%;" onclick="openManagementStoreEditor()">＋ ADD STORE MANUALLY</button>' +
+      (
+        rows.length
+          ? rows.map(
+              entry => {
+                const record = entry.record;
+                const title = [record.name, record.branchName].filter(Boolean).join(" — ") || "Unnamed store";
+                const meta = [
+                  record.type,
+                  record.address,
+                  record.googlePlaceId ? "Google-backed" : "Manual record",
+                  record.active ? "Active" : "Inactive"
+                ].filter(Boolean).join(" • ");
 
-            const tripCount =
-              managementTrips.filter(
-                trip =>
-                  normalizeStore(
-                    trip.store || ""
-                  ) ===
-                  normalizeStore(
-                    record.store
-                  )
-              ).length;
-
-            return (
-              '<div class="management-row">' +
-                '<div class="management-row-name">' +
-                  escapeHtml(
-                    record.store
-                  ) +
-                "</div>" +
-                '<div class="management-row-meta">' +
-                  escapeHtml(
-                    `${record.products} saved product record${record.products === 1 ? "" : "s"} • ${tripCount} finished trip${tripCount === 1 ? "" : "s"}`
-                  ) +
-                "</div>" +
-              "</div>"
-            );
-          }
-        )
-        .join(
-          ""
-        );
+                return (
+                  '<div class="management-row">' +
+                    '<div class="management-row-top">' +
+                      '<div class="management-row-name">' + escapeHtml(title) + '</div>' +
+                      '<div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;">' +
+                        '<button class="management-edit-button" type="button" onclick="editManagementStore(' + entry.originalIndex + ')">EDIT</button>' +
+                        '<button class="management-edit-button" type="button" style="background:' + (record.active ? '#7f3038' : '#24643b') + ';" onclick="toggleManagementStoreActive(' + entry.originalIndex + ')">' +
+                          (record.active ? 'DEACTIVATE' : 'REACTIVATE') +
+                        '</button>' +
+                      '</div>' +
+                    '</div>' +
+                    '<div class="management-row-meta">' + escapeHtml(meta || "Store") + '</div>' +
+                    (record.notes ? '<div class="management-row-meta">' + escapeHtml(record.notes) + '</div>' : '') +
+                  '</div>'
+                );
+              }
+            ).join("")
+          : '<div class="management-empty">No saved Stores records yet. Use ADD STORE MANUALLY to create the first one.</div>'
+      );
 
     scrollManagementContentIntoView();
   }
 
 
+  function openManagementStoreEditor(index = null) {
+
+    managementEditingStoreIndex =
+      Number.isInteger(index)
+        ? index
+        : null;
+
+    const record =
+      managementEditingStoreIndex === null
+        ? null
+        : managementStores[managementEditingStoreIndex];
+
+    document.getElementById(
+      "management-store-editor-title"
+    ).textContent =
+      record
+        ? "Edit Store"
+        : "Add Store Manually";
+
+    document.getElementById("management-store-name").value = record?.name || "";
+    document.getElementById("management-store-branch").value = record?.branchName || "";
+    document.getElementById("management-store-address").value = record?.address || "";
+    document.getElementById("management-store-type").value = record?.type || "Physical";
+    document.getElementById("management-store-notes").value = record?.notes || "";
+
+    document.getElementById(
+      "management-save-store-button"
+    ).textContent =
+      record
+        ? "SAVE CHANGES"
+        : "SAVE STORE";
+
+    show(
+      "management-store-editor"
+    );
+
+    document.getElementById(
+      "management-store-editor"
+    ).scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+
+  function editManagementStore(index) {
+    const record = managementStores[index];
+    if (!record) {
+      return;
+    }
+    openManagementStoreEditor(index);
+  }
+
+
+  function cancelManagementStoreEdit(silent = false) {
+    managementEditingStoreIndex = null;
+    hide(
+      "management-store-editor"
+    );
+    if (!silent) {
+      setStatus(
+        "Store edit cancelled.",
+        "success"
+      );
+    }
+  }
+
+
+  async function findNextStoreSheetRow() {
+    const idResult =
+      await sheetsGetValues(
+        `'${STORES_SHEET}'!A2:A`,
+        "FORMATTED_VALUE"
+      );
+
+    const rows =
+      idResult.values || [];
+
+    let rowNumber =
+      rows.length + 2;
+
+    for (
+      let index = 0;
+      index < rows.length;
+      index++
+    ) {
+      if (
+        blank(
+          rows[index]?.[0]
+        )
+      ) {
+        rowNumber =
+          index + 2;
+        break;
+      }
+    }
+
+    return rowNumber;
+  }
+
+
+  async function saveManagementStoreEdit() {
+
+    const name = String(document.getElementById("management-store-name").value || "").trim();
+    const branchName = String(document.getElementById("management-store-branch").value || "").trim();
+    const address = String(document.getElementById("management-store-address").value || "").trim();
+    const type = String(document.getElementById("management-store-type").value || "Manual").trim();
+    const notes = String(document.getElementById("management-store-notes").value || "").trim();
+
+    if (!name) {
+      showErrorToast(
+        "Store name required",
+        "Enter a recognizable store or merchant name."
+      );
+      return;
+    }
+
+    const editing =
+      managementEditingStoreIndex !== null
+        ? managementStores[managementEditingStoreIndex]
+        : null;
+
+    const duplicate =
+      managementStores.find(
+        record =>
+          record !== editing &&
+          normalizeStore(record.name) === normalizeStore(name) &&
+          normalizeStore(record.branchName) === normalizeStore(branchName) &&
+          normalizeStore(record.address) === normalizeStore(address)
+      );
+
+    if (duplicate) {
+      showErrorToast(
+        "Store already saved",
+        "A store with the same name, branch, and address already exists."
+      );
+      return;
+    }
+
+    const button = document.getElementById(
+      "management-save-store-button"
+    );
+    button.disabled = true;
+
+    try {
+      setStatus(
+        editing ? "Saving store..." : "Adding store...",
+        "working"
+      );
+
+      const rowNumber =
+        editing
+          ? editing.sheetRow
+          : await findNextStoreSheetRow();
+
+      const storeId =
+        editing?.id ||
+        (
+          "STORE-" +
+          Date.now()
+        );
+
+      await sheetsValuesBatchUpdate(
+        [{
+          range: `'${STORES_SHEET}'!A${rowNumber}:M${rowNumber}`,
+          values: [[
+            storeId,
+            name,
+            branchName,
+            address,
+            type,
+            editing?.googlePlaceId || "",
+            editing?.latitude ?? "",
+            editing?.longitude ?? "",
+            editing?.businessStatus || "",
+            editing?.openingHours || "",
+            editing?.googleMapsUrl || "",
+            notes,
+            editing ? editing.active : true
+          ]]
+        }],
+        "RAW"
+      );
+
+      await loadManagementData();
+      cancelManagementStoreEdit(true);
+      showManagementStores();
+
+      showSuccessToast(
+        editing ? "Store updated" : "Store added",
+        [name, branchName].filter(Boolean).join(" — ")
+      );
+      setStatus(
+        "Stores updated.",
+        "success"
+      );
+
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast(
+        "Store save failed",
+        "The store was not changed."
+      );
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+
+  async function toggleManagementStoreActive(index) {
+
+    const record = managementStores[index];
+    if (!record) {
+      return;
+    }
+
+    const nextActive = !record.active;
+
+    try {
+      setStatus(
+        nextActive ? "Reactivating store..." : "Deactivating store...",
+        "working"
+      );
+
+      await sheetsValuesBatchUpdate(
+        [{
+          range: `'${STORES_SHEET}'!M${record.sheetRow}`,
+          values: [[nextActive]]
+        }],
+        "RAW"
+      );
+
+      record.active = nextActive;
+      showManagementStores();
+
+      showSuccessToast(
+        nextActive ? "Store reactivated" : "Store deactivated",
+        [record.name, record.branchName].filter(Boolean).join(" — ")
+      );
+      setStatus(
+        "Stores updated.",
+        "success"
+      );
+
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast(
+        "Store update failed",
+        "The store status was not changed."
+      );
+    }
+  }
+
+
   function showManagementHistoryAudit() {
 
+    cancelManagementStoreEdit(
+      true
+    );
     cancelManagementProductEdit(
       true
     );
@@ -20636,6 +20911,9 @@
 
   function showManagementAbout() {
 
+    cancelManagementStoreEdit(
+      true
+    );
     cancelManagementProductEdit(
       true
     );
@@ -20698,6 +20976,9 @@
 
   function closeManagementSection() {
 
+    cancelManagementStoreEdit(
+      true
+    );
     cancelManagementProductEdit(
       true
     );
