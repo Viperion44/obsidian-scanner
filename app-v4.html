@@ -1666,6 +1666,198 @@
       background: #4a3a61;
     }
 
+    /* V4 Payment UI - Step 1 (UI only, no Sheets writes yet) */
+    .payment-next-button {
+      margin-bottom: 10px;
+      background: #7137b5;
+      font-weight: bold;
+    }
+
+    .payment-panel-header {
+      margin-bottom: 14px;
+      padding: 16px;
+      border-radius: 13px;
+      background: #242833;
+      text-align: center;
+    }
+
+    .payment-panel-title {
+      font-size: 24px;
+      font-weight: bold;
+      line-height: 1.2;
+    }
+
+    .payment-panel-store {
+      margin-top: 5px;
+      color: #c9a7f2;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .payment-panel-total {
+      margin-top: 10px;
+      font-size: 30px;
+      font-weight: bold;
+    }
+
+    .payment-panel-total-label {
+      margin-top: 3px;
+      color: #aeb4c0;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .payment-section-card {
+      margin-bottom: 14px;
+      padding: 15px;
+      border-radius: 13px;
+      background: #242833;
+    }
+
+    .payment-section-heading {
+      margin-bottom: 5px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .payment-section-hint {
+      margin-bottom: 12px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .payment-method-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .payment-method-card {
+      width: 100%;
+      margin: 0;
+      padding: 13px 14px;
+      border: 1px solid #4b5260;
+      border-radius: 11px;
+      background: #1c2028;
+      color: #ffffff;
+      text-align: left;
+    }
+
+    .payment-method-card.selected {
+      border-color: #a56be2;
+      background: #38264d;
+      box-shadow: inset 0 0 0 1px #a56be2;
+    }
+
+    .payment-method-name {
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .payment-method-meta {
+      margin-top: 4px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .payment-add-button {
+      margin-top: 10px;
+      margin-bottom: 0;
+      background: #4a3a61;
+    }
+
+    .payment-new-form {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #454b56;
+    }
+
+    .payment-new-form.hidden {
+      display: none;
+    }
+
+    .payment-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .payment-form-grid .payment-form-full {
+      grid-column: 1 / -1;
+    }
+
+    .payment-save-checkbox {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-top: 12px;
+      padding: 11px;
+      border: 1px solid #4b5260;
+      border-radius: 10px;
+      background: #1c2028;
+      color: #d8dbe1;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .payment-save-checkbox input {
+      width: auto;
+      margin: 2px 0 0;
+      accent-color: #8b4fc4;
+    }
+
+    .payment-form-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .payment-form-actions button {
+      margin: 0;
+    }
+
+    .payment-form-use {
+      background: #7137b5;
+    }
+
+    .payment-form-cancel {
+      background: #3b414d;
+    }
+
+    .payment-selection-preview {
+      margin-top: 10px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #173d25;
+      color: #c9efd4;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .payment-ui-note {
+      margin-bottom: 14px;
+      padding: 12px 13px;
+      border-radius: 11px;
+      background: #31283d;
+      color: #d8c4ef;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 430px) {
+      .payment-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .payment-form-grid .payment-form-full {
+        grid-column: auto;
+      }
+    }
+
     .review-edit-overlay {
       position: fixed;
       inset: 0;
@@ -3269,6 +3461,14 @@
     </button>
 
     <button
+      class="payment-next-button"
+      type="button"
+      onclick="openPaymentReview()"
+    >
+      CONTINUE TO PAYMENT
+    </button>
+
+    <button
       id="confirm-finish-button"
       class="finish"
       type="button"
@@ -3283,6 +3483,157 @@
       onclick="backToShoppingFromFinish()"
     >
       BACK TO SHOPPING
+    </button>
+
+  </div>
+
+  <div
+    id="payment-panel"
+    class="hidden"
+  >
+
+    <div class="payment-panel-header">
+      <div class="small-label">CHECKOUT</div>
+      <div class="payment-panel-title">Payment</div>
+      <div id="payment-review-store" class="payment-panel-store">—</div>
+      <div id="payment-review-total" class="payment-panel-total">$0.00</div>
+      <div class="payment-panel-total-label">Trip total</div>
+    </div>
+
+    <div class="payment-ui-note">
+      This first payment build is for interface testing only. Choosing or creating a method here does not write anything to Google Sheets yet, and the existing finish button remains available in Final Review while we test this screen.
+    </div>
+
+    <div class="payment-section-card">
+      <div class="payment-section-heading">How are you paying?</div>
+      <div class="payment-section-hint">
+        Choose a saved method or add a new one while you are checking out. Split-payment amounts come in the next implementation step.
+      </div>
+
+      <div id="payment-method-list" class="payment-method-list"></div>
+
+      <button
+        class="payment-add-button"
+        type="button"
+        onclick="openNewPaymentMethodForm()"
+      >
+        ＋ ADD NEW PAYMENT METHOD
+      </button>
+
+      <div
+        id="payment-new-form"
+        class="payment-new-form hidden"
+      >
+
+        <div class="payment-section-heading">New payment method</div>
+        <div class="payment-section-hint">
+          Add only the identifying details you want to keep. Full card numbers, expiration dates, CVVs and PINs are never requested.
+        </div>
+
+        <div class="payment-form-grid">
+          <div class="payment-form-full">
+            <label for="payment-new-nickname">Nickname</label>
+            <input
+              id="payment-new-nickname"
+              type="text"
+              placeholder="e.g. GUS's HSBC Credit Card"
+              autocomplete="off"
+            >
+          </div>
+
+          <div>
+            <label for="payment-new-owner">Owner</label>
+            <input
+              id="payment-new-owner"
+              type="text"
+              placeholder="Full name"
+              autocomplete="off"
+            >
+          </div>
+
+          <div>
+            <label for="payment-new-institution">Institution</label>
+            <input
+              id="payment-new-institution"
+              type="text"
+              placeholder="Bank / issuer"
+              autocomplete="off"
+            >
+          </div>
+
+          <div>
+            <label for="payment-new-type">Type</label>
+            <select id="payment-new-type">
+              <option value="Credit">Credit</option>
+              <option value="Debit">Debit</option>
+              <option value="Food stamps">Food stamps</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="payment-new-last4">Last 4 (optional)</label>
+            <input
+              id="payment-new-last4"
+              type="text"
+              inputmode="numeric"
+              maxlength="4"
+              placeholder="1234"
+              autocomplete="off"
+              oninput="sanitizePaymentLast4()"
+            >
+          </div>
+
+          <div class="payment-form-full">
+            <label for="payment-new-notes">Notes (optional)</label>
+            <textarea
+              id="payment-new-notes"
+              rows="2"
+              placeholder="Anything useful for identifying this payment method later"
+            ></textarea>
+          </div>
+        </div>
+
+        <label class="payment-save-checkbox" for="payment-new-save">
+          <input
+            id="payment-new-save"
+            type="checkbox"
+            checked
+          >
+          <span>Save this payment method for future trips</span>
+        </label>
+
+        <div class="payment-form-actions">
+          <button
+            class="payment-form-cancel"
+            type="button"
+            onclick="closeNewPaymentMethodForm()"
+          >
+            CANCEL
+          </button>
+
+          <button
+            class="payment-form-use"
+            type="button"
+            onclick="useDraftPaymentMethod()"
+          >
+            USE THIS METHOD
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="payment-selection-preview"
+        class="payment-selection-preview hidden"
+      ></div>
+    </div>
+
+    <button
+      class="secondary"
+      type="button"
+      onclick="backToFinishReviewFromPayment()"
+    >
+      BACK TO FINAL REVIEW
     </button>
 
   </div>
@@ -4195,6 +4546,9 @@
   let finishReviewTotals = null;
   let reviewEditingItemIndex = null;
 
+  let paymentDraftMethods = [];
+  let selectedPaymentDraftId = "";
+
   let visitedStores = [];
   let visitedStoresLoadedFromTrips = false;
 
@@ -4433,6 +4787,7 @@
     hide("item-panel");
     hide("success-panel");
     hide("finish-review-panel");
+    hide("payment-panel");
     hide("finished-panel");
 
     show("home-panel");
@@ -4744,6 +5099,7 @@
     hide("item-panel");
     hide("success-panel");
     hide("finish-review-panel");
+    hide("payment-panel");
     hide("finished-panel");
 
     show("active-trip-panel");
@@ -9070,6 +9426,439 @@
   }
 
 
+  function openPaymentReview() {
+
+    if (
+      !activeTrip
+    ) {
+      fail(
+        "No active trip exists."
+      );
+      return;
+    }
+
+    if (
+      !finishReviewTotals
+    ) {
+      finishReviewTotals =
+        calculateTripTotals(
+          finishReviewItems
+        );
+    }
+
+    if (
+      !paymentDraftMethods.length
+    ) {
+      paymentDraftMethods = [
+        {
+          id: "CASH",
+          nickname: "Cash",
+          owner: "",
+          institution: "",
+          type: "Cash",
+          last4: "",
+          notes: "",
+          saveForFuture: true,
+          builtIn: true
+        }
+      ];
+    }
+
+    document.getElementById(
+      "payment-review-store"
+    ).textContent =
+      activeTrip.store || "—";
+
+    document.getElementById(
+      "payment-review-total"
+    ).textContent =
+      formatMoney(
+        finishReviewTotals.actualTotal
+      );
+
+    renderPaymentMethodList();
+    closeNewPaymentMethodForm();
+
+    hide(
+      "finish-review-panel"
+    );
+
+    show(
+      "payment-panel"
+    );
+
+    setStatus(
+      "Choose a payment method. This screen is UI-only for this test build.",
+      "success"
+    );
+
+    document.getElementById(
+      "payment-panel"
+    ).scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+
+  function renderPaymentMethodList() {
+
+    const list =
+      document.getElementById(
+        "payment-method-list"
+      );
+
+    if (
+      !list
+    ) {
+      return;
+    }
+
+    list.innerHTML =
+      paymentDraftMethods
+        .map(
+          method => {
+
+            const selected =
+              method.id ===
+              selectedPaymentDraftId;
+
+            const metaParts = [];
+
+            if (
+              method.owner
+            ) {
+              metaParts.push(
+                method.owner
+              );
+            }
+
+            if (
+              method.institution
+            ) {
+              metaParts.push(
+                method.institution
+              );
+            }
+
+            if (
+              method.type
+            ) {
+              metaParts.push(
+                method.type
+              );
+            }
+
+            if (
+              method.last4
+            ) {
+              metaParts.push(
+                "•••• " +
+                method.last4
+              );
+            }
+
+            if (
+              method.builtIn
+            ) {
+              metaParts.push(
+                "Built-in"
+              );
+            }
+
+            return (
+              '<button class="payment-method-card' +
+              (
+                selected
+                  ? " selected"
+                  : ""
+              ) +
+              '" type="button" onclick="selectDraftPaymentMethod(\'' +
+              escapeJsString(
+                method.id
+              ) +
+              '\')">' +
+                '<div class="payment-method-name">' +
+                  escapeHtml(
+                    method.nickname
+                  ) +
+                '</div>' +
+                '<div class="payment-method-meta">' +
+                  escapeHtml(
+                    metaParts.join(
+                      " • "
+                    ) ||
+                    "Payment method"
+                  ) +
+                '</div>' +
+              '</button>'
+            );
+          }
+        )
+        .join("");
+  }
+
+
+  function escapeJsString(value) {
+    return String(
+      value ?? ""
+    )
+      .replace(
+        /\\/g,
+        "\\\\"
+      )
+      .replace(
+        /'/g,
+        "\\'"
+      );
+  }
+
+
+  function selectDraftPaymentMethod(methodId) {
+
+    selectedPaymentDraftId =
+      String(
+        methodId || ""
+      );
+
+    renderPaymentMethodList();
+
+    const method =
+      paymentDraftMethods.find(
+        entry =>
+          entry.id ===
+          selectedPaymentDraftId
+      );
+
+    const preview =
+      document.getElementById(
+        "payment-selection-preview"
+      );
+
+    if (
+      !method ||
+      !preview
+    ) {
+      return;
+    }
+
+    preview.innerHTML =
+      '<b>Selected:</b> ' +
+      escapeHtml(
+        method.nickname
+      ) +
+      '<br>Next step: assign payment amounts and support split payments.';
+
+    preview.classList.remove(
+      "hidden"
+    );
+  }
+
+
+  function openNewPaymentMethodForm() {
+
+    document.getElementById(
+      "payment-new-form"
+    ).classList.remove(
+      "hidden"
+    );
+
+    document.getElementById(
+      "payment-new-nickname"
+    ).focus();
+  }
+
+
+  function closeNewPaymentMethodForm() {
+
+    const form =
+      document.getElementById(
+        "payment-new-form"
+      );
+
+    if (
+      form
+    ) {
+      form.classList.add(
+        "hidden"
+      );
+    }
+  }
+
+
+  function sanitizePaymentLast4() {
+
+    const input =
+      document.getElementById(
+        "payment-new-last4"
+      );
+
+    input.value =
+      String(
+        input.value || ""
+      )
+        .replace(
+          /\D/g,
+          ""
+        )
+        .slice(
+          0,
+          4
+        );
+  }
+
+
+  function useDraftPaymentMethod() {
+
+    const nickname =
+      String(
+        document.getElementById(
+          "payment-new-nickname"
+        ).value || ""
+      ).trim();
+
+    const owner =
+      String(
+        document.getElementById(
+          "payment-new-owner"
+        ).value || ""
+      ).trim();
+
+    const institution =
+      String(
+        document.getElementById(
+          "payment-new-institution"
+        ).value || ""
+      ).trim();
+
+    const type =
+      String(
+        document.getElementById(
+          "payment-new-type"
+        ).value || "Other"
+      ).trim();
+
+    const last4 =
+      String(
+        document.getElementById(
+          "payment-new-last4"
+        ).value || ""
+      ).trim();
+
+    const notes =
+      String(
+        document.getElementById(
+          "payment-new-notes"
+        ).value || ""
+      ).trim();
+
+    const saveForFuture =
+      document.getElementById(
+        "payment-new-save"
+      ).checked;
+
+    if (
+      !nickname
+    ) {
+      showErrorToast(
+        "Nickname required",
+        "Give this payment method a recognizable name."
+      );
+      return;
+    }
+
+    if (
+      last4 &&
+      last4.length !== 4
+    ) {
+      showErrorToast(
+        "Check last 4",
+        "Leave Last 4 blank or enter exactly four digits."
+      );
+      return;
+    }
+
+    const draftId =
+      "DRAFT-" +
+      Date.now();
+
+    paymentDraftMethods.push({
+      id: draftId,
+      nickname,
+      owner,
+      institution,
+      type,
+      last4,
+      notes,
+      saveForFuture,
+      builtIn: false
+    });
+
+    selectedPaymentDraftId =
+      draftId;
+
+    renderPaymentMethodList();
+    closeNewPaymentMethodForm();
+
+    document.getElementById(
+      "payment-new-nickname"
+    ).value = "";
+    document.getElementById(
+      "payment-new-owner"
+    ).value = "";
+    document.getElementById(
+      "payment-new-institution"
+    ).value = "";
+    document.getElementById(
+      "payment-new-type"
+    ).value = "Credit";
+    document.getElementById(
+      "payment-new-last4"
+    ).value = "";
+    document.getElementById(
+      "payment-new-notes"
+    ).value = "";
+    document.getElementById(
+      "payment-new-save"
+    ).checked = true;
+
+    selectDraftPaymentMethod(
+      draftId
+    );
+
+    showSuccessToast(
+      "Payment method ready",
+      saveForFuture
+        ? "This method is staged to be saved once payment storage is wired up."
+        : "This method is staged for this trip only."
+    );
+  }
+
+
+  function backToFinishReviewFromPayment() {
+
+    hide(
+      "payment-panel"
+    );
+
+    show(
+      "finish-review-panel"
+    );
+
+    setStatus(
+      "Final trip review restored.",
+      "success"
+    );
+
+    document.getElementById(
+      "finish-review-panel"
+    ).scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+
   async function confirmFinishTrip() {
 
     if (
@@ -9173,6 +9962,10 @@
 
       hide(
         "finish-review-panel"
+      );
+
+      hide(
+        "payment-panel"
       );
 
       visitedStoresLoadedFromTrips =
@@ -14578,6 +15371,7 @@
       "item-panel",
       "success-panel",
       "finish-review-panel",
+      "payment-panel",
       "finished-panel"
     ];
 
@@ -14618,6 +15412,7 @@
       "item-panel",
       "success-panel",
       "finish-review-panel",
+      "payment-panel",
       "finished-panel"
     ]
       .forEach(
@@ -15744,6 +16539,7 @@
       "item-panel",
       "success-panel",
       "finish-review-panel",
+      "payment-panel",
       "finished-panel",
       "history-panel",
       "history-receipt-panel",
@@ -16486,6 +17282,7 @@
       "item-panel",
       "success-panel",
       "finish-review-panel",
+      "payment-panel",
       "finished-panel",
       "history-panel",
       "history-receipt-panel",
