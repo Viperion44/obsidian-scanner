@@ -3470,6 +3470,13 @@
 
     </div>
 
+    <div class="payment-section-card">
+      <div class="payment-section-heading">Payment</div>
+      <div id="finish-review-payment-summary" class="payment-section-hint">
+        No payment method selected yet.
+      </div>
+    </div>
+
     <div class="finish-warning">
       Nothing is archived or cleared until you tap
       <b>CONFIRM &amp; FINISH TRIP</b>.
@@ -3485,6 +3492,7 @@
     </button>
 
     <button
+      id="finish-payment-button"
       class="payment-next-button"
       type="button"
       onclick="openPaymentReview()"
@@ -3501,13 +3509,6 @@
       CONFIRM &amp; FINISH TRIP
     </button>
 
-    <button
-      class="secondary"
-      type="button"
-      onclick="backToShoppingFromFinish()"
-    >
-      BACK TO SHOPPING
-    </button>
 
   </div>
 
@@ -3525,7 +3526,7 @@
     </div>
 
     <div class="payment-ui-note">
-      This first payment build is for interface testing only. Choosing or creating a method here does not write anything to Google Sheets yet, and the existing finish button remains available in Final Review while we test this screen.
+      Choose an existing payment method or add one while checking out. Saved methods are stored in the Payment Methods sheet and can be reused on later trips.
     </div>
 
     <div class="payment-section-card">
@@ -3873,6 +3874,8 @@
       </div>
 
     </div>
+
+    <div id="history-receipt-payment" class="payment-section-card hidden"></div>
 
     <div
       id="history-receipt-trip-id"
@@ -4521,6 +4524,12 @@
 
   const TRIP_HISTORY_SHEET =
     "Trip History";
+
+  const PAYMENT_METHODS_SHEET =
+    "Payment Methods";
+
+  const TRIP_PAYMENTS_SHEET =
+    "Trip Payments";
 
   const CURRENT_STORE_CELL =
     "U21";
@@ -8937,6 +8946,121 @@
         "hidden"
       );
     }
+
+    renderFinishReviewPaymentSummary();
+  }
+
+
+  function renderFinishReviewPaymentSummary() {
+
+    const summary =
+      document.getElementById(
+        "finish-review-payment-summary"
+      );
+
+    const paymentButton =
+      document.getElementById(
+        "finish-payment-button"
+      );
+
+    const finishButton =
+      document.getElementById(
+        "confirm-finish-button"
+      );
+
+    const total =
+      finishReviewTotals &&
+      isUsableNumber(
+        finishReviewTotals.actualTotal
+      )
+        ? Number(
+            finishReviewTotals.actualTotal
+          )
+        : 0;
+
+    const method =
+      paymentDraftMethods.find(
+        entry =>
+          entry.id ===
+          selectedPaymentDraftId
+      );
+
+    if (
+      total <= 0
+    ) {
+      if (summary) {
+        summary.innerHTML =
+          "No payment required for a $0.00 trip.";
+      }
+
+      if (paymentButton) {
+        paymentButton.textContent =
+          method
+            ? "CHANGE PAYMENT METHOD"
+            : "OPTIONAL PAYMENT DETAILS";
+      }
+
+      if (finishButton) {
+        finishButton.disabled =
+          false;
+      }
+
+      return;
+    }
+
+    if (method) {
+      const ownerText =
+        method.owner
+          ? " • " +
+            escapeHtml(
+              method.owner
+            )
+          : "";
+
+      if (summary) {
+        summary.innerHTML =
+          "<b>" +
+          escapeHtml(
+            method.nickname ||
+            "Payment method"
+          ) +
+          "</b>" +
+          ownerText +
+          "<br>Applied to trip: " +
+          escapeHtml(
+            formatMoney(
+              total
+            )
+          );
+      }
+
+      if (paymentButton) {
+        paymentButton.textContent =
+          "CHANGE PAYMENT METHOD";
+      }
+
+      if (finishButton) {
+        finishButton.disabled =
+          false;
+      }
+
+    } else {
+
+      if (summary) {
+        summary.textContent =
+          "No payment method selected yet.";
+      }
+
+      if (paymentButton) {
+        paymentButton.textContent =
+          "CONTINUE TO PAYMENT";
+      }
+
+      if (finishButton) {
+        finishButton.disabled =
+          true;
+      }
+    }
   }
 
 
@@ -9673,7 +9797,7 @@
   }
 
 
-  function openPaymentReview() {
+  async function openPaymentReview() {
 
     if (
       !activeTrip
@@ -9693,58 +9817,203 @@
         );
     }
 
-    if (
-      !paymentDraftMethods.length
-    ) {
-      paymentDraftMethods = [
-        {
-          id: "CASH",
-          nickname: "Cash",
-          owner: "",
-          institution: "",
-          type: "Cash",
-          last4: "",
-          notes: "",
-          saveForFuture: true,
-          builtIn: true
-        }
-      ];
-    }
-
-    document.getElementById(
-      "payment-review-store"
-    ).textContent =
-      activeTrip.store || "—";
-
-    document.getElementById(
-      "payment-review-total"
-    ).textContent =
-      formatMoney(
-        finishReviewTotals.actualTotal
+    try {
+      setStatus(
+        "Loading payment methods...",
+        "working"
       );
 
-    renderPaymentMethodList();
-    closeNewPaymentMethodForm();
+      const savedMethods =
+        await loadSavedPaymentMethods();
 
-    hide(
-      "finish-review-panel"
+      const unsavedDrafts =
+        paymentDraftMethods.filter(
+          method =>
+            method &&
+            !method.builtIn &&
+            !method.savedToSheet
+        );
+
+      paymentDraftMethods =
+        mergePaymentMethods(
+          savedMethods,
+          unsavedDrafts
+        );
+
+      document.getElementById(
+        "payment-review-store"
+      ).textContent =
+        activeTrip.store || "—";
+
+      document.getElementById(
+        "payment-review-total"
+      ).textContent =
+        formatMoney(
+          finishReviewTotals.actualTotal
+        );
+
+      renderPaymentMethodList();
+      closeNewPaymentMethodForm();
+
+      hide(
+        "finish-review-panel"
+      );
+
+      show(
+        "payment-panel"
+      );
+
+      setStatus(
+        "Choose the payment method for this trip.",
+        "success"
+      );
+
+      document.getElementById(
+        "payment-panel"
+      ).scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+
+    } catch (error) {
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  async function loadSavedPaymentMethods() {
+
+    const result =
+      await sheetsGetValues(
+        `'${PAYMENT_METHODS_SHEET}'!A2:H`,
+        "UNFORMATTED_VALUE"
+      );
+
+    const rows =
+      result.values || [];
+
+    const methods =
+      rows
+        .map(
+          row => {
+            const id =
+              String(
+                row[0] ?? ""
+              ).trim();
+
+            const nickname =
+              String(
+                row[1] ?? ""
+              ).trim();
+
+            const activeRaw =
+              row[7];
+
+            const active =
+              activeRaw === true ||
+              String(
+                activeRaw ?? ""
+              ).trim().toUpperCase() ===
+                "TRUE";
+
+            if (
+              !id ||
+              !nickname ||
+              !active
+            ) {
+              return null;
+            }
+
+            return {
+              id,
+              nickname,
+              owner:
+                String(
+                  row[2] ?? ""
+                ).trim(),
+              institution:
+                String(
+                  row[3] ?? ""
+                ).trim(),
+              type:
+                String(
+                  row[4] ?? "Other"
+                ).trim() || "Other",
+              last4:
+                String(
+                  row[5] ?? ""
+                ).trim(),
+              notes:
+                String(
+                  row[6] ?? ""
+                ).trim(),
+              saveForFuture: true,
+              savedToSheet: true,
+              builtIn:
+                id === "CASH" ||
+                String(
+                  row[4] ?? ""
+                ).trim().toLowerCase() ===
+                  "cash"
+            };
+          }
+        )
+        .filter(Boolean);
+
+    if (
+      !methods.some(
+        method =>
+          method.id === "CASH"
+      )
+    ) {
+      methods.unshift({
+        id: "CASH",
+        nickname: "Cash",
+        owner: "",
+        institution: "",
+        type: "Cash",
+        last4: "",
+        notes: "",
+        saveForFuture: true,
+        savedToSheet: true,
+        builtIn: true
+      });
+    }
+
+    return methods;
+  }
+
+
+  function mergePaymentMethods(
+    savedMethods,
+    drafts
+  ) {
+
+    const merged =
+      new Map();
+
+    [
+      ...(savedMethods || []),
+      ...(drafts || [])
+    ].forEach(
+      method => {
+        if (
+          method &&
+          method.id
+        ) {
+          merged.set(
+            method.id,
+            method
+          );
+        }
+      }
     );
 
-    show(
-      "payment-panel"
+    return Array.from(
+      merged.values()
     );
-
-    setStatus(
-      "Choose a payment method. This screen is UI-only for this test build.",
-      "success"
-    );
-
-    document.getElementById(
-      "payment-panel"
-    ).scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
   }
 
 
@@ -9894,7 +10163,21 @@
       escapeHtml(
         method.nickname
       ) +
-      '<br>Next step: assign payment amounts and support split payments.';
+      (
+        method.owner
+          ? '<br>Owner: ' +
+            escapeHtml(
+              method.owner
+            )
+          : ''
+      ) +
+      '<br>Applied to trip: ' +
+      escapeHtml(
+        formatMoney(
+          finishReviewTotals?.actualTotal || 0
+        )
+      ) +
+      '<br>Return to Final Review when ready.';
 
     preview.classList.remove(
       "hidden"
@@ -9955,7 +10238,7 @@
   }
 
 
-  function useDraftPaymentMethod() {
+  async function useDraftPaymentMethod() {
 
     const nickname =
       String(
@@ -10025,12 +10308,10 @@
       return;
     }
 
-    const draftId =
-      "DRAFT-" +
-      Date.now();
-
-    paymentDraftMethods.push({
-      id: draftId,
+    const method = {
+      id:
+        "PM-" +
+        Date.now(),
       nickname,
       owner,
       institution,
@@ -10038,46 +10319,135 @@
       last4,
       notes,
       saveForFuture,
-      builtIn: false
-    });
+      builtIn: false,
+      savedToSheet: false
+    };
 
-    selectedPaymentDraftId =
-      draftId;
+    try {
+      if (
+        saveForFuture
+      ) {
+        setStatus(
+          "Saving payment method...",
+          "working"
+        );
 
-    renderPaymentMethodList();
-    closeNewPaymentMethodForm();
+        await savePaymentMethod(
+          method
+        );
 
-    document.getElementById(
-      "payment-new-nickname"
-    ).value = "";
-    document.getElementById(
-      "payment-new-owner"
-    ).value = "";
-    document.getElementById(
-      "payment-new-institution"
-    ).value = "";
-    document.getElementById(
-      "payment-new-type"
-    ).value = "Credit";
-    document.getElementById(
-      "payment-new-last4"
-    ).value = "";
-    document.getElementById(
-      "payment-new-notes"
-    ).value = "";
-    document.getElementById(
-      "payment-new-save"
-    ).checked = true;
+        method.savedToSheet =
+          true;
+      }
 
-    selectDraftPaymentMethod(
-      draftId
-    );
+      paymentDraftMethods.push(
+        method
+      );
 
-    showSuccessToast(
-      "Payment method ready",
-      saveForFuture
-        ? "This method is staged to be saved once payment storage is wired up."
-        : "This method is staged for this trip only."
+      selectedPaymentDraftId =
+        method.id;
+
+      renderPaymentMethodList();
+      closeNewPaymentMethodForm();
+
+      document.getElementById(
+        "payment-new-nickname"
+      ).value = "";
+      document.getElementById(
+        "payment-new-owner"
+      ).value = "";
+      document.getElementById(
+        "payment-new-institution"
+      ).value = "";
+      document.getElementById(
+        "payment-new-type"
+      ).value = "Credit";
+      document.getElementById(
+        "payment-new-last4"
+      ).value = "";
+      document.getElementById(
+        "payment-new-notes"
+      ).value = "";
+      document.getElementById(
+        "payment-new-save"
+      ).checked = true;
+
+      selectDraftPaymentMethod(
+        method.id
+      );
+
+      setStatus(
+        saveForFuture
+          ? "Payment method saved and selected."
+          : "Payment method selected for this trip.",
+        "success"
+      );
+
+      showSuccessToast(
+        "Payment method ready",
+        saveForFuture
+          ? "Saved for future trips and selected for this checkout."
+          : "Selected for this trip only."
+      );
+
+    } catch (error) {
+      handleApiError(
+        error
+      );
+    }
+  }
+
+
+  async function savePaymentMethod(
+    method
+  ) {
+
+    const idResult =
+      await sheetsGetValues(
+        `'${PAYMENT_METHODS_SHEET}'!A2:A`,
+        "FORMATTED_VALUE"
+      );
+
+    const rows =
+      idResult.values || [];
+
+    let rowNumber =
+      rows.length + 2;
+
+    for (
+      let index = 0;
+      index < rows.length;
+      index++
+    ) {
+      if (
+        blank(
+          rows[index]?.[0]
+        )
+      ) {
+        rowNumber =
+          index + 2;
+        break;
+      }
+    }
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${PAYMENT_METHODS_SHEET}'!A${rowNumber}:H${rowNumber}`,
+          values: [[
+            method.id,
+            method.nickname,
+            method.owner,
+            method.institution,
+            method.type,
+            method.last4,
+            method.notes,
+            true
+          ]]
+        }
+      ],
+      "RAW"
     );
   }
 
@@ -10087,6 +10457,8 @@
     hide(
       "payment-panel"
     );
+
+    renderFinishReviewPaymentSummary();
 
     show(
       "finish-review-panel"
@@ -10116,6 +10488,34 @@
         "No active trip exists."
       );
 
+      return;
+    }
+
+    const expectedTotal =
+      finishReviewTotals &&
+      isUsableNumber(
+        finishReviewTotals.actualTotal
+      )
+        ? Number(
+            finishReviewTotals.actualTotal
+          )
+        : 0;
+
+    const selectedMethod =
+      paymentDraftMethods.find(
+        entry =>
+          entry.id ===
+          selectedPaymentDraftId
+      );
+
+    if (
+      expectedTotal > 0 &&
+      !selectedMethod
+    ) {
+      showErrorToast(
+        "Payment required",
+        "Choose a payment method before finishing this trip."
+      );
       return;
     }
 
@@ -10158,6 +10558,10 @@
       await archiveTripHistory(
         items,
         finishIso
+      );
+
+      await archiveTripPayments(
+        totals.actualTotal
       );
 
 
@@ -10205,6 +10609,16 @@
 
       finishReviewTotals =
         null;
+
+      paymentDraftMethods =
+        paymentDraftMethods.filter(
+          method =>
+            method.savedToSheet ||
+            method.builtIn
+        );
+
+      selectedPaymentDraftId =
+        "";
 
 
       hide(
@@ -10258,6 +10672,119 @@
         error
       );
     }
+  }
+
+
+  async function archiveTripPayments(
+    finalTotal
+  ) {
+
+    if (
+      !isUsableNumber(
+        finalTotal
+      ) ||
+      Number(
+        finalTotal
+      ) <= 0
+    ) {
+      return;
+    }
+
+    const method =
+      paymentDraftMethods.find(
+        entry =>
+          entry.id ===
+          selectedPaymentDraftId
+      );
+
+    if (!method) {
+      throw new Error(
+        "A payment method is required before this trip can be finished."
+      );
+    }
+
+    const existingResult =
+      await sheetsGetValues(
+        `'${TRIP_PAYMENTS_SHEET}'!A2:A`,
+        "FORMATTED_VALUE"
+      );
+
+    const existingRows =
+      existingResult.values || [];
+
+    const existingCount =
+      existingRows.filter(
+        row =>
+          String(
+            row?.[0] ?? ""
+          ).trim() ===
+            activeTrip.tripId
+      ).length;
+
+    if (
+      existingCount === 1
+    ) {
+      return;
+    }
+
+    if (
+      existingCount > 1
+    ) {
+      throw new Error(
+        "Multiple payment rows already exist for this trip. Finish was stopped to avoid duplicate payment records."
+      );
+    }
+
+    let rowNumber =
+      existingRows.length + 2;
+
+    for (
+      let index = 0;
+      index < existingRows.length;
+      index++
+    ) {
+      if (
+        blank(
+          existingRows[index]?.[0]
+        )
+      ) {
+        rowNumber =
+          index + 2;
+        break;
+      }
+    }
+
+    const paymentId =
+      "PAY-" +
+      Date.now();
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${TRIP_PAYMENTS_SHEET}'!A${rowNumber}:L${rowNumber}`,
+          values: [[
+            activeTrip.tripId,
+            paymentId,
+            method.id || "",
+            method.nickname || "Payment method",
+            method.owner || "",
+            method.institution || "",
+            method.type || "Other",
+            method.last4 || "",
+            roundMoney(
+              Number(
+                finalTotal
+              )
+            ),
+            "",
+            "",
+            method.notes || ""
+          ]]
+        }
+      ],
+      "RAW"
+    );
   }
 
 
@@ -16051,7 +16578,8 @@
       tripsResult,
       tripsFormattedResult,
       historyResult,
-      historyDatesResult
+      historyDatesResult,
+      tripPaymentsResult
     ] =
       await Promise.all(
         [
@@ -16073,6 +16601,11 @@
           sheetsGetValues(
             `'${TRIP_HISTORY_SHEET}'!B2:B`,
             "FORMATTED_VALUE"
+          ),
+
+          sheetsGetValues(
+            `'${TRIP_PAYMENTS_SHEET}'!A2:L`,
+            "UNFORMATTED_VALUE"
           )
         ]
       );
@@ -16082,7 +16615,8 @@
         tripsResult.values || [],
         historyResult.values || [],
         historyDatesResult.values || [],
-        tripsFormattedResult.values || []
+        tripsFormattedResult.values || [],
+        tripPaymentsResult.values || []
       );
 
     renderHistoryTripList();
@@ -16093,8 +16627,86 @@
     tripRows,
     historyRows,
     formattedDateRows,
-    formattedTripRows = []
+    formattedTripRows = [],
+    paymentRows = []
   ) {
+
+    const paymentGroups =
+      new Map();
+
+    paymentRows.forEach(
+      row => {
+        const tripId =
+          String(
+            row[0] ?? ""
+          ).trim();
+
+        if (!tripId) {
+          return;
+        }
+
+        if (
+          !paymentGroups.has(
+            tripId
+          )
+        ) {
+          paymentGroups.set(
+            tripId,
+            []
+          );
+        }
+
+        paymentGroups.get(
+          tripId
+        ).push({
+          paymentId:
+            String(
+              row[1] ?? ""
+            ).trim(),
+          methodId:
+            String(
+              row[2] ?? ""
+            ).trim(),
+          nickname:
+            String(
+              row[3] ?? "Payment method"
+            ).trim() ||
+            "Payment method",
+          owner:
+            String(
+              row[4] ?? ""
+            ).trim(),
+          institution:
+            String(
+              row[5] ?? ""
+            ).trim(),
+          type:
+            String(
+              row[6] ?? ""
+            ).trim(),
+          last4:
+            String(
+              row[7] ?? ""
+            ).trim(),
+          amountApplied:
+            normalizeNumericValue(
+              row[8]
+            ),
+          cashTendered:
+            normalizeNumericValue(
+              row[9]
+            ),
+          change:
+            normalizeNumericValue(
+              row[10]
+            ),
+          notes:
+            String(
+              row[11] ?? ""
+            ).trim()
+        });
+      }
+    );
 
     const historyGroups =
       new Map();
@@ -16396,6 +17008,11 @@
             items:
               items,
 
+            payments:
+              paymentGroups.get(
+                tripId
+              ) || [],
+
             hasTripRecord:
               true
           }
@@ -16455,6 +17072,11 @@
 
             items:
               group.items,
+
+            payments:
+              paymentGroups.get(
+                tripId
+              ) || [],
 
             hasTripRecord:
               false
@@ -16987,6 +17609,70 @@
       formatMoney(
         trip.finalTotal
       );
+
+
+    const paymentBox =
+      document.getElementById(
+        "history-receipt-payment"
+      );
+
+    const receiptPayments =
+      Array.isArray(
+        trip.payments
+      )
+        ? trip.payments
+        : [];
+
+    if (
+      paymentBox &&
+      receiptPayments.length
+    ) {
+      paymentBox.classList.remove(
+        "hidden"
+      );
+
+      paymentBox.innerHTML =
+        '<div class="payment-section-heading">Payment</div>' +
+        receiptPayments
+          .map(
+            payment =>
+              '<div class="payment-section-hint"><b>' +
+              escapeHtml(
+                payment.nickname ||
+                "Payment method"
+              ) +
+              '</b>' +
+              (
+                payment.owner
+                  ? ' • ' +
+                    escapeHtml(
+                      payment.owner
+                    )
+                  : ''
+              ) +
+              (
+                isUsableNumber(
+                  payment.amountApplied
+                )
+                  ? '<br>Applied: ' +
+                    escapeHtml(
+                      formatMoney(
+                        payment.amountApplied
+                      )
+                    )
+                  : ''
+              ) +
+              '</div>'
+          )
+          .join('');
+
+    } else if (paymentBox) {
+      paymentBox.classList.add(
+        "hidden"
+      );
+      paymentBox.innerHTML =
+        "";
+    }
 
 
     document.getElementById(
