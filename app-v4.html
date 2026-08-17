@@ -2415,7 +2415,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 PDF pagination v2 test
+    V4 payment + PDF privacy test
   </div>
 
   <button
@@ -3037,13 +3037,16 @@
 
               <input
                 id="promo-quantity"
-                type="number"
-                inputmode="decimal"
-                min="0"
-                step="1"
-                placeholder="Example: 2"
-                oninput="fieldChanged(this); updatePricing();"
+                type="text"
+                inputmode="text"
+                placeholder="Example: 2 or 2 x 10"
+                autocomplete="off"
+                oninput="fieldChanged(this); syncXForYPromoInput(); updatePricing();"
               >
+
+              <div class="hint">
+                You can enter only X here and the price below, or type the whole offer here, e.g. 2 x 10 or 2 10.
+              </div>
 
             </div>
 
@@ -6829,6 +6832,112 @@
   }
 
 
+  function parseXForYPromoInput() {
+
+    const quantityInput =
+      document.getElementById(
+        "promo-quantity"
+      );
+
+    const totalInput =
+      document.getElementById(
+        "promo-total"
+      );
+
+    const raw =
+      String(
+        quantityInput?.value || ""
+      ).trim();
+
+    if (!raw) {
+      return {
+        quantity: null,
+        total: readPositiveNumber(
+          "promo-total"
+        )
+      };
+    }
+
+    const numbers =
+      raw
+        .replace(/,/g, ".")
+        .match(/\d+(?:\.\d+)?/g);
+
+    if (
+      numbers &&
+      numbers.length >= 2
+    ) {
+
+      const quantity =
+        Number(numbers[0]);
+
+      const total =
+        Number(numbers[1]);
+
+      return {
+        quantity:
+          Number.isFinite(quantity) && quantity > 0
+            ? quantity
+            : null,
+        total:
+          Number.isFinite(total) && total > 0
+            ? total
+            : null
+      };
+    }
+
+    const quantity =
+      Number(
+        raw.replace(/,/g, ".")
+      );
+
+    return {
+      quantity:
+        Number.isFinite(quantity) && quantity > 0
+          ? quantity
+          : null,
+      total:
+        readPositiveNumber(
+          "promo-total"
+        )
+    };
+  }
+
+
+  function syncXForYPromoInput() {
+
+    const parsed =
+      parseXForYPromoInput();
+
+    const raw =
+      String(
+        document.getElementById(
+          "promo-quantity"
+        )?.value || ""
+      );
+
+    const containsTwoValues =
+      (
+        raw
+          .replace(/,/g, ".")
+          .match(/\d+(?:\.\d+)?/g) ||
+        []
+      ).length >= 2;
+
+    if (
+      containsTwoValues &&
+      parsed.total !== null
+    ) {
+      document.getElementById(
+        "promo-total"
+      ).value =
+        formatPlainNumber(
+          parsed.total
+        );
+    }
+  }
+
+
   function updatePricing() {
 
     currentPricing =
@@ -7014,15 +7123,14 @@
       promoType === "X_FOR_Y"
     ) {
 
+      const xForY =
+        parseXForYPromoInput();
+
       const quantity =
-        readPositiveNumber(
-          "promo-quantity"
-        );
+        xForY.quantity;
 
       const total =
-        readPositiveNumber(
-          "promo-total"
-        );
+        xForY.total;
 
       if (
         quantity === null ||
@@ -8013,6 +8121,12 @@
 
 
       await refreshTripSummary();
+
+
+      setStatus(
+        "Item added to trip.",
+        "success"
+      );
 
 
       document.getElementById(
@@ -10555,6 +10669,36 @@
   }
 
 
+  function getSelectedPaymentPdfSnapshot() {
+
+    const method =
+      paymentDraftMethods.find(
+        entry =>
+          entry.id ===
+          selectedPaymentDraftId
+      );
+
+    if (!method) {
+      return [];
+    }
+
+    return [
+      {
+        nickname:
+          String(
+            method.nickname ||
+            "Payment method"
+          ).trim(),
+        owner:
+          String(
+            method.owner ||
+            ""
+          ).trim()
+      }
+    ];
+  }
+
+
   function renderFinishedReceipt(
     items,
     totals,
@@ -10635,6 +10779,8 @@
         totals.savings,
       itemCount:
         items.length,
+      payments:
+        getSelectedPaymentPdfSnapshot(),
       items:
         items.map(
           item => ({
@@ -12842,10 +12988,57 @@
             )
           );
 
+    let payments =
+      Array.isArray(
+        trip.payments
+      )
+        ? trip.payments
+        : [];
+
+    if (
+      !payments.length &&
+      lastFinishedTripExport &&
+      String(
+        trip.tripId || ""
+      ) ===
+        String(
+          lastFinishedTripExport.tripId || ""
+        ) &&
+      Array.isArray(
+        lastFinishedTripExport.payments
+      )
+    ) {
+      payments =
+        lastFinishedTripExport.payments;
+    }
+
+    payments =
+      payments
+        .map(
+          payment => ({
+            nickname:
+              String(
+                payment?.nickname ||
+                "Payment method"
+              ).trim(),
+            owner:
+              String(
+                payment?.owner ||
+                ""
+              ).trim()
+          })
+        )
+        .filter(
+          payment =>
+            payment.nickname
+        );
+
     return {
       ...trip,
       items:
         items,
+      payments:
+        payments,
       itemCount:
         isUsableNumber(
           trip.itemCount
@@ -14695,6 +14888,147 @@
   }
 
 
+  function pdfEstimatePaymentsHeight(
+    trip
+  ) {
+
+    const payments =
+      Array.isArray(
+        trip.payments
+      )
+        ? trip.payments
+        : [];
+
+    if (!payments.length) {
+      return 0;
+    }
+
+    return (
+      32 +
+      (payments.length * 38)
+    );
+  }
+
+
+  function pdfDrawPayments(
+    doc,
+    trip,
+    x,
+    y,
+    width
+  ) {
+
+    const payments =
+      Array.isArray(
+        trip.payments
+      )
+        ? trip.payments
+        : [];
+
+    if (!payments.length) {
+      return 0;
+    }
+
+    const height =
+      pdfEstimatePaymentsHeight(
+        trip
+      );
+
+    pdfSetText(
+      doc,
+      "#d9c4f5"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(
+      9
+    );
+
+    doc.text(
+      "PAYMENT",
+      x,
+      y + 9
+    );
+
+    let cursor =
+      y + 20;
+
+    payments.forEach(
+      payment => {
+
+        pdfRoundRect(
+          doc,
+          x,
+          cursor,
+          width,
+          30,
+          "#1c2028",
+          "#4a505d",
+          7
+        );
+
+        pdfSetText(
+          doc,
+          "#f6f3fb"
+        );
+
+        doc.setFont(
+          "helvetica",
+          "bold"
+        );
+
+        doc.setFontSize(
+          9
+        );
+
+        doc.text(
+          String(
+            payment.nickname ||
+            "Payment method"
+          ),
+          x + 12,
+          cursor + 13
+        );
+
+        if (payment.owner) {
+
+          pdfSetText(
+            doc,
+            "#aeb4c0"
+          );
+
+          doc.setFont(
+            "helvetica",
+            "normal"
+          );
+
+          doc.setFontSize(
+            8
+          );
+
+          doc.text(
+            "Owner: " +
+              String(
+                payment.owner
+              ),
+            x + 12,
+            cursor + 24
+          );
+        }
+
+        cursor +=
+          38;
+      }
+    );
+
+    return height;
+  }
+
+
   function pdfDrawTotals(
     doc,
     trip,
@@ -15106,6 +15440,37 @@
             10;
         }
       );
+    }
+
+
+    const paymentsHeight =
+      pdfEstimatePaymentsHeight(
+        trip
+      );
+
+    if (paymentsHeight) {
+
+      if (
+        cursorY +
+          paymentsHeight >
+        bottomLimit
+      ) {
+
+        pageNumber +=
+          1;
+
+        startNewPage();
+      }
+
+      cursorY +=
+        pdfDrawPayments(
+          doc,
+          trip,
+          margin,
+          cursorY,
+          contentWidth
+        ) +
+        10;
     }
 
 
