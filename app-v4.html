@@ -14380,6 +14380,41 @@
               String(
                 payment?.owner ||
                 ""
+              ).trim(),
+            amountApplied:
+              isUsableNumber(
+                payment?.amountApplied
+              )
+                ? roundMoney(
+                    Number(
+                      payment.amountApplied
+                    )
+                  )
+                : "",
+            cashTendered:
+              isUsableNumber(
+                payment?.cashTendered
+              )
+                ? roundMoney(
+                    Number(
+                      payment.cashTendered
+                    )
+                  )
+                : "",
+            change:
+              isUsableNumber(
+                payment?.change
+              )
+                ? roundMoney(
+                    Number(
+                      payment.change
+                    )
+                  )
+                : "",
+            type:
+              String(
+                payment?.type ||
+                ""
               ).trim()
           })
         )
