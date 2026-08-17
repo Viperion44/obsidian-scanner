@@ -3886,6 +3886,15 @@
 
       <div id="payment-allocation-list" class="payment-allocation-list"></div>
 
+      <button
+        id="payment-add-another-allocation"
+        class="payment-add-button hidden"
+        type="button"
+        onclick="openAdditionalMixedPaymentPicker()"
+      >
+        ＋ ADD ANOTHER PAYMENT
+      </button>
+
       <div id="payment-allocation-summary" class="payment-allocation-summary"></div>
 
       <div
@@ -9377,6 +9386,10 @@
       );
     }
 
+    /*
+      Being exactly at budget counts as back within budget. checkBudgetSurpassed()
+      re-arms the warning at total <= budget, so a later crossing warns once again.
+    */
     checkBudgetSurpassed(
       finishReviewTotals.actualTotal
     );
@@ -10715,37 +10728,96 @@
     updatePaymentMethodPickerTrigger();
   }
 
+  function renderPaymentAllocationSummary() {
+    const summary = document.getElementById("payment-allocation-summary");
+    if (!summary) return;
+
+    const total = getCurrentPaymentTripTotal();
+    const allocated = paymentAllocatedTotal();
+    const remaining = roundMoney(total - allocated);
+    const remainingClass = Math.abs(remaining) <= 0.009 ? "payment-remaining-good" : "payment-remaining-bad";
+
+    summary.innerHTML =
+      '<div class="payment-allocation-summary-row"><span>Trip total</span><strong>' + escapeHtml(formatMoney(total)) + '</strong></div>' +
+      '<div class="payment-allocation-summary-row"><span>Allocated</span><strong>' + escapeHtml(formatMoney(allocated)) + '</strong></div>' +
+      '<div class="payment-allocation-summary-row ' + remainingClass + '"><span>Remaining</span><strong>' + escapeHtml(formatMoney(remaining)) + '</strong></div>';
+
+    const preview = document.getElementById("payment-selection-preview");
+    if (preview) {
+      const validation = validatePaymentAllocations(false);
+      if (paymentAllocations.length) {
+        preview.classList.remove("hidden");
+        preview.textContent = validation.valid
+          ? "Payment allocation is complete. Return to Final Review when ready."
+          : validation.message;
+      } else {
+        preview.classList.add("hidden");
+        preview.textContent = "";
+      }
+    }
+
+    const addAnotherButton = document.getElementById("payment-add-another-allocation");
+    if (addAnotherButton) {
+      addAnotherButton.classList.toggle(
+        "hidden",
+        paymentMode !== "MIXED" || paymentAllocations.length < 1
+      );
+    }
+  }
+
   function renderPaymentAllocations() {
     const list = document.getElementById("payment-allocation-list");
-    const summary = document.getElementById("payment-allocation-summary");
-    if (!list || !summary) return;
+    if (!list) return;
+
     if (!paymentAllocations.length) {
       list.innerHTML = '<div class="payment-section-hint">No payment has been assigned yet.</div>';
     } else {
       list.innerHTML = paymentAllocations.map(allocation => {
         const method = getPaymentMethodById(allocation.methodId);
         if (!method) return "";
+
         const cash = isCashMethod(method);
-        const removeButton = paymentMode === "MIXED" ? '<button class="payment-allocation-remove" type="button" onclick="removePaymentAllocation(\'' + escapeJsString(allocation.allocationId) + '\')">REMOVE</button>' : "";
+        const safeAllocationId = escapeHtml(String(allocation.allocationId || ""));
+        const removeButton = paymentMode === "MIXED"
+          ? '<button class="payment-allocation-remove" type="button" onclick="removePaymentAllocation(\'' + escapeJsString(allocation.allocationId) + '\')">REMOVE</button>'
+          : "";
+
         const amountField = paymentMode === "MIXED"
-          ? '<div><label>Amount applied</label><input type="number" inputmode="decimal" min="0" step="0.01" value="' + escapeHtml(String(isUsableNumber(allocation.amountApplied) ? allocation.amountApplied : "")) + '" oninput="updatePaymentAllocationAmount(\'' + escapeJsString(allocation.allocationId) + '\', this.value)"></div>'
+          ? '<div><label>Amount applied</label><input id="payment-allocation-amount-' + safeAllocationId + '" type="number" inputmode="decimal" min="0" step="0.01" value="' + escapeHtml(String(isUsableNumber(allocation.amountApplied) ? allocation.amountApplied : "")) + '" oninput="updatePaymentAllocationAmount(\'' + escapeJsString(allocation.allocationId) + '\', this.value)"></div>'
           : '<div><label>Amount applied</label><input type="text" readonly value="' + escapeHtml(formatMoney(allocation.amountApplied || 0)) + '"></div>';
-        const cashFields = cash ? '<div><label>Cash given</label><input type="number" inputmode="decimal" min="0" step="0.01" value="' + escapeHtml(String(isUsableNumber(allocation.cashTendered) ? allocation.cashTendered : "")) + '" oninput="updatePaymentCashTendered(\'' + escapeJsString(allocation.allocationId) + '\', this.value)"></div>' : "";
-        const changeLine = cash && isUsableNumber(allocation.cashTendered) ? '<div class="payment-allocation-change">Change due: ' + escapeHtml(formatMoney(Math.max(0, allocation.change || 0))) + '</div>' : "";
-        return '<div class="payment-allocation-card"><div class="payment-allocation-top"><div><div class="payment-allocation-name">' + escapeHtml(method.nickname || "Payment method") + '</div><div class="payment-allocation-meta">' + escapeHtml(paymentMethodMetaParts(method).join(" • ") || "Payment method") + '</div></div>' + removeButton + '</div><div class="payment-allocation-fields">' + amountField + cashFields + '</div>' + changeLine + '</div>';
+
+        const cashFields = cash
+          ? '<div><label>Cash given</label><input id="payment-cash-tendered-' + safeAllocationId + '" type="number" inputmode="decimal" min="0" step="0.01" value="' + escapeHtml(String(isUsableNumber(allocation.cashTendered) ? allocation.cashTendered : "")) + '" oninput="updatePaymentCashTendered(\'' + escapeJsString(allocation.allocationId) + '\', this.value)"></div>'
+          : "";
+
+        const changeVisible = cash && isUsableNumber(allocation.cashTendered) && isUsableNumber(allocation.amountApplied);
+        const changeLine = cash
+          ? '<div id="payment-allocation-change-' + safeAllocationId + '" class="payment-allocation-change' + (changeVisible ? '' : ' hidden') + '">Change due: ' + escapeHtml(formatMoney(Math.max(0, allocation.change || 0))) + '</div>'
+          : "";
+
+        return '<div class="payment-allocation-card" data-allocation-id="' + safeAllocationId + '"><div class="payment-allocation-top"><div><div class="payment-allocation-name">' + escapeHtml(method.nickname || "Payment method") + '</div><div class="payment-allocation-meta">' + escapeHtml(paymentMethodMetaParts(method).join(" • ") || "Payment method") + '</div></div>' + removeButton + '</div><div class="payment-allocation-fields">' + amountField + cashFields + '</div>' + changeLine + '</div>';
       }).filter(Boolean).join("");
     }
-    const total = getCurrentPaymentTripTotal();
-    const allocated = paymentAllocatedTotal();
-    const remaining = roundMoney(total - allocated);
-    const remainingClass = Math.abs(remaining) <= 0.009 ? "payment-remaining-good" : "payment-remaining-bad";
-    summary.innerHTML = '<div class="payment-allocation-summary-row"><span>Trip total</span><strong>' + escapeHtml(formatMoney(total)) + '</strong></div>' + '<div class="payment-allocation-summary-row"><span>Allocated</span><strong>' + escapeHtml(formatMoney(allocated)) + '</strong></div>' + '<div class="payment-allocation-summary-row ' + remainingClass + '"><span>Remaining</span><strong>' + escapeHtml(formatMoney(remaining)) + '</strong></div>';
-    const preview = document.getElementById("payment-selection-preview");
-    if (preview) {
-      const validation = validatePaymentAllocations(false);
-      if (paymentAllocations.length) { preview.classList.remove("hidden"); preview.textContent = validation.valid ? "Payment allocation is complete. Return to Final Review when ready." : validation.message; }
-      else { preview.classList.add("hidden"); preview.textContent = ""; }
+
+    renderPaymentAllocationSummary();
+  }
+
+  function refreshCashAllocationChange(allocation) {
+    if (!allocation) return;
+    const changeLine = document.getElementById("payment-allocation-change-" + allocation.allocationId);
+    if (!changeLine) return;
+
+    if (!isUsableNumber(allocation.cashTendered) || !isUsableNumber(allocation.amountApplied)) {
+      changeLine.classList.add("hidden");
+      changeLine.textContent = "Change due: —";
+      return;
     }
+
+    const difference = roundMoney(Number(allocation.cashTendered) - Number(allocation.amountApplied));
+    changeLine.classList.remove("hidden");
+    changeLine.textContent = difference >= 0
+      ? "Change due: " + formatMoney(difference)
+      : "Cash is short by " + formatMoney(Math.abs(difference));
   }
 
   function selectDraftPaymentMethod(methodId) {
@@ -10767,24 +10839,60 @@
     else if (paymentMode === "MIXED") showSuccessToast("Payment method added", "Enter how much of the trip will be paid with this method.");
   }
 
+  function openAdditionalMixedPaymentPicker() {
+    if (paymentMode !== "MIXED") return;
+
+    const search = document.getElementById("payment-method-search");
+    if (search) search.value = "";
+    renderPaymentMethodList();
+    togglePaymentMethodPicker(true);
+
+    const trigger = document.getElementById("payment-method-picker-trigger");
+    if (trigger) {
+      trigger.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    setTimeout(() => document.getElementById("payment-method-search")?.focus(), 250);
+  }
+
   function updatePaymentAllocationAmount(allocationId, rawValue) {
     const allocation = paymentAllocations.find(item => item.allocationId === allocationId);
     if (!allocation) return;
+
     const value = Number(rawValue);
-    allocation.amountApplied = Number.isFinite(value) && value >= 0 ? roundMoney(value) : "";
+    allocation.amountApplied = rawValue === ""
+      ? ""
+      : (Number.isFinite(value) && value >= 0 ? roundMoney(value) : "");
+
     const method = getPaymentMethodById(allocation.methodId);
-    if (isCashMethod(method) && isUsableNumber(allocation.cashTendered) && isUsableNumber(allocation.amountApplied)) allocation.change = roundMoney(Number(allocation.cashTendered) - Number(allocation.amountApplied));
-    renderPaymentAllocations();
+    if (isCashMethod(method) && isUsableNumber(allocation.cashTendered) && isUsableNumber(allocation.amountApplied)) {
+      allocation.change = roundMoney(Number(allocation.cashTendered) - Number(allocation.amountApplied));
+      refreshCashAllocationChange(allocation);
+    }
+
+    /*
+      Do not rebuild payment-allocation-list here. Replacing the focused input
+      on every keystroke dismissed Android's numeric keyboard after each digit.
+      Only derived totals/validation are refreshed while the user is typing.
+    */
+    renderPaymentAllocationSummary();
     renderFinishReviewPaymentSummary();
   }
 
   function updatePaymentCashTendered(allocationId, rawValue) {
     const allocation = paymentAllocations.find(item => item.allocationId === allocationId);
     if (!allocation) return;
+
     const value = Number(rawValue);
-    allocation.cashTendered = Number.isFinite(value) && value >= 0 ? roundMoney(value) : "";
-    allocation.change = isUsableNumber(allocation.cashTendered) && isUsableNumber(allocation.amountApplied) ? roundMoney(Number(allocation.cashTendered) - Number(allocation.amountApplied)) : "";
-    renderPaymentAllocations();
+    allocation.cashTendered = rawValue === ""
+      ? ""
+      : (Number.isFinite(value) && value >= 0 ? roundMoney(value) : "");
+    allocation.change = isUsableNumber(allocation.cashTendered) && isUsableNumber(allocation.amountApplied)
+      ? roundMoney(Number(allocation.cashTendered) - Number(allocation.amountApplied))
+      : "";
+
+    refreshCashAllocationChange(allocation);
+    renderPaymentAllocationSummary();
     renderFinishReviewPaymentSummary();
   }
 
@@ -16135,6 +16243,22 @@
   }
 
 
+  function pdfPaymentIsCash(payment) {
+    return Boolean(
+      payment &&
+      (
+        String(payment.type || "").toLowerCase() === "cash" ||
+        String(payment.nickname || "").trim().toLowerCase() === "cash" ||
+        isUsableNumber(payment.cashTendered)
+      )
+    );
+  }
+
+  function pdfPaymentCardHeight(payment) {
+    if (pdfPaymentIsCash(payment)) return 54;
+    return payment && payment.owner ? 42 : 34;
+  }
+
   function pdfEstimatePaymentsHeight(
     trip
   ) {
@@ -16151,8 +16275,11 @@
     }
 
     return (
-      32 +
-      (payments.length * 38)
+      28 +
+      payments.reduce(
+        (sum, payment) => sum + pdfPaymentCardHeight(payment) + 8,
+        0
+      )
     );
   }
 
@@ -16207,12 +16334,22 @@
     payments.forEach(
       payment => {
 
+        const isCash =
+          pdfPaymentIsCash(
+            payment
+          );
+
+        const cardHeight =
+          pdfPaymentCardHeight(
+            payment
+          );
+
         pdfRoundRect(
           doc,
           x,
           cursor,
           width,
-          30,
+          cardHeight,
           "#1c2028",
           "#4a505d",
           7
@@ -16238,8 +16375,20 @@
             "Payment method"
           ),
           x + 12,
-          cursor + 13
+          cursor + 14
         );
+
+        doc.text(
+          isUsableNumber(payment.amountApplied)
+            ? formatMoney(Number(payment.amountApplied))
+            : "—",
+          x + width - 12,
+          cursor + 14,
+          { align: "right" }
+        );
+
+        let detailY =
+          cursor + 28;
 
         if (payment.owner) {
 
@@ -16263,12 +16412,64 @@
                 payment.owner
               ),
             x + 12,
-            cursor + 24
+            detailY
+          );
+
+          detailY +=
+            13;
+        }
+
+        if (isCash) {
+
+          pdfSetText(
+            doc,
+            "#8de6b0"
+          );
+
+          doc.setFont(
+            "helvetica",
+            "normal"
+          );
+
+          doc.setFontSize(
+            8
+          );
+
+          const cashGiven =
+            isUsableNumber(
+              payment.cashTendered
+            )
+              ? formatMoney(
+                  Number(
+                    payment.cashTendered
+                  )
+                )
+              : "—";
+
+          const changeDue =
+            isUsableNumber(
+              payment.change
+            )
+              ? formatMoney(
+                  Number(
+                    payment.change
+                  )
+                )
+              : "—";
+
+          doc.text(
+            "Cash given: " + cashGiven +
+              "    Change: " + changeDue,
+            x + 12,
+            Math.min(
+              cursor + cardHeight - 10,
+              detailY
+            )
           );
         }
 
         cursor +=
-          38;
+          cardHeight + 8;
       }
     );
 
