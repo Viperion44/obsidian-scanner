@@ -29,6 +29,11 @@
     defer
   ></script>
 
+  <script
+    src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
+    defer
+  ></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -1832,6 +1837,304 @@
       text-align: center;
     }
 
+    /* V4 PDF Export */
+    .pdf-export-button {
+      margin-top: 12px;
+      background: #7137b5;
+    }
+
+    .pdf-export-button:disabled {
+      opacity: 0.58;
+      cursor: wait;
+    }
+
+    #pdf-export-stage {
+      position: fixed;
+      left: -100000px;
+      top: 0;
+      width: 794px;
+      pointer-events: none;
+    }
+
+    .pdf-document {
+      width: 794px;
+      min-height: 1123px;
+      padding: 44px;
+      background: #111318;
+      color: #f7f7fa;
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .pdf-hero {
+      padding: 28px;
+      border: 1px solid #4a3a61;
+      border-radius: 22px;
+      background:
+        linear-gradient(
+          135deg,
+          #271936 0%,
+          #191d26 58%,
+          #111318 100%
+        );
+    }
+
+    .pdf-brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .pdf-brand {
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 2.4px;
+      color: #c9a7f2;
+      text-transform: uppercase;
+    }
+
+    .pdf-badge {
+      padding: 7px 11px;
+      border: 1px solid #64468a;
+      border-radius: 999px;
+      background: rgba(113, 55, 181, 0.18);
+      color: #d9c4f5;
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+    }
+
+    .pdf-store {
+      margin-top: 18px;
+      font-size: 31px;
+      font-weight: bold;
+      line-height: 1.15;
+      color: #ffffff;
+    }
+
+    .pdf-address {
+      margin-top: 6px;
+      color: #c6cbd4;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .pdf-trip-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin-top: 16px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .pdf-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .pdf-summary-card {
+      padding: 15px;
+      border: 1px solid #343a47;
+      border-radius: 14px;
+      background: #20242d;
+    }
+
+    .pdf-summary-label {
+      color: #929aa7;
+      font-size: 9px;
+      font-weight: bold;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .pdf-summary-value {
+      margin-top: 5px;
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: bold;
+      line-height: 1.2;
+    }
+
+    .pdf-summary-value.pdf-saved {
+      color: #7fe299;
+    }
+
+    .pdf-section-title {
+      margin: 28px 0 12px;
+      color: #d9c4f5;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .pdf-item {
+      margin-bottom: 12px;
+      padding: 17px;
+      border: 1px solid #343a47;
+      border-radius: 15px;
+      background: #20242d;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .pdf-item-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .pdf-item-name {
+      flex: 1;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .pdf-item-line-total {
+      white-space: nowrap;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .pdf-barcode {
+      margin-top: 4px;
+      color: #838b99;
+      font-size: 10px;
+      letter-spacing: 0.45px;
+    }
+
+    .pdf-price-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 13px;
+    }
+
+    .pdf-price-cell {
+      padding: 10px;
+      border-radius: 10px;
+      background: #171a20;
+    }
+
+    .pdf-price-label {
+      color: #808896;
+      font-size: 8px;
+      font-weight: bold;
+      letter-spacing: 0.55px;
+      text-transform: uppercase;
+    }
+
+    .pdf-price-value {
+      margin-top: 4px;
+      color: #eef0f4;
+      font-size: 12px;
+      font-weight: bold;
+      line-height: 1.25;
+    }
+
+    .pdf-promo {
+      margin-top: 11px;
+      padding: 10px 12px;
+      border: 1px solid #3e7650;
+      border-radius: 10px;
+      background: #183124;
+      color: #a9efba;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .pdf-promo-unused {
+      border-color: #5b4f39;
+      background: #30291d;
+      color: #e7c98c;
+    }
+
+    .pdf-notes {
+      margin-top: 9px;
+      padding: 9px 11px;
+      border-left: 3px solid #7137b5;
+      background: #191d25;
+      color: #cfd3da;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .pdf-empty {
+      padding: 24px;
+      border: 1px dashed #4a505d;
+      border-radius: 15px;
+      background: #1c2028;
+      color: #aeb4c0;
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .pdf-total-box {
+      margin-top: 24px;
+      padding: 20px;
+      border: 1px solid #4a3a61;
+      border-radius: 16px;
+      background: #1b1721;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .pdf-total-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 6px 0;
+      color: #c6cbd4;
+      font-size: 12px;
+    }
+
+    .pdf-total-row strong {
+      color: #ffffff;
+    }
+
+    .pdf-total-row.pdf-saving-row strong {
+      color: #7fe299;
+    }
+
+    .pdf-final-row {
+      margin-top: 8px;
+      padding-top: 13px;
+      border-top: 1px solid #4a3a61;
+      color: #ffffff;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .pdf-budget-good {
+      color: #7fe299 !important;
+    }
+
+    .pdf-budget-bad {
+      color: #ff9999 !important;
+    }
+
+    .pdf-footer {
+      margin-top: 28px;
+      padding-top: 14px;
+      border-top: 1px solid #2f3440;
+      color: #747c89;
+      font-size: 9px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1915,7 +2218,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 zero-item history fix
+    V4 PDF export test
   </div>
 
   <button
@@ -3056,6 +3359,15 @@
     </div>
 
     <button
+      id="finished-export-pdf-button"
+      class="pdf-export-button"
+      type="button"
+      onclick="exportFinishedTripPdf()"
+    >
+      ⬇ EXPORT TRIP PDF
+    </button>
+
+    <button
       type="button"
       onclick="returnHomeAfterFinish()"
     >
@@ -3189,6 +3501,15 @@
     >
       —
     </div>
+
+    <button
+      id="history-export-pdf-button"
+      class="pdf-export-button"
+      type="button"
+      onclick="exportHistoryTripPdf()"
+    >
+      ⬇ EXPORT TRIP PDF
+    </button>
 
   </div>
 
@@ -3759,6 +4080,8 @@
   </div>
 </div>
 
+<div id="pdf-export-stage"></div>
+
 <nav
   id="bottom-nav"
   class="bottom-nav"
@@ -3873,6 +4196,10 @@
   let historyTrips = [];
   let historyReturnPanelId = "home-panel";
   let historyLoadedOnce = false;
+
+  let currentHistoryReceiptTrip = null;
+  let lastFinishedTripExport = null;
+  let pdfExportInProgress = false;
 
   let reportsReturnPanelId = "home-panel";
   let reportsLoadedOnce = false;
@@ -9487,6 +9814,36 @@
     ).textContent =
       "Trip ID: " +
       activeTrip.tripId;
+
+
+    lastFinishedTripExport = {
+      tripId:
+        activeTrip.tripId,
+      store:
+        activeTrip.store,
+      address:
+        activeTrip.address || "",
+      start:
+        activeTrip.start,
+      end:
+        finishIso,
+      budget:
+        activeTrip.budget,
+      finalTotal:
+        totals.actualTotal,
+      regularTotal:
+        totals.regularTotal,
+      savings:
+        totals.savings,
+      itemCount:
+        items.length,
+      items:
+        items.map(
+          item => ({
+            ...item
+          })
+        )
+    };
   }
 
 
@@ -11447,6 +11804,969 @@
   }
 
 
+  function pdfEscape(
+    value
+  ) {
+    return escapeHtml(
+      String(
+        value ?? ""
+      )
+    );
+  }
+
+
+  function pdfSafeFilename(
+    value
+  ) {
+
+    return String(
+      value || "trip"
+    )
+      .trim()
+      .replace(
+        /[<>:"/\\|?*\u0000-\u001F]/g,
+        "-"
+      )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .slice(
+        0,
+        80
+      ) ||
+      "trip";
+  }
+
+
+  function pdfTripDateText(
+    trip
+  ) {
+
+    if (
+      trip.start
+    ) {
+
+      const start =
+        new Date(
+          trip.start
+        );
+
+      if (
+        !Number.isNaN(
+          start.getTime()
+        )
+      ) {
+
+        return start.toLocaleDateString(
+          [],
+          {
+            year:
+              "numeric",
+            month:
+              "long",
+            day:
+              "numeric"
+          }
+        );
+      }
+    }
+
+    return (
+      trip.fallbackDate ||
+      "Saved trip"
+    );
+  }
+
+
+  function pdfTripTimeText(
+    trip
+  ) {
+
+    const parts =
+      [];
+
+    if (
+      trip.start
+    ) {
+
+      const start =
+        new Date(
+          trip.start
+        );
+
+      if (
+        !Number.isNaN(
+          start.getTime()
+        )
+      ) {
+        parts.push(
+          formatTimeOnly(
+            start
+          )
+        );
+      }
+    }
+
+    if (
+      trip.end
+    ) {
+
+      const end =
+        new Date(
+          trip.end
+        );
+
+      if (
+        !Number.isNaN(
+          end.getTime()
+        )
+      ) {
+        parts.push(
+          formatTimeOnly(
+            end
+          )
+        );
+      }
+    }
+
+    if (
+      parts.length === 2
+    ) {
+
+      let result =
+        parts[0] +
+        " - " +
+        parts[1];
+
+      if (
+        trip.start &&
+        trip.end
+      ) {
+
+        result +=
+          " • " +
+          formatDuration(
+            trip.start,
+            trip.end
+          );
+      }
+
+      return result;
+    }
+
+    return (
+      parts[0] ||
+      ""
+    );
+  }
+
+
+  function normalizeTripForPdf(
+    trip
+  ) {
+
+    const items =
+      Array.isArray(
+        trip.items
+      )
+        ? trip.items
+        : [];
+
+    const actualTotal =
+      isUsableNumber(
+        trip.finalTotal
+      )
+        ? Number(
+            trip.finalTotal
+          )
+        : roundMoney(
+            items.reduce(
+              (sum, item) =>
+                sum +
+                (
+                  isUsableNumber(
+                    item.lineTotal
+                  )
+                    ? Number(
+                        item.lineTotal
+                      )
+                    : 0
+                ),
+              0
+            )
+          );
+
+    const regularTotal =
+      isUsableNumber(
+        trip.regularTotal
+      )
+        ? Number(
+            trip.regularTotal
+          )
+        : roundMoney(
+            items.reduce(
+              (sum, item) =>
+                sum +
+                (
+                  isUsableNumber(
+                    item.regularLineTotal
+                  )
+                    ? Number(
+                        item.regularLineTotal
+                      )
+                    : (
+                        isUsableNumber(
+                          item.lineTotal
+                        )
+                          ? Number(
+                              item.lineTotal
+                            )
+                          : 0
+                      )
+                ),
+              0
+            )
+          );
+
+    const savings =
+      isUsableNumber(
+        trip.savings
+      )
+        ? Number(
+            trip.savings
+          )
+        : roundMoney(
+            Math.max(
+              0,
+              regularTotal -
+              actualTotal
+            )
+          );
+
+    return {
+      ...trip,
+      items:
+        items,
+      itemCount:
+        isUsableNumber(
+          trip.itemCount
+        )
+          ? Number(
+              trip.itemCount
+            )
+          : items.length,
+      finalTotal:
+        roundMoney(
+          actualTotal
+        ),
+      regularTotal:
+        roundMoney(
+          regularTotal
+        ),
+      savings:
+        roundMoney(
+          savings
+        )
+    };
+  }
+
+
+  function buildTripPdfHtml(
+    rawTrip
+  ) {
+
+    const trip =
+      normalizeTripForPdf(
+        rawTrip
+      );
+
+    const dateText =
+      pdfTripDateText(
+        trip
+      );
+
+    const timeText =
+      pdfTripTimeText(
+        trip
+      );
+
+    const budget =
+      isUsableNumber(
+        trip.budget
+      )
+        ? Number(
+            trip.budget
+          )
+        : null;
+
+    const budgetDifference =
+      budget === null
+        ? null
+        : roundMoney(
+            budget -
+            trip.finalTotal
+          );
+
+
+    const itemsHtml =
+      trip.items.length
+        ? trip.items
+            .map(
+              function(item) {
+
+                const amount =
+                  isUsableNumber(
+                    item.amount
+                  )
+                    ? Number(
+                        item.amount
+                      )
+                    : "";
+
+                const effective =
+                  isUsableNumber(
+                    item.effectiveUnitPrice
+                  )
+                    ? Number(
+                        item.effectiveUnitPrice
+                      )
+                    : "";
+
+                const shelf =
+                  isUsableNumber(
+                    item.shelfUnitPrice
+                  )
+                    ? Number(
+                        item.shelfUnitPrice
+                      )
+                    : effective;
+
+                const regular =
+                  isUsableNumber(
+                    item.regularLineTotal
+                  )
+                    ? Number(
+                        item.regularLineTotal
+                      )
+                    : (
+                        isUsableNumber(
+                          item.lineTotal
+                        )
+                          ? Number(
+                              item.lineTotal
+                            )
+                          : 0
+                      );
+
+                const savings =
+                  isUsableNumber(
+                    item.savings
+                  )
+                    ? Number(
+                        item.savings
+                      )
+                    : 0;
+
+                const promoUsed =
+                  String(
+                    item.promoApplied || ""
+                  ).toUpperCase() === "YES";
+
+                const promoKnown =
+                  item.promoDetails ||
+                  item.promoType;
+
+                let promoHtml =
+                  "";
+
+                if (
+                  promoKnown
+                ) {
+
+                  promoHtml =
+                    '<div class="pdf-promo' +
+                    (
+                      promoUsed
+                        ? ""
+                        : " pdf-promo-unused"
+                    ) +
+                    '">' +
+                    (
+                      promoUsed
+                        ? "PROMOTION APPLIED"
+                        : "PROMOTION NOT USED"
+                    ) +
+                    (
+                      item.promoType
+                        ? " • " +
+                          pdfEscape(
+                            item.promoType
+                          )
+                        : ""
+                    ) +
+                    (
+                      item.promoDetails
+                        ? "<br>" +
+                          pdfEscape(
+                            item.promoDetails
+                          )
+                        : ""
+                    ) +
+                    (
+                      savings > 0
+                        ? "<br>Saved " +
+                          pdfEscape(
+                            formatMoney(
+                              savings
+                            )
+                          ) +
+                          " on this item"
+                        : ""
+                    ) +
+                    "</div>";
+                }
+
+
+                const notesHtml =
+                  item.notes
+                    ? (
+                        '<div class="pdf-notes">' +
+                        "<strong>NOTE</strong><br>" +
+                        pdfEscape(
+                          item.notes
+                        ) +
+                        "</div>"
+                      )
+                    : "";
+
+
+                return (
+                  '<div class="pdf-item">' +
+
+                    '<div class="pdf-item-top">' +
+
+                      '<div class="pdf-item-name">' +
+                        pdfEscape(
+                          item.product ||
+                          item.barcode ||
+                          "Unnamed item"
+                        ) +
+                      "</div>" +
+
+                      '<div class="pdf-item-line-total">' +
+                        pdfEscape(
+                          formatMoney(
+                            item.lineTotal || 0
+                          )
+                        ) +
+                      "</div>" +
+
+                    "</div>" +
+
+                    (
+                      item.barcode
+                        ? (
+                            '<div class="pdf-barcode">' +
+                              "BARCODE " +
+                              pdfEscape(
+                                item.barcode
+                              ) +
+                            "</div>"
+                          )
+                        : ""
+                    ) +
+
+                    '<div class="pdf-price-grid">' +
+
+                      '<div class="pdf-price-cell">' +
+                        '<div class="pdf-price-label">Amount</div>' +
+                        '<div class="pdf-price-value">' +
+                          pdfEscape(
+                            formatPlainNumber(
+                              amount
+                            )
+                          ) +
+                        "</div>" +
+                      "</div>" +
+
+                      '<div class="pdf-price-cell">' +
+                        '<div class="pdf-price-label">Shelf / unit</div>' +
+                        '<div class="pdf-price-value">' +
+                          pdfEscape(
+                            isUsableNumber(
+                              shelf
+                            )
+                              ? formatMoney(
+                                  shelf
+                                )
+                              : "—"
+                          ) +
+                        "</div>" +
+                      "</div>" +
+
+                      '<div class="pdf-price-cell">' +
+                        '<div class="pdf-price-label">Effective / unit</div>' +
+                        '<div class="pdf-price-value">' +
+                          pdfEscape(
+                            isUsableNumber(
+                              effective
+                            )
+                              ? formatMoney(
+                                  effective
+                                )
+                              : "—"
+                          ) +
+                        "</div>" +
+                      "</div>" +
+
+                      '<div class="pdf-price-cell">' +
+                        '<div class="pdf-price-label">Regular line</div>' +
+                        '<div class="pdf-price-value">' +
+                          pdfEscape(
+                            formatMoney(
+                              regular
+                            )
+                          ) +
+                        "</div>" +
+                      "</div>" +
+
+                    "</div>" +
+
+                    promoHtml +
+                    notesHtml +
+
+                  "</div>"
+                );
+              }
+            )
+            .join(
+              ""
+            )
+        : (
+            '<div class="pdf-empty">' +
+              "No items were purchased on this trip." +
+            "</div>"
+          );
+
+
+    let budgetRows =
+      "";
+
+    if (
+      budget !== null
+    ) {
+
+      budgetRows =
+        '<div class="pdf-total-row">' +
+          "<span>Budget</span>" +
+          "<strong>" +
+            pdfEscape(
+              formatMoney(
+                budget
+              )
+            ) +
+          "</strong>" +
+        "</div>" +
+
+        '<div class="pdf-total-row">' +
+          "<span>" +
+            (
+              budgetDifference >= 0
+                ? "Remaining"
+                : "Over budget"
+            ) +
+          "</span>" +
+          '<strong class="' +
+            (
+              budgetDifference >= 0
+                ? "pdf-budget-good"
+                : "pdf-budget-bad"
+            ) +
+          '">' +
+            pdfEscape(
+              formatMoney(
+                Math.abs(
+                  budgetDifference
+                )
+              )
+            ) +
+          "</strong>" +
+        "</div>";
+    }
+
+
+    return (
+      '<div class="pdf-document">' +
+
+        '<div class="pdf-hero">' +
+
+          '<div class="pdf-brand-row">' +
+            '<div class="pdf-brand">Obsidian Shopping</div>' +
+            '<div class="pdf-badge">Trip Report</div>' +
+          "</div>" +
+
+          '<div class="pdf-store">' +
+            pdfEscape(
+              trip.store ||
+              "Unknown store"
+            ) +
+          "</div>" +
+
+          (
+            trip.address
+              ? (
+                  '<div class="pdf-address">' +
+                    pdfEscape(
+                      trip.address
+                    ) +
+                  "</div>"
+                )
+              : ""
+          ) +
+
+          '<div class="pdf-trip-meta">' +
+            "<span>" +
+              pdfEscape(
+                dateText
+              ) +
+            "</span>" +
+            (
+              timeText
+                ? (
+                    "<span>" +
+                      pdfEscape(
+                        timeText
+                      ) +
+                    "</span>"
+                  )
+                : ""
+            ) +
+            (
+              trip.tripId
+                ? (
+                    "<span>" +
+                      pdfEscape(
+                        trip.tripId
+                      ) +
+                    "</span>"
+                  )
+                : ""
+            ) +
+          "</div>" +
+
+        "</div>" +
+
+        '<div class="pdf-summary-grid">' +
+
+          '<div class="pdf-summary-card">' +
+            '<div class="pdf-summary-label">Items</div>' +
+            '<div class="pdf-summary-value">' +
+              pdfEscape(
+                trip.itemCount
+              ) +
+            "</div>" +
+          "</div>" +
+
+          '<div class="pdf-summary-card">' +
+            '<div class="pdf-summary-label">Regular value</div>' +
+            '<div class="pdf-summary-value">' +
+              pdfEscape(
+                formatMoney(
+                  trip.regularTotal
+                )
+              ) +
+            "</div>" +
+          "</div>" +
+
+          '<div class="pdf-summary-card">' +
+            '<div class="pdf-summary-label">Saved</div>' +
+            '<div class="pdf-summary-value pdf-saved">' +
+              pdfEscape(
+                formatMoney(
+                  trip.savings
+                )
+              ) +
+            "</div>" +
+          "</div>" +
+
+          '<div class="pdf-summary-card">' +
+            '<div class="pdf-summary-label">Final total</div>' +
+            '<div class="pdf-summary-value">' +
+              pdfEscape(
+                formatMoney(
+                  trip.finalTotal
+                )
+              ) +
+            "</div>" +
+          "</div>" +
+
+        "</div>" +
+
+        '<div class="pdf-section-title">Purchased Items</div>' +
+
+        itemsHtml +
+
+        '<div class="pdf-total-box">' +
+
+          '<div class="pdf-total-row">' +
+            "<span>Regular value</span>" +
+            "<strong>" +
+              pdfEscape(
+                formatMoney(
+                  trip.regularTotal
+                )
+              ) +
+            "</strong>" +
+          "</div>" +
+
+          '<div class="pdf-total-row pdf-saving-row">' +
+            "<span>Savings</span>" +
+            "<strong>" +
+              pdfEscape(
+                formatMoney(
+                  trip.savings
+                )
+              ) +
+            "</strong>" +
+          "</div>" +
+
+          budgetRows +
+
+          '<div class="pdf-total-row pdf-final-row">' +
+            "<span>FINAL TOTAL</span>" +
+            "<strong>" +
+              pdfEscape(
+                formatMoney(
+                  trip.finalTotal
+                )
+              ) +
+            "</strong>" +
+          "</div>" +
+
+        "</div>" +
+
+        '<div class="pdf-footer">' +
+          "Generated by Obsidian Shopping" +
+          (
+            trip.tripId
+              ? " • " +
+                pdfEscape(
+                  trip.tripId
+                )
+              : ""
+          ) +
+        "</div>" +
+
+      "</div>"
+    );
+  }
+
+
+  async function exportTripPdf(
+    rawTrip,
+    buttonId
+  ) {
+
+    if (
+      pdfExportInProgress
+    ) {
+      return;
+    }
+
+    if (
+      !rawTrip
+    ) {
+
+      showErrorToast(
+        "Nothing to export",
+        "This trip is not available for PDF export."
+      );
+
+      return;
+    }
+
+    if (
+      typeof html2pdf === "undefined"
+    ) {
+
+      showErrorToast(
+        "PDF exporter not ready",
+        "Wait a moment and try again."
+      );
+
+      return;
+    }
+
+
+    pdfExportInProgress =
+      true;
+
+    const button =
+      document.getElementById(
+        buttonId
+      );
+
+    if (button) {
+      button.disabled =
+        true;
+      button.textContent =
+        "BUILDING PDF...";
+    }
+
+
+    const trip =
+      normalizeTripForPdf(
+        rawTrip
+      );
+
+    const stage =
+      document.getElementById(
+        "pdf-export-stage"
+      );
+
+    stage.innerHTML =
+      buildTripPdfHtml(
+        trip
+      );
+
+    const element =
+      stage.firstElementChild;
+
+    const filename =
+      pdfSafeFilename(
+        "Obsidian Shopping - " +
+        (
+          trip.store ||
+          "Trip"
+        ) +
+        " - " +
+        pdfTripDateText(
+          trip
+        )
+      ) +
+      ".pdf";
+
+
+    const options = {
+      margin:
+        0,
+      filename:
+        filename,
+      image: {
+        type:
+          "jpeg",
+        quality:
+          0.98
+      },
+      html2canvas: {
+        scale:
+          2,
+        useCORS:
+          true,
+        backgroundColor:
+          "#111318",
+        logging:
+          false
+      },
+      jsPDF: {
+        unit:
+          "pt",
+        format:
+          "a4",
+        orientation:
+          "portrait"
+      },
+      pagebreak: {
+        mode: [
+          "css",
+          "legacy"
+        ],
+        avoid: [
+          ".pdf-item",
+          ".pdf-total-box"
+        ]
+      }
+    };
+
+
+    try {
+
+      setStatus(
+        "Building your PDF...",
+        "working"
+      );
+
+      await html2pdf()
+        .set(
+          options
+        )
+        .from(
+          element
+        )
+        .save();
+
+      setStatus(
+        "PDF export ready.",
+        "success"
+      );
+
+      showSuccessToast(
+        "PDF exported",
+        filename
+      );
+
+    } catch (error) {
+
+      console.error(
+        error
+      );
+
+      showErrorToast(
+        "PDF export failed",
+        "The trip PDF could not be created."
+      );
+
+      fail(
+        "The trip PDF could not be created."
+      );
+
+    } finally {
+
+      stage.innerHTML =
+        "";
+
+      pdfExportInProgress =
+        false;
+
+      if (button) {
+        button.disabled =
+          false;
+        button.textContent =
+          "⬇ EXPORT TRIP PDF";
+      }
+    }
+  }
+
+
+  async function exportFinishedTripPdf() {
+
+    await exportTripPdf(
+      lastFinishedTripExport,
+      "finished-export-pdf-button"
+    );
+  }
+
+
+  async function exportHistoryTripPdf() {
+
+    await exportTripPdf(
+      currentHistoryReceiptTrip,
+      "history-export-pdf-button"
+    );
+  }
+
+
   function previewFutureSection(
     sectionName
   ) {
@@ -12440,6 +13760,9 @@
   function renderHistoryReceipt(
     trip
   ) {
+
+    currentHistoryReceiptTrip =
+      trip;
 
     document.getElementById(
       "history-receipt-store"
