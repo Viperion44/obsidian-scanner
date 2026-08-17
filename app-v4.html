@@ -1727,6 +1727,111 @@
       background: #672d35;
     }
 
+    /* V4 Visited Store Dropdown */
+    .start-store-picker {
+      position: relative;
+    }
+
+    .start-store-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .start-store-row input {
+      margin: 0;
+    }
+
+    .start-store-toggle {
+      flex: 0 0 48px;
+      width: 48px;
+      min-width: 48px;
+      margin: 0;
+      padding: 11px 0;
+      border-radius: 10px;
+      background: #4a3a61;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .start-store-dropdown {
+      margin-top: 8px;
+      overflow: hidden;
+      border: 1px solid #4b5260;
+      border-radius: 11px;
+      background: #1d2129;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.30);
+    }
+
+    .start-store-search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 11px;
+      border-bottom: 1px solid #3b414d;
+      background: #171a20;
+    }
+
+    .start-store-search input {
+      margin: 0;
+      padding: 8px 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .start-store-list {
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .start-store-option {
+      width: 100%;
+      margin: 0;
+      padding: 11px 13px;
+      border: 0;
+      border-bottom: 1px solid #3b414d;
+      border-radius: 0;
+      background: transparent;
+      color: #ffffff;
+      text-align: left;
+    }
+
+    .start-store-option:last-child {
+      border-bottom: none;
+    }
+
+    .start-store-option:active {
+      background: #2d323e;
+    }
+
+    .start-store-option-name {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .start-store-option-meta {
+      display: block;
+      margin-top: 3px;
+      color: #9fa6b1;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .start-store-manual {
+      background: #2b2138;
+    }
+
+    .start-store-empty {
+      padding: 13px;
+      color: #9fa6b1;
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1810,7 +1915,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 searchable products + editable final review
+    V4 visited-store dropdown + editable final review
   </div>
 
   <button
@@ -1934,15 +2039,55 @@
           Store
         </label>
 
-        <input
-          id="start-store"
-          type="text"
-          list="known-stores"
-          autocomplete="off"
-          placeholder="Choose a store or type a new one"
-        >
+        <div class="start-store-picker">
 
-        <datalist id="known-stores"></datalist>
+          <div class="start-store-row">
+
+            <input
+              id="start-store"
+              type="text"
+              autocomplete="off"
+              placeholder="Choose a visited store or type a new one"
+              oninput="startStoreInputChanged()"
+            >
+
+            <button
+              class="start-store-toggle"
+              type="button"
+              onclick="toggleStartStoreDropdown()"
+              aria-label="Show visited stores"
+              title="Show visited stores"
+            >
+              ▾
+            </button>
+
+          </div>
+
+          <div
+            id="start-store-dropdown"
+            class="start-store-dropdown hidden"
+          >
+
+            <div class="start-store-search">
+              <span>🔍</span>
+
+              <input
+                id="start-store-search"
+                type="search"
+                autocomplete="off"
+                placeholder="Search visited stores..."
+                oninput="renderVisitedStores()"
+              >
+            </div>
+
+            <div
+              id="start-store-list"
+              class="start-store-list"
+            ></div>
+
+          </div>
+
+        </div>
 
       </div>
 
@@ -3722,6 +3867,9 @@
   let finishReviewTotals = null;
   let reviewEditingItemIndex = null;
 
+  let visitedStores = [];
+  let visitedStoresLoadedFromTrips = false;
+
   let historyTrips = [];
   let historyReturnPanelId = "home-panel";
   let historyLoadedOnce = false;
@@ -4432,49 +4580,405 @@
             store
           );
 
-        if (!stores.has(key)) {
-
+        if (
+          !stores.has(
+            key
+          )
+        ) {
           stores.set(
             key,
-            store
+            {
+              name:
+                store,
+              lastUsed:
+                0,
+              source:
+                "product"
+            }
           );
         }
       }
     );
 
-    const datalist =
-      document.getElementById(
-        "known-stores"
+    visitedStores =
+      Array.from(
+        stores.values()
+      )
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(
+              b.name
+            )
+        );
+
+    renderVisitedStores();
+  }
+
+
+  async function loadVisitedStoresFromTrips() {
+
+    if (
+      visitedStoresLoadedFromTrips ||
+      !accessToken
+    ) {
+      return;
+    }
+
+    try {
+
+      const result =
+        await sheetsGetValues(
+          `'${TRIPS_SHEET}'!A2:H`,
+          "UNFORMATTED_VALUE"
+        );
+
+      const stores =
+        new Map();
+
+      visitedStores.forEach(
+        store => {
+          stores.set(
+            normalizeStore(
+              store.name
+            ),
+            {
+              ...store
+            }
+          );
+        }
       );
 
-    datalist.innerHTML =
-      "";
+      (result.values || [])
+        .forEach(
+          row => {
 
-    Array.from(
-      stores.values()
-    )
-    .sort(
-      (a, b) =>
-        a.localeCompare(b)
-    )
-    .forEach(
-      store => {
+            const store =
+              String(
+                row[1] ?? ""
+              ).trim();
 
-        const option =
-          document.createElement(
-            "option"
+            if (!store) {
+              return;
+            }
+
+            const key =
+              normalizeStore(
+                store
+              );
+
+            const rawDate =
+              String(
+                row[3] ??
+                row[2] ??
+                ""
+              ).trim();
+
+            const parsed =
+              new Date(
+                rawDate
+              ).getTime();
+
+            const lastUsed =
+              Number.isFinite(
+                parsed
+              )
+                ? parsed
+                : 0;
+
+            const previous =
+              stores.get(
+                key
+              );
+
+            if (
+              !previous ||
+              lastUsed >
+                (
+                  previous.lastUsed ||
+                  0
+                )
+            ) {
+              stores.set(
+                key,
+                {
+                  name:
+                    store,
+                  lastUsed:
+                    lastUsed,
+                  source:
+                    "trip"
+                }
+              );
+            }
+          }
+        );
+
+      visitedStores =
+        Array.from(
+          stores.values()
+        )
+          .sort(
+            (a, b) => {
+
+              if (
+                (b.lastUsed || 0) !==
+                (a.lastUsed || 0)
+              ) {
+                return (
+                  (b.lastUsed || 0) -
+                  (a.lastUsed || 0)
+                );
+              }
+
+              return a.name.localeCompare(
+                b.name
+              );
+            }
           );
 
-        option.value =
-          store;
+      visitedStoresLoadedFromTrips =
+        true;
 
-        datalist.appendChild(
-          option
-        );
-      }
+      renderVisitedStores();
+
+    } catch (error) {
+
+      // The Product database still gives us a useful fallback list.
+      visitedStoresLoadedFromTrips =
+        false;
+    }
+  }
+
+
+  async function openStartStoreDropdown() {
+
+    document.getElementById(
+      "start-store-dropdown"
+    ).classList.remove(
+      "hidden"
+    );
+
+    document.getElementById(
+      "start-store-search"
+    ).value =
+      "";
+
+    renderVisitedStores();
+
+    await loadVisitedStoresFromTrips();
+
+    setTimeout(
+      function() {
+        document.getElementById(
+          "start-store-search"
+        ).focus();
+      },
+      60
     );
   }
 
+
+  function closeStartStoreDropdown() {
+
+    document.getElementById(
+      "start-store-dropdown"
+    ).classList.add(
+      "hidden"
+    );
+  }
+
+
+  function toggleStartStoreDropdown() {
+
+    const dropdown =
+      document.getElementById(
+        "start-store-dropdown"
+      );
+
+    if (
+      dropdown.classList.contains(
+        "hidden"
+      )
+    ) {
+      openStartStoreDropdown();
+    } else {
+      closeStartStoreDropdown();
+    }
+  }
+
+
+  function startStoreInputChanged() {
+
+    const value =
+      document.getElementById(
+        "start-store"
+      ).value;
+
+    document.getElementById(
+      "start-store-search"
+    ).value =
+      value;
+
+    document.getElementById(
+      "start-store-dropdown"
+    ).classList.remove(
+      "hidden"
+    );
+
+    renderVisitedStores();
+  }
+
+
+  function renderVisitedStores() {
+
+    const list =
+      document.getElementById(
+        "start-store-list"
+      );
+
+    if (!list) {
+      return;
+    }
+
+    const query =
+      String(
+        document.getElementById(
+          "start-store-search"
+        )?.value || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    const filtered =
+      visitedStores
+        .filter(
+          store =>
+            !query ||
+            store.name
+              .toLowerCase()
+              .includes(
+                query
+              )
+        )
+        .slice(
+          0,
+          40
+        );
+
+    window.currentVisitedStoreResults =
+      filtered;
+
+    let html =
+      "";
+
+    if (
+      filtered.length
+    ) {
+
+      html +=
+        filtered
+          .map(
+            (store, index) => (
+
+              '<button class="start-store-option" type="button" onclick="selectVisitedStore(' +
+              index +
+              ')">' +
+
+                '<span class="start-store-option-name">' +
+                  escapeHtml(
+                    store.name
+                  ) +
+                "</span>" +
+
+                '<span class="start-store-option-meta">' +
+                  (
+                    store.lastUsed
+                      ? "Previously visited"
+                      : "Saved in product history"
+                  ) +
+                "</span>" +
+
+              "</button>"
+            )
+          )
+          .join(
+            ""
+          );
+
+    } else {
+
+      html +=
+        '<div class="start-store-empty">' +
+          (
+            query
+              ? "No visited store matches that search."
+              : "No previously visited stores are stored yet."
+          ) +
+        "</div>";
+    }
+
+
+    html +=
+      '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
+        '<span class="start-store-option-name">＋ Enter a new store manually</span>' +
+        '<span class="start-store-option-meta">For a store not already listed here.</span>' +
+      "</button>";
+
+
+    list.innerHTML =
+      html;
+  }
+
+
+  function selectVisitedStore(
+    index
+  ) {
+
+    const store =
+      (
+        window.currentVisitedStoreResults ||
+        []
+      )[
+        index
+      ];
+
+    if (!store) {
+      return;
+    }
+
+    document.getElementById(
+      "start-store"
+    ).value =
+      store.name;
+
+    closeStartStoreDropdown();
+
+    showSuccessToast(
+      "Store selected",
+      store.name
+    );
+  }
+
+
+  function chooseManualStoreEntry() {
+
+    const input =
+      document.getElementById(
+        "start-store"
+      );
+
+    input.value =
+      "";
+
+    closeStartStoreDropdown();
+
+    input.focus();
+
+    setStatus(
+      "Enter the new store name manually.",
+      "success"
+    );
+  }
 
   async function writeCurrentStore(
     store
@@ -8329,6 +8833,9 @@
       hide(
         "finish-review-panel"
       );
+
+      visitedStoresLoadedFromTrips =
+        false;
 
       show(
         "finished-panel"
