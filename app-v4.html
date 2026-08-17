@@ -1728,9 +1728,90 @@
       line-height: 1.45;
     }
 
+    .payment-method-picker {
+      position: relative;
+    }
+
+    .payment-method-picker-trigger {
+      width: 100%;
+      margin: 0;
+      padding: 13px 14px;
+      border: 1px solid #5a6270;
+      border-radius: 11px;
+      background: #1c2028;
+      color: #ffffff;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .payment-method-picker-trigger-main {
+      min-width: 0;
+    }
+
+    .payment-method-picker-trigger-name {
+      display: block;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .payment-method-picker-trigger-meta {
+      display: block;
+      margin-top: 3px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .payment-method-picker-chevron {
+      flex: 0 0 auto;
+      color: #caa6ef;
+      font-size: 18px;
+    }
+
+    .payment-method-picker-menu {
+      margin-top: 8px;
+      padding: 10px;
+      border: 1px solid #5a6270;
+      border-radius: 11px;
+      background: #171a21;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
+    }
+
+    .payment-method-picker-menu.hidden {
+      display: none;
+    }
+
+    .payment-method-search {
+      margin-bottom: 9px;
+    }
+
     .payment-method-list {
       display: grid;
       gap: 9px;
+      max-height: 300px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 2px;
+    }
+
+    .payment-method-empty {
+      padding: 12px;
+      border-radius: 9px;
+      background: #20242d;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.4;
+      text-align: center;
     }
 
     .payment-method-card {
@@ -3535,7 +3616,33 @@
         Choose a saved method or add a new one while you are checking out. Split-payment amounts come in the next implementation step.
       </div>
 
-      <div id="payment-method-list" class="payment-method-list"></div>
+      <div class="payment-method-picker">
+        <button
+          id="payment-method-picker-trigger"
+          class="payment-method-picker-trigger"
+          type="button"
+          onclick="togglePaymentMethodPicker()"
+          aria-expanded="false"
+        >
+          <span class="payment-method-picker-trigger-main">
+            <span id="payment-method-picker-name" class="payment-method-picker-trigger-name">Choose payment method</span>
+            <span id="payment-method-picker-meta" class="payment-method-picker-trigger-meta">Tap to view saved methods</span>
+          </span>
+          <span class="payment-method-picker-chevron">⌄</span>
+        </button>
+
+        <div id="payment-method-picker-menu" class="payment-method-picker-menu hidden">
+          <input
+            id="payment-method-search"
+            class="payment-method-search"
+            type="search"
+            placeholder="Search nickname, owner, bank, type or last 4"
+            autocomplete="off"
+            oninput="renderPaymentMethodList()"
+          >
+          <div id="payment-method-list" class="payment-method-list"></div>
+        </div>
+      </div>
 
       <button
         class="payment-add-button"
@@ -9852,7 +9959,17 @@
           finishReviewTotals.actualTotal
         );
 
+      const paymentSearch =
+        document.getElementById(
+          "payment-method-search"
+        );
+
+      if (paymentSearch) {
+        paymentSearch.value = "";
+      }
+
       renderPaymentMethodList();
+      togglePaymentMethodPicker(false);
       closeNewPaymentMethodForm();
 
       hide(
@@ -10017,6 +10134,129 @@
   }
 
 
+  function paymentMethodMetaParts(method) {
+
+    const metaParts = [];
+
+    if (method?.owner) {
+      metaParts.push(method.owner);
+    }
+
+    if (method?.institution) {
+      metaParts.push(method.institution);
+    }
+
+    if (method?.type) {
+      metaParts.push(method.type);
+    }
+
+    if (method?.last4) {
+      metaParts.push("•••• " + method.last4);
+    }
+
+    if (method?.builtIn) {
+      metaParts.push("Built-in");
+    }
+
+    return metaParts;
+  }
+
+
+  function updatePaymentMethodPickerTrigger() {
+
+    const name =
+      document.getElementById(
+        "payment-method-picker-name"
+      );
+
+    const meta =
+      document.getElementById(
+        "payment-method-picker-meta"
+      );
+
+    if (!name || !meta) {
+      return;
+    }
+
+    const method =
+      paymentDraftMethods.find(
+        entry =>
+          entry.id ===
+          selectedPaymentDraftId
+      );
+
+    if (!method) {
+      name.textContent =
+        "Choose payment method";
+      meta.textContent =
+        "Tap to view saved methods";
+      return;
+    }
+
+    name.textContent =
+      method.nickname ||
+      "Payment method";
+
+    meta.textContent =
+      paymentMethodMetaParts(method)
+        .join(" • ") ||
+      "Selected";
+  }
+
+
+  function togglePaymentMethodPicker(forceOpen) {
+
+    const menu =
+      document.getElementById(
+        "payment-method-picker-menu"
+      );
+
+    const trigger =
+      document.getElementById(
+        "payment-method-picker-trigger"
+      );
+
+    if (!menu || !trigger) {
+      return;
+    }
+
+    const shouldOpen =
+      typeof forceOpen === "boolean"
+        ? forceOpen
+        : menu.classList.contains(
+            "hidden"
+          );
+
+    menu.classList.toggle(
+      "hidden",
+      !shouldOpen
+    );
+
+    trigger.setAttribute(
+      "aria-expanded",
+      shouldOpen
+        ? "true"
+        : "false"
+    );
+
+    if (shouldOpen) {
+      const search =
+        document.getElementById(
+          "payment-method-search"
+        );
+
+      renderPaymentMethodList();
+
+      setTimeout(
+        function() {
+          search?.focus();
+        },
+        50
+      );
+    }
+  }
+
+
   function renderPaymentMethodList() {
 
     const list =
@@ -10024,63 +10264,65 @@
         "payment-method-list"
       );
 
-    if (
-      !list
-    ) {
+    if (!list) {
+      return;
+    }
+
+    const search =
+      document.getElementById(
+        "payment-method-search"
+      );
+
+    const query =
+      String(
+        search?.value || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    const visibleMethods =
+      paymentDraftMethods.filter(
+        method => {
+          if (!query) {
+            return true;
+          }
+
+          const haystack = [
+            method.nickname,
+            method.owner,
+            method.institution,
+            method.type,
+            method.last4
+          ]
+            .map(
+              value =>
+                String(
+                  value ?? ""
+                ).toLowerCase()
+            )
+            .join(" ");
+
+          return haystack.includes(
+            query
+          );
+        }
+      );
+
+    if (!visibleMethods.length) {
+      list.innerHTML =
+        '<div class="payment-method-empty">No payment methods match this search.</div>';
+      updatePaymentMethodPickerTrigger();
       return;
     }
 
     list.innerHTML =
-      paymentDraftMethods
+      visibleMethods
         .map(
           method => {
 
             const selected =
               method.id ===
               selectedPaymentDraftId;
-
-            const metaParts = [];
-
-            if (
-              method.owner
-            ) {
-              metaParts.push(
-                method.owner
-              );
-            }
-
-            if (
-              method.institution
-            ) {
-              metaParts.push(
-                method.institution
-              );
-            }
-
-            if (
-              method.type
-            ) {
-              metaParts.push(
-                method.type
-              );
-            }
-
-            if (
-              method.last4
-            ) {
-              metaParts.push(
-                "•••• " +
-                method.last4
-              );
-            }
-
-            if (
-              method.builtIn
-            ) {
-              metaParts.push(
-                "Built-in"
-              );
-            }
 
             return (
               '<button class="payment-method-card' +
@@ -10101,7 +10343,9 @@
                 '</div>' +
                 '<div class="payment-method-meta">' +
                   escapeHtml(
-                    metaParts.join(
+                    paymentMethodMetaParts(
+                      method
+                    ).join(
                       " • "
                     ) ||
                     "Payment method"
@@ -10112,6 +10356,8 @@
           }
         )
         .join("");
+
+    updatePaymentMethodPickerTrigger();
   }
 
 
@@ -10138,6 +10384,7 @@
       );
 
     renderPaymentMethodList();
+    togglePaymentMethodPicker(false);
 
     const method =
       paymentDraftMethods.find(
