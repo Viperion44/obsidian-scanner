@@ -1479,6 +1479,254 @@
       line-height: 1.35;
     }
 
+    /* V4 Existing Product Search */
+    .product-search-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2600;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding:
+        calc(18px + env(safe-area-inset-top))
+        14px
+        calc(18px + env(safe-area-inset-bottom));
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+      overflow-y: auto;
+    }
+
+    .product-search-overlay.hidden {
+      display: none;
+    }
+
+    .product-search-card {
+      width: min(100%, 540px);
+      margin-top: 26px;
+      padding: 16px;
+      border: 1px solid #4b5260;
+      border-radius: 14px;
+      background: #242833;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .product-search-title {
+      font-size: 20px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .product-search-hint {
+      margin-top: 6px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .product-search-box {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 14px;
+      padding: 0 11px;
+      border: 1px solid #4b5260;
+      border-radius: 11px;
+      background: #171a20;
+    }
+
+    .product-search-icon {
+      flex: 0 0 auto;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .product-search-box input {
+      margin: 0;
+      padding: 12px 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .product-search-results {
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 11px;
+      background: #1d2129;
+    }
+
+    .product-search-result {
+      width: 100%;
+      margin: 0;
+      padding: 12px 13px;
+      border: 0;
+      border-bottom: 1px solid #3b414d;
+      border-radius: 0;
+      background: transparent;
+      color: #fff;
+      text-align: left;
+    }
+
+    .product-search-result:last-child {
+      border-bottom: none;
+    }
+
+    .product-search-result:active {
+      background: #2d323e;
+    }
+
+    .product-search-result-name {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .product-search-result-meta {
+      display: block;
+      margin-top: 4px;
+      color: #aeb4c0;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .product-search-empty {
+      padding: 16px 13px;
+      color: #9fa6b1;
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .product-search-cancel {
+      margin-top: 12px;
+      background: #3b414d;
+    }
+
+    /* V4 Editable Final Review */
+    .finish-item-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .finish-qty-button,
+    .finish-edit-amount-button,
+    .finish-remove-button {
+      width: auto;
+      min-width: 42px;
+      margin: 0;
+      padding: 8px 10px;
+      border-radius: 9px;
+      font-size: 12px;
+    }
+
+    .finish-qty-button {
+      background: #4a3a61;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .finish-edit-amount-button {
+      background: #3b414d;
+    }
+
+    .finish-remove-button {
+      margin-left: auto;
+      background: #672d35;
+    }
+
+    .finish-amount-chip {
+      min-width: 54px;
+      padding: 8px 10px;
+      border: 1px solid #4b5260;
+      border-radius: 9px;
+      background: #1c2028;
+      color: #ffffff;
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .finish-add-item-button {
+      margin-bottom: 10px;
+      background: #4a3a61;
+    }
+
+    .review-edit-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2650;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.70);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+    }
+
+    .review-edit-overlay.hidden {
+      display: none;
+    }
+
+    .review-edit-card {
+      width: min(100%, 480px);
+      padding: 18px;
+      border: 1px solid #4b5260;
+      border-radius: 14px;
+      background: #242833;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.50);
+    }
+
+    .review-edit-title {
+      font-size: 20px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .review-edit-product {
+      margin-top: 6px;
+      color: #c9a7f2;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
+    .review-edit-hint {
+      margin-top: 7px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .review-edit-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .review-edit-actions button {
+      margin: 0;
+    }
+
+    .review-edit-save {
+      background: #7137b5;
+    }
+
+    .review-edit-cancel {
+      background: #3b414d;
+    }
+
+    .review-edit-remove {
+      grid-column: 1 / -1;
+      background: #672d35;
+    }
+
     /* V4 fixed primary navigation */
     .bottom-nav {
       position: fixed;
@@ -1562,7 +1810,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 product identity + empty trip test
+    V4 searchable products + editable final review
   </div>
 
   <button
@@ -2556,8 +2804,16 @@
     <div class="finish-warning">
       Nothing is archived or cleared until you tap
       <b>CONFIRM &amp; FINISH TRIP</b>.
-      You can still return to shopping.
+      You can still change amounts, remove items, or add something else.
     </div>
+
+    <button
+      class="finish-add-item-button"
+      type="button"
+      onclick="addAnotherItemFromFinishReview()"
+    >
+      ＋ ADD ANOTHER ITEM
+    </button>
 
     <button
       id="confirm-finish-button"
@@ -3240,6 +3496,124 @@
   </div>
 </div>
 
+<div
+  id="product-search-overlay"
+  class="product-search-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="product-search-title"
+>
+  <div class="product-search-card">
+
+    <div
+      id="product-search-title"
+      class="product-search-title"
+    >
+      Find a product you've bought before
+    </div>
+
+    <div class="product-search-hint">
+      Search by product name. Results are limited to products previously recorded at this store.
+    </div>
+
+    <div class="product-search-box">
+      <span class="product-search-icon">🔍</span>
+
+      <input
+        id="product-search-input"
+        type="search"
+        placeholder="Type product keywords..."
+        autocomplete="off"
+        oninput="renderExistingProductSearchResults()"
+      >
+    </div>
+
+    <div
+      id="product-search-results"
+      class="product-search-results"
+    ></div>
+
+    <button
+      class="product-search-cancel"
+      type="button"
+      onclick="closeExistingProductSearch()"
+    >
+      CANCEL
+    </button>
+
+  </div>
+</div>
+
+<div
+  id="review-edit-overlay"
+  class="review-edit-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="review-edit-title"
+>
+  <div class="review-edit-card">
+
+    <div
+      id="review-edit-title"
+      class="review-edit-title"
+    >
+      Edit amount
+    </div>
+
+    <div
+      id="review-edit-product"
+      class="review-edit-product"
+    >
+      —
+    </div>
+
+    <div class="review-edit-hint">
+      Use whole numbers for pieces or decimals for weighed items, such as 0.650 kg.
+    </div>
+
+    <label for="review-edit-amount">
+      Amount
+    </label>
+
+    <input
+      id="review-edit-amount"
+      type="number"
+      inputmode="decimal"
+      min="0.001"
+      step="any"
+    >
+
+    <div class="review-edit-actions">
+
+      <button
+        class="review-edit-cancel"
+        type="button"
+        onclick="closeReviewAmountEditor()"
+      >
+        CANCEL
+      </button>
+
+      <button
+        class="review-edit-save"
+        type="button"
+        onclick="saveReviewAmountEditor()"
+      >
+        SAVE AMOUNT
+      </button>
+
+      <button
+        class="review-edit-remove"
+        type="button"
+        onclick="removeReviewItemFromEditor()"
+      >
+        REMOVE ITEM FROM TRIP
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
 <nav
   id="bottom-nav"
   class="bottom-nav"
@@ -3346,6 +3720,7 @@
 
   let finishReviewItems = [];
   let finishReviewTotals = null;
+  let reviewEditingItemIndex = null;
 
   let historyTrips = [];
   let historyReturnPanelId = "home-panel";
@@ -6871,120 +7246,192 @@
         "finish-review-list"
       );
 
-    list.innerHTML =
-      finishReviewItems
-        .map(
-          item => {
 
-            let promoHtml =
-              "";
+    if (
+      !finishReviewItems.length
+    ) {
 
-            if (
-              item.promoApplied === "YES" &&
-              item.promoDetails
-            ) {
+      list.innerHTML =
+        '<div class="finish-item">' +
+          '<div class="finish-item-sub">' +
+            "No items are currently in this trip." +
+          "</div>" +
+        "</div>";
 
-              promoHtml =
+    } else {
 
-                '<div class="finish-item-promo">' +
+      list.innerHTML =
+        finishReviewItems
+          .map(
+            (item, index) => {
 
-                "🏷️ " +
-                escapeHtml(
-                  item.promoDetails
-                );
+              let promoHtml =
+                "";
 
               if (
-                isUsableNumber(
-                  item.savings
-                ) &&
-                Number(
-                  item.savings
-                ) > 0
+                item.promoApplied === "YES" &&
+                item.promoDetails
               ) {
 
-                promoHtml +=
+                promoHtml =
 
-                  " • Saved " +
+                  '<div class="finish-item-promo">' +
+
+                  "🏷️ " +
                   escapeHtml(
-                    formatMoney(
-                      item.savings
-                    )
+                    item.promoDetails
                   );
-              }
 
-              promoHtml +=
-                "</div>";
+                if (
+                  isUsableNumber(
+                    item.savings
+                  ) &&
+                  Number(
+                    item.savings
+                  ) > 0
+                ) {
 
-            } else if (
-              item.promoApplied === "NO" &&
-              item.promoDetails
-            ) {
+                  promoHtml +=
 
-              promoHtml =
-
-                '<div class="finish-item-sub">' +
-
-                "Promo available but not used: " +
-                escapeHtml(
-                  item.promoDetails
-                ) +
-
-                "</div>";
-            }
-
-
-            return (
-
-              '<div class="finish-item">' +
-
-                '<div class="finish-item-top">' +
-
-                  '<div class="finish-product">' +
-                    escapeHtml(
-                      item.product ||
-                      item.barcode
-                    ) +
-                  "</div>" +
-
-                  '<div class="finish-line-total">' +
+                    " • Saved " +
                     escapeHtml(
                       formatMoney(
-                        item.lineTotal
+                        item.savings
                       )
-                    ) +
+                    );
+                }
+
+                promoHtml +=
+                  "</div>";
+
+              } else if (
+                item.promoApplied === "NO" &&
+                item.promoDetails
+              ) {
+
+                promoHtml =
+
+                  '<div class="finish-item-sub">' +
+
+                  "Promo available but not used: " +
+                  escapeHtml(
+                    item.promoDetails
+                  ) +
+
+                  "</div>";
+              }
+
+
+              const wholeAmount =
+                Number.isInteger(
+                  Number(
+                    item.amount
+                  )
+                );
+
+              const quantityControls =
+                wholeAmount
+                  ? (
+                      '<button class="finish-qty-button" type="button" onclick="adjustFinishReviewAmount(' +
+                      index +
+                      ', -1)">−</button>' +
+
+                      '<div class="finish-amount-chip">' +
+                        escapeHtml(
+                          formatPlainNumber(
+                            item.amount
+                          )
+                        ) +
+                      "</div>" +
+
+                      '<button class="finish-qty-button" type="button" onclick="adjustFinishReviewAmount(' +
+                      index +
+                      ', 1)">+</button>'
+                    )
+                  : (
+                      '<div class="finish-amount-chip">' +
+                        escapeHtml(
+                          formatPlainNumber(
+                            item.amount
+                          )
+                        ) +
+                      "</div>"
+                    );
+
+
+              return (
+
+                '<div class="finish-item">' +
+
+                  '<div class="finish-item-top">' +
+
+                    '<div class="finish-product">' +
+                      escapeHtml(
+                        item.product ||
+                        item.barcode
+                      ) +
+                    "</div>" +
+
+                    '<div class="finish-line-total">' +
+                      escapeHtml(
+                        formatMoney(
+                          item.lineTotal
+                        )
+                      ) +
+                    "</div>" +
+
                   "</div>" +
 
-                "</div>" +
+                  '<div class="finish-item-sub">' +
 
-                '<div class="finish-item-sub">' +
+                    escapeHtml(
+                      formatPlainNumber(
+                        item.amount
+                      )
+                    ) +
 
-                  escapeHtml(
-                    formatPlainNumber(
-                      item.amount
-                    )
-                  ) +
+                    " × " +
 
-                  " × " +
+                    escapeHtml(
+                      formatMoney(
+                        item.effectiveUnitPrice
+                      )
+                    ) +
 
-                  escapeHtml(
-                    formatMoney(
-                      item.effectiveUnitPrice
-                    )
-                  ) +
+                    " effective unit price" +
 
-                  " effective unit price" +
+                  "</div>" +
 
-                "</div>" +
+                  promoHtml +
 
-                promoHtml +
+                  '<div class="finish-item-controls">' +
 
-              "</div>"
-            );
-          }
-        )
-        .join(
-          ""
-        );
+                    quantityControls +
+
+                    '<button class="finish-edit-amount-button" type="button" onclick="openReviewAmountEditor(' +
+                    index +
+                    ')">EDIT AMOUNT</button>' +
+
+                    '<button class="finish-remove-button" type="button" onclick="openReviewAmountEditor(' +
+                    index +
+                    ')">REMOVE</button>' +
+
+                  "</div>" +
+
+                "</div>"
+              );
+            }
+          )
+          .join(
+            ""
+          );
+    }
+
+
+    finishReviewTotals =
+      calculateTripTotals(
+        finishReviewItems
+      );
 
 
     document.getElementById(
@@ -7108,6 +7555,644 @@
   }
 
 
+  function calculateReviewPricingForAmount(
+    item,
+    newAmount
+  ) {
+
+    const amount =
+      Number(
+        newAmount
+      );
+
+    const shelf =
+      Number(
+        item.shelfUnitPrice
+      );
+
+    if (
+      !Number.isFinite(
+        amount
+      ) ||
+      amount <= 0 ||
+      !Number.isFinite(
+        shelf
+      )
+    ) {
+
+      throw new Error(
+        "A valid amount and shelf price are required."
+      );
+    }
+
+
+    const regular =
+      amount *
+      shelf;
+
+    let actual =
+      regular;
+
+
+    if (
+      item.promoApplied === "YES"
+    ) {
+
+      if (
+        item.promoType === "X for $Y" &&
+        isUsableNumber(
+          item.promoQuantity
+        ) &&
+        isUsableNumber(
+          item.promoTotal
+        )
+      ) {
+
+        const qty =
+          Number(
+            item.promoQuantity
+          );
+
+        const promoTotal =
+          Number(
+            item.promoTotal
+          );
+
+        const bundles =
+          Math.floor(
+            amount /
+            qty
+          );
+
+        const leftover =
+          amount -
+          (
+            bundles *
+            qty
+          );
+
+        actual =
+          (
+            bundles *
+            promoTotal
+          ) +
+          (
+            leftover *
+            shelf
+          );
+
+      } else if (
+        item.promoType === "Buy X, get Y free"
+      ) {
+
+        const match =
+          String(
+            item.promoDetails || ""
+          ).match(
+            /Buy\s+([\d.]+),\s*get\s+([\d.]+)\s+free/i
+          );
+
+        if (!match) {
+          throw new Error(
+            "This promotion cannot be safely recalculated from the saved information. Use EDIT AMOUNT and re-add the item from Shopping instead."
+          );
+        }
+
+        const buyQty =
+          Number(
+            match[1]
+          );
+
+        const freeQty =
+          Number(
+            match[2]
+          );
+
+        const group =
+          buyQty +
+          freeQty;
+
+        const fullGroups =
+          Math.floor(
+            amount /
+            group
+          );
+
+        const leftover =
+          amount -
+          (
+            fullGroups *
+            group
+          );
+
+        actual =
+          (
+            (
+              fullGroups *
+              buyQty
+            ) +
+            leftover
+          ) *
+          shelf;
+
+      } else if (
+        item.promoType === "Percentage discount"
+      ) {
+
+        const match =
+          String(
+            item.promoDetails || ""
+          ).match(
+            /([\d.]+)\s*%\s*off/i
+          );
+
+        if (!match) {
+          throw new Error(
+            "This percentage promotion cannot be safely recalculated from the saved information."
+          );
+        }
+
+        const percent =
+          Number(
+            match[1]
+          );
+
+        actual =
+          regular *
+          (
+            1 -
+            (
+              percent /
+              100
+            )
+          );
+
+      } else if (
+        item.promoType === "Special unit price" &&
+        isUsableNumber(
+          item.promoQuantity
+        ) &&
+        isUsableNumber(
+          item.promoTotal
+        )
+      ) {
+
+        const threshold =
+          Number(
+            item.promoQuantity
+          );
+
+        const special =
+          Number(
+            item.promoTotal
+          );
+
+        actual =
+          amount >=
+            threshold
+              ? amount *
+                special
+              : regular;
+
+      } else if (
+        item.promoType === "Other / manual"
+      ) {
+
+        throw new Error(
+          "Manual promotions cannot be safely recalculated when the amount changes. Return to Shopping and re-add this item with the correct amount."
+        );
+      }
+    }
+
+
+    const roundedActual =
+      roundMoney(
+        actual
+      );
+
+    const roundedRegular =
+      roundMoney(
+        regular
+      );
+
+    const effective =
+      roundMoneyMore(
+        roundedActual /
+        amount
+      );
+
+    const savings =
+      roundMoney(
+        Math.max(
+          0,
+          roundedRegular -
+          roundedActual
+        )
+      );
+
+    return {
+      amount:
+        amount,
+      lineTotal:
+        roundedActual,
+      regularLineTotal:
+        roundedRegular,
+      effectiveUnitPrice:
+        effective,
+      savings:
+        savings,
+      priceDelta:
+        isUsableNumber(
+          item.previousPrice
+        )
+          ? roundMoneyMore(
+              effective -
+              Number(
+                item.previousPrice
+              )
+            )
+          : ""
+    };
+  }
+
+
+  async function saveFinishReviewAmount(
+    index,
+    newAmount
+  ) {
+
+    const item =
+      finishReviewItems[
+        index
+      ];
+
+    if (!item) {
+      return;
+    }
+
+
+    let pricing;
+
+    try {
+
+      pricing =
+        calculateReviewPricingForAmount(
+          item,
+          newAmount
+        );
+
+    } catch (error) {
+
+      fail(
+        error.message ||
+        "The amount could not be recalculated."
+      );
+
+      showErrorToast(
+        "Amount not changed",
+        error.message ||
+        "The amount could not be recalculated."
+      );
+
+      return;
+    }
+
+
+    setStatus(
+      "Updating trip item...",
+      "working"
+    );
+
+
+    try {
+
+      await sheetsValuesBatchUpdate(
+        [
+          {
+            range:
+              `'${SHOPPING_SHEET}'!D${item.sheetRow}`,
+            values:
+              [[pricing.amount]]
+          },
+          {
+            range:
+              `'${SHOPPING_SHEET}'!F${item.sheetRow}:G${item.sheetRow}`,
+            values:
+              [[
+                pricing.effectiveUnitPrice,
+                pricing.lineTotal
+              ]]
+          },
+          {
+            range:
+              `'${SHOPPING_SHEET}'!I${item.sheetRow}`,
+            values:
+              [[pricing.priceDelta]]
+          },
+          {
+            range:
+              `'${SHOPPING_SHEET}'!O${item.sheetRow}:P${item.sheetRow}`,
+            values:
+              [[
+                pricing.regularLineTotal,
+                pricing.savings
+              ]]
+          }
+        ],
+        "USER_ENTERED"
+      );
+
+
+      Object.assign(
+        item,
+        pricing
+      );
+
+
+      renderFinishReview();
+
+      showSuccessToast(
+        "Amount updated",
+        `${item.product || item.barcode}: ${formatPlainNumber(item.amount)}`
+      );
+
+      setStatus(
+        "Trip review updated.",
+        "success"
+      );
+
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+
+      showErrorToast(
+        "Update failed",
+        "The item amount was not changed."
+      );
+    }
+  }
+
+
+  async function adjustFinishReviewAmount(
+    index,
+    delta
+  ) {
+
+    const item =
+      finishReviewItems[
+        index
+      ];
+
+    if (!item) {
+      return;
+    }
+
+    const current =
+      Number(
+        item.amount
+      );
+
+    const next =
+      current +
+      delta;
+
+    if (
+      next <= 0
+    ) {
+
+      openReviewAmountEditor(
+        index
+      );
+
+      return;
+    }
+
+    await saveFinishReviewAmount(
+      index,
+      next
+    );
+  }
+
+
+  function openReviewAmountEditor(
+    index
+  ) {
+
+    const item =
+      finishReviewItems[
+        index
+      ];
+
+    if (!item) {
+      return;
+    }
+
+    reviewEditingItemIndex =
+      index;
+
+    document.getElementById(
+      "review-edit-product"
+    ).textContent =
+      item.product ||
+      item.barcode ||
+      "Item";
+
+    document.getElementById(
+      "review-edit-amount"
+    ).value =
+      item.amount;
+
+    document.getElementById(
+      "review-edit-overlay"
+    ).classList.remove(
+      "hidden"
+    );
+
+    setTimeout(
+      function() {
+        document.getElementById(
+          "review-edit-amount"
+        ).focus();
+      },
+      80
+    );
+  }
+
+
+  function closeReviewAmountEditor() {
+
+    reviewEditingItemIndex =
+      null;
+
+    document.getElementById(
+      "review-edit-overlay"
+    ).classList.add(
+      "hidden"
+    );
+  }
+
+
+  async function saveReviewAmountEditor() {
+
+    if (
+      reviewEditingItemIndex ===
+      null
+    ) {
+      return;
+    }
+
+    const amount =
+      Number(
+        document.getElementById(
+          "review-edit-amount"
+        ).value
+      );
+
+    if (
+      !Number.isFinite(
+        amount
+      ) ||
+      amount <= 0
+    ) {
+
+      showErrorToast(
+        "Invalid amount",
+        "Enter an amount greater than zero."
+      );
+
+      return;
+    }
+
+    const index =
+      reviewEditingItemIndex;
+
+    closeReviewAmountEditor();
+
+    await saveFinishReviewAmount(
+      index,
+      amount
+    );
+  }
+
+
+  async function removeReviewItemFromEditor() {
+
+    if (
+      reviewEditingItemIndex ===
+      null
+    ) {
+      return;
+    }
+
+    const index =
+      reviewEditingItemIndex;
+
+    const item =
+      finishReviewItems[
+        index
+      ];
+
+    if (!item) {
+      closeReviewAmountEditor();
+      return;
+    }
+
+    const approved =
+      window.confirm(
+        `Remove "${item.product || item.barcode}" from this trip?`
+      );
+
+    if (
+      !approved
+    ) {
+      return;
+    }
+
+    closeReviewAmountEditor();
+
+    setStatus(
+      "Removing item from trip...",
+      "working"
+    );
+
+    try {
+
+      await sheetsClearValues(
+        `'${SHOPPING_SHEET}'!A${item.sheetRow}:R${item.sheetRow}`
+      );
+
+      finishReviewItems.splice(
+        index,
+        1
+      );
+
+      renderFinishReview();
+
+      showSuccessToast(
+        "Item removed",
+        `${item.product || item.barcode} was removed from this trip.`
+      );
+
+      setStatus(
+        finishReviewItems.length
+          ? "Trip review updated."
+          : "No items remain. You can still finish and save this store visit.",
+        "success"
+      );
+
+    } catch (error) {
+
+      handleApiError(
+        error
+      );
+
+      showErrorToast(
+        "Remove failed",
+        "The item was not removed."
+      );
+    }
+  }
+
+
+  function addAnotherItemFromFinishReview() {
+
+    finishReviewItems =
+      [];
+
+    finishReviewTotals =
+      null;
+
+    reviewEditingItemIndex =
+      null;
+
+    hide(
+      "review-edit-overlay"
+    );
+
+    hide(
+      "finish-review-panel"
+    );
+
+    show(
+      "active-trip-panel"
+    );
+
+    resumeScanner();
+
+    setStatus(
+      "Trip active. Scan or enter another item.",
+      "success"
+    );
+
+    showSuccessToast(
+      "Shopping resumed",
+      "Add the extra item, then return to final review."
+    );
+  }
+
   function backToShoppingFromFinish() {
 
     finishReviewItems =
@@ -7115,6 +8200,13 @@
 
     finishReviewTotals =
       null;
+
+    reviewEditingItemIndex =
+      null;
+
+    hide(
+      "review-edit-overlay"
+    );
 
     hide(
       "finish-review-panel"
@@ -8957,6 +10049,11 @@
         "identity-overlay"
       );
 
+    const productSearchOverlay =
+      document.getElementById(
+        "product-search-overlay"
+      );
+
     if (button) {
       button.classList.add(
         "hidden"
@@ -8979,6 +10076,12 @@
 
     if (identityOverlay) {
       identityOverlay.classList.add(
+        "hidden"
+      );
+    }
+
+    if (productSearchOverlay) {
+      productSearchOverlay.classList.add(
         "hidden"
       );
     }
@@ -9144,9 +10247,344 @@
       return;
     }
 
+    if (
+      kind === "existing"
+    ) {
+
+      wrongProductMode =
+        "forward";
+
+      wrongProductIdentityKind =
+        "existing";
+
+      openExistingProductSearch();
+
+      return;
+    }
+
     beginWrongProductEntry(
       "forward",
       kind
+    );
+  }
+
+
+  function getExistingProductsAtCurrentStore() {
+
+    const seen =
+      new Map();
+
+    productDatabase.forEach(
+      record => {
+
+        const product =
+          String(
+            record.product || ""
+          ).trim();
+
+        if (
+          !product ||
+          normalizeStore(
+            record.store
+          ) !==
+            normalizeStore(
+              activeTrip.store
+            )
+        ) {
+          return;
+        }
+
+        const key =
+          normalizeProductIdentity(
+            product
+          );
+
+        if (
+          !key
+        ) {
+          return;
+        }
+
+        const existing =
+          seen.get(
+            key
+          );
+
+        const recordTime =
+          new Date(
+            record.lastPurchased || 0
+          ).getTime();
+
+        const existingTime =
+          existing
+            ? new Date(
+                existing.lastPurchased || 0
+              ).getTime()
+            : -1;
+
+        if (
+          !existing ||
+          (
+            Number.isFinite(
+              recordTime
+            ) &&
+            recordTime >
+              (
+                Number.isFinite(
+                  existingTime
+                )
+                  ? existingTime
+                  : -1
+              )
+          )
+        ) {
+          seen.set(
+            key,
+            record
+          );
+        }
+      }
+    );
+
+    return Array.from(
+      seen.values()
+    )
+      .sort(
+        (a, b) =>
+          String(
+            a.product || ""
+          ).localeCompare(
+            String(
+              b.product || ""
+            )
+          )
+      );
+  }
+
+
+  function openExistingProductSearch() {
+
+    const overlay =
+      document.getElementById(
+        "product-search-overlay"
+      );
+
+    const input =
+      document.getElementById(
+        "product-search-input"
+      );
+
+    input.value =
+      "";
+
+    overlay.classList.remove(
+      "hidden"
+    );
+
+    renderExistingProductSearchResults();
+
+    setTimeout(
+      function() {
+        input.focus();
+      },
+      80
+    );
+  }
+
+
+  function closeExistingProductSearch() {
+
+    document.getElementById(
+      "product-search-overlay"
+    ).classList.add(
+      "hidden"
+    );
+
+    wrongProductMode =
+      null;
+
+    wrongProductIdentityKind =
+      null;
+
+    showErrorToast(
+      "Selection cancelled",
+      "The recognized product was left unchanged."
+    );
+  }
+
+
+  function renderExistingProductSearchResults() {
+
+    const query =
+      document.getElementById(
+        "product-search-input"
+      ).value
+        .trim()
+        .toLowerCase();
+
+    const allProducts =
+      getExistingProductsAtCurrentStore();
+
+    const filtered =
+      allProducts
+        .filter(
+          record => {
+
+            if (!query) {
+              return true;
+            }
+
+            const haystack =
+              (
+                String(
+                  record.product || ""
+                ) +
+                " " +
+                String(
+                  record.barcode || ""
+                )
+              ).toLowerCase();
+
+            return query
+              .split(/\s+/)
+              .every(
+                term =>
+                  haystack.includes(
+                    term
+                  )
+              );
+          }
+        )
+        .slice(
+          0,
+          40
+        );
+
+    const box =
+      document.getElementById(
+        "product-search-results"
+      );
+
+    if (
+      !filtered.length
+    ) {
+
+      box.innerHTML =
+        '<div class="product-search-empty">' +
+          (
+            query
+              ? "No matching previously purchased product was found at this store."
+              : "No previously purchased products are available for this store."
+          ) +
+        "</div>";
+
+      return;
+    }
+
+    box.innerHTML =
+      filtered
+        .map(
+          (record, index) => {
+
+            const price =
+              isUsableNumber(
+                record.price
+              )
+                ? formatMoney(
+                    record.price
+                  )
+                : "No previous price";
+
+            return (
+              '<button class="product-search-result" type="button" onclick="selectExistingProductFromSearch(' +
+              index +
+              ')">' +
+                '<span class="product-search-result-name">' +
+                  escapeHtml(
+                    record.product
+                  ) +
+                "</span>" +
+                '<span class="product-search-result-meta">' +
+                  escapeHtml(
+                    price
+                  ) +
+                  (
+                    record.barcode
+                      ? " • Previous barcode " +
+                        escapeHtml(
+                          record.barcode
+                        )
+                      : ""
+                  ) +
+                "</span>" +
+              "</button>"
+            );
+          }
+        )
+        .join(
+          ""
+        );
+
+    window.currentExistingProductSearchResults =
+      filtered;
+  }
+
+
+  function selectExistingProductFromSearch(
+    index
+  ) {
+
+    const record =
+      (
+        window.currentExistingProductSearchResults ||
+        []
+      )[
+        index
+      ];
+
+    if (!record) {
+      return;
+    }
+
+    document.getElementById(
+      "product-search-overlay"
+    ).classList.add(
+      "hidden"
+    );
+
+    beginWrongProductEntry(
+      "forward",
+      "existing"
+    );
+
+    document.getElementById(
+      "product-name"
+    ).value =
+      record.product;
+
+    previousPriceAtStore =
+      isUsableNumber(
+        record.price
+      )
+        ? record.price
+        : "";
+
+    updatePreviousPriceDisplay();
+
+    document.getElementById(
+      "confirm-name"
+    ).checked =
+      false;
+
+    renderPriceComparisons();
+
+    showSuccessToast(
+      "Existing product selected",
+      isUsableNumber(
+        record.price
+      )
+        ? `Previous price at this store: ${formatMoney(record.price)}`
+        : "No previous price was available for this product."
     );
   }
 
