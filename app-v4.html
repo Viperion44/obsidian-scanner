@@ -4171,7 +4171,7 @@
       </div>
 
       <div class="management-warning">
-        This first Management build is read-only. We are verifying the data views before enabling edits or deletions.
+        Products and payment methods can be maintained here. Historical trip records remain protected from destructive edits.
       </div>
 
     </div>
@@ -4186,6 +4186,16 @@
         <span class="management-action-icon">📦</span>
         <span class="management-action-title">Products</span>
         <span class="management-action-desc">Review saved product/store records.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
+        onclick="showManagementPayments()"
+      >
+        <span class="management-action-icon">💳</span>
+        <span class="management-action-title">Payments</span>
+        <span class="management-action-desc">Add, edit, activate, or deactivate payment methods.</span>
       </button>
 
       <button
@@ -4229,7 +4239,7 @@
       </div>
 
       <div class="management-empty">
-        Products, stores, and history auditing will appear here.
+        Products, payment methods, stores, and history auditing will appear here.
       </div>
     </div>
 
@@ -4307,6 +4317,61 @@
           SAVE CORRECTION
         </button>
 
+      </div>
+
+    </div>
+
+    <div
+      id="management-payment-editor"
+      class="management-editor-card hidden"
+    >
+
+      <div id="management-payment-editor-title" class="management-editor-title">
+        Add Payment Method
+      </div>
+
+      <label for="management-payment-nickname">Nickname</label>
+      <input id="management-payment-nickname" type="text" autocomplete="off">
+
+      <label for="management-payment-owner">Owner</label>
+      <input id="management-payment-owner" type="text" autocomplete="off">
+
+      <label for="management-payment-institution">Institution</label>
+      <input id="management-payment-institution" type="text" autocomplete="off">
+
+      <label for="management-payment-type">Type</label>
+      <select id="management-payment-type">
+        <option value="Credit">Credit</option>
+        <option value="Debit">Debit</option>
+        <option value="Food stamps">Food stamps</option>
+        <option value="Cash">Cash</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label for="management-payment-last4">Last 4 (optional)</label>
+      <input
+        id="management-payment-last4"
+        type="text"
+        inputmode="numeric"
+        maxlength="4"
+        autocomplete="off"
+        oninput="sanitizeManagementPaymentLast4()"
+      >
+
+      <label for="management-payment-notes">Notes (optional)</label>
+      <textarea id="management-payment-notes" rows="3" autocomplete="off"></textarea>
+
+      <div class="management-editor-note">
+        Only the nickname and owner are exposed in exported trip PDFs. Saved backend details stay in Payment Methods.
+      </div>
+
+      <div class="management-editor-actions">
+        <button class="management-cancel-button" type="button" onclick="cancelManagementPaymentEdit()">
+          CANCEL
+        </button>
+        <button id="management-save-payment-button" class="management-save-button" type="button" onclick="saveManagementPaymentEdit()">
+          SAVE PAYMENT METHOD
+        </button>
       </div>
 
     </div>
@@ -4570,6 +4635,29 @@
   </div>
 </div>
 
+<div
+  id="budget-warning-overlay"
+  class="change-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="budget-warning-title"
+>
+  <div class="change-card" style="border-color:#8f3039;">
+    <div id="budget-warning-title" class="change-title" style="color:#ff8d96;">
+      BUDGET SURPASSED
+    </div>
+    <div id="budget-warning-body" class="change-body"></div>
+    <div class="change-actions">
+      <button class="change-cancel" type="button" onclick="continueShoppingAfterBudgetWarning()">
+        CONTINUE SHOPPING
+      </button>
+      <button class="change-history" type="button" onclick="goToReviewFromBudgetWarning()">
+        GO TO REVIEW &amp; FINISH TRIP
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="pdf-export-stage"></div>
 
 <nav
@@ -4707,7 +4795,11 @@
   let managementProducts = [];
   let managementTrips = [];
   let managementHistoryRows = [];
+  let managementPaymentMethods = [];
   let managementEditingProductIndex = null;
+  let managementEditingPaymentIndex = null;
+
+  let budgetWarningAcknowledged = false;
 
   let toastHideTimer = null;
   let toastRemoveTimer = null;
@@ -5115,6 +5207,9 @@
       activeTrip =
         trip;
 
+      budgetWarningAcknowledged =
+        false;
+
       openTripCandidate =
         trip;
 
@@ -5217,6 +5312,9 @@
 
     activeTrip =
       openTripCandidate;
+
+    budgetWarningAcknowledged =
+      false;
 
     try {
 
@@ -5848,6 +5946,78 @@
       formatMoney(
         totals.actualTotal
       );
+
+    checkBudgetSurpassed(
+      totals.actualTotal
+    );
+
+    return {
+      items,
+      totals
+    };
+  }
+
+
+  function checkBudgetSurpassed(currentTotal) {
+
+    if (
+      !activeTrip ||
+      String(activeTrip.status || "OPEN").toUpperCase() !== "OPEN" ||
+      !isUsableNumber(activeTrip.budget)
+    ) {
+      budgetWarningAcknowledged = false;
+      return;
+    }
+
+    const budget = Number(activeTrip.budget);
+    const total = Number(currentTotal || 0);
+
+    if (
+      !Number.isFinite(budget) ||
+      budget < 0 ||
+      total <= budget
+    ) {
+      budgetWarningAcknowledged = false;
+      hide("budget-warning-overlay");
+      return;
+    }
+
+    if (budgetWarningAcknowledged) {
+      return;
+    }
+
+    const overBy =
+      total - budget;
+
+    document.getElementById(
+      "budget-warning-body"
+    ).textContent =
+      `Your current total is ${formatMoney(total)}, which is ${formatMoney(overBy)} over your ${formatMoney(budget)} budget.`;
+
+    show(
+      "budget-warning-overlay"
+    );
+  }
+
+
+  function continueShoppingAfterBudgetWarning() {
+    budgetWarningAcknowledged = true;
+    hide(
+      "budget-warning-overlay"
+    );
+    setStatus(
+      "Budget exceeded. Shopping continues.",
+      "success"
+    );
+  }
+
+
+  async function goToReviewFromBudgetWarning() {
+    budgetWarningAcknowledged = true;
+    hide(
+      "budget-warning-overlay"
+    );
+    await openFinishReview();
   }
 
 
@@ -10846,6 +11016,18 @@
         totals,
         finishIso
       );
+
+      /*
+        The finished receipt/PDF snapshot is now self-contained. Do not leave
+        the completed trip in activeTrip: primary navigation previously saw
+        that stale object and resurrected the cleared Shopping List as a
+        phantom zero-item OPEN trip.
+      */
+      activeTrip =
+        null;
+
+      budgetWarningAcknowledged =
+        false;
 
 
       openTripCandidate =
@@ -16635,6 +16817,14 @@
   }
 
 
+  function hasOpenActiveTrip() {
+    return Boolean(
+      activeTrip &&
+      String(activeTrip.status || "OPEN").toUpperCase() === "OPEN"
+    );
+  }
+
+
   function getVisibleShoppingPanelId() {
 
     const panelIds = [
@@ -16667,7 +16857,7 @@
       }
     }
 
-    return activeTrip
+    return hasOpenActiveTrip()
       ? "active-trip-panel"
       : "home-panel";
   }
@@ -18764,7 +18954,8 @@
       tripsResult,
       tripsFormattedResult,
       historyResult,
-      historyDatesResult
+      historyDatesResult,
+      paymentMethodsResult
     ] =
       await Promise.all(
         [
@@ -18787,6 +18978,10 @@
           sheetsGetValues(
             `'${TRIP_HISTORY_SHEET}'!B2:B`,
             "FORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${PAYMENT_METHODS_SHEET}'!A2:H`,
+            "UNFORMATTED_VALUE"
           )
         ]
       );
@@ -18856,6 +19051,35 @@
             record.product
         );
 
+    managementPaymentMethods =
+      (paymentMethodsResult.values || [])
+        .map(
+          (row, index) => {
+            const id = String(row[0] ?? "").trim();
+            const nickname = String(row[1] ?? "").trim();
+            if (!id && !nickname) {
+              return null;
+            }
+            const activeRaw = row[7];
+            return {
+              sheetRow: index + 2,
+              id,
+              nickname,
+              owner: String(row[2] ?? "").trim(),
+              institution: String(row[3] ?? "").trim(),
+              type: String(row[4] ?? "Other").trim() || "Other",
+              last4: String(row[5] ?? "").trim(),
+              notes: String(row[6] ?? "").trim(),
+              active:
+                activeRaw === true ||
+                String(activeRaw ?? "").trim().toUpperCase() === "TRUE",
+              builtIn:
+                id === "CASH"
+            };
+          }
+        )
+        .filter(Boolean);
+
     managementHistoryRows =
       (historyResult.values || [])
         .map(
@@ -18906,6 +19130,9 @@
   ) {
 
     cancelManagementProductEdit(
+      true
+    );
+    cancelManagementPaymentEdit(
       true
     );
 
@@ -19466,9 +19693,317 @@
     }
   }
 
+  function showManagementPayments() {
+
+    cancelManagementProductEdit(
+      true
+    );
+    cancelManagementPaymentEdit(
+      true
+    );
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    const rows =
+      managementPaymentMethods
+        .map(
+          (record, originalIndex) => ({
+            record,
+            originalIndex
+          })
+        )
+        .sort(
+          (a, b) => {
+            if (a.record.builtIn !== b.record.builtIn) {
+              return a.record.builtIn ? -1 : 1;
+            }
+            return String(a.record.nickname || "").localeCompare(
+              String(b.record.nickname || "")
+            );
+          }
+        );
+
+    box.innerHTML =
+      '<div class="management-section-title">Payment Methods</div>' +
+      '<button class="management-save-button" type="button" style="margin:0 0 12px;width:100%;" onclick="openManagementPaymentEditor()">＋ ADD PAYMENT METHOD</button>' +
+      (
+        rows.length
+          ? rows.map(
+              entry => {
+                const record = entry.record;
+                const meta = [
+                  record.owner,
+                  record.institution,
+                  record.type,
+                  record.last4 ? "•••• " + record.last4 : "",
+                  record.active ? "Active" : "Inactive"
+                ].filter(Boolean).join(" • ");
+
+                const controls = record.builtIn
+                  ? '<span class="management-row-meta">Built-in</span>'
+                  : '<div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;">' +
+                      '<button class="management-edit-button" type="button" onclick="editManagementPayment(' + entry.originalIndex + ')">EDIT</button>' +
+                      '<button class="management-edit-button" type="button" style="background:' + (record.active ? '#7f3038' : '#24643b') + ';" onclick="toggleManagementPaymentActive(' + entry.originalIndex + ')">' +
+                        (record.active ? 'DEACTIVATE' : 'REACTIVATE') +
+                      '</button>' +
+                    '</div>';
+
+                return (
+                  '<div class="management-row">' +
+                    '<div class="management-row-top">' +
+                      '<div class="management-row-name">' + escapeHtml(record.nickname || record.id || "Unnamed payment") + '</div>' +
+                      controls +
+                    '</div>' +
+                    '<div class="management-row-meta">' + escapeHtml(meta || "Payment method") + '</div>' +
+                    (record.notes ? '<div class="management-row-meta">' + escapeHtml(record.notes) + '</div>' : '') +
+                  '</div>'
+                );
+              }
+            ).join("")
+          : '<div class="management-empty">No payment methods are stored yet.</div>'
+      );
+
+    scrollManagementContentIntoView();
+  }
+
+
+  function openManagementPaymentEditor(index = null) {
+
+    managementEditingPaymentIndex =
+      Number.isInteger(index)
+        ? index
+        : null;
+
+    const record =
+      managementEditingPaymentIndex === null
+        ? null
+        : managementPaymentMethods[managementEditingPaymentIndex];
+
+    document.getElementById(
+      "management-payment-editor-title"
+    ).textContent =
+      record
+        ? "Edit Payment Method"
+        : "Add Payment Method";
+
+    document.getElementById("management-payment-nickname").value = record?.nickname || "";
+    document.getElementById("management-payment-owner").value = record?.owner || "";
+    document.getElementById("management-payment-institution").value = record?.institution || "";
+    document.getElementById("management-payment-type").value = record?.type || "Credit";
+    document.getElementById("management-payment-last4").value = record?.last4 || "";
+    document.getElementById("management-payment-notes").value = record?.notes || "";
+
+    document.getElementById(
+      "management-save-payment-button"
+    ).textContent =
+      record
+        ? "SAVE CHANGES"
+        : "SAVE PAYMENT METHOD";
+
+    show(
+      "management-payment-editor"
+    );
+
+    document.getElementById(
+      "management-payment-editor"
+    ).scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+
+  function editManagementPayment(index) {
+    const record = managementPaymentMethods[index];
+    if (!record || record.builtIn) {
+      return;
+    }
+    openManagementPaymentEditor(index);
+  }
+
+
+  function cancelManagementPaymentEdit(silent = false) {
+    managementEditingPaymentIndex = null;
+    hide(
+      "management-payment-editor"
+    );
+    if (!silent) {
+      setStatus(
+        "Payment edit cancelled.",
+        "success"
+      );
+    }
+  }
+
+
+  function sanitizeManagementPaymentLast4() {
+    const input = document.getElementById(
+      "management-payment-last4"
+    );
+    input.value = String(input.value || "")
+      .replace(/\D/g, "")
+      .slice(0, 4);
+  }
+
+
+  async function saveManagementPaymentEdit() {
+
+    const nickname = String(document.getElementById("management-payment-nickname").value || "").trim();
+    const owner = String(document.getElementById("management-payment-owner").value || "").trim();
+    const institution = String(document.getElementById("management-payment-institution").value || "").trim();
+    const type = String(document.getElementById("management-payment-type").value || "Other").trim();
+    const last4 = String(document.getElementById("management-payment-last4").value || "").trim();
+    const notes = String(document.getElementById("management-payment-notes").value || "").trim();
+
+    if (!nickname) {
+      showErrorToast(
+        "Nickname required",
+        "Give this payment method a recognizable name."
+      );
+      return;
+    }
+
+    if (last4 && last4.length !== 4) {
+      showErrorToast(
+        "Check last 4",
+        "Leave Last 4 blank or enter exactly four digits."
+      );
+      return;
+    }
+
+    const editing =
+      managementEditingPaymentIndex !== null
+        ? managementPaymentMethods[managementEditingPaymentIndex]
+        : null;
+
+    if (editing?.builtIn) {
+      showErrorToast(
+        "Cash is built in",
+        "The built-in Cash method cannot be edited."
+      );
+      return;
+    }
+
+    const button = document.getElementById(
+      "management-save-payment-button"
+    );
+    button.disabled = true;
+
+    try {
+      setStatus(
+        editing ? "Saving payment method..." : "Adding payment method...",
+        "working"
+      );
+
+      if (editing) {
+        await sheetsValuesBatchUpdate(
+          [{
+            range: `'${PAYMENT_METHODS_SHEET}'!A${editing.sheetRow}:H${editing.sheetRow}`,
+            values: [[
+              editing.id,
+              nickname,
+              owner,
+              institution,
+              type,
+              last4,
+              notes,
+              editing.active
+            ]]
+          }],
+          "RAW"
+        );
+      } else {
+        const method = {
+          id: "PM-" + Date.now(),
+          nickname,
+          owner,
+          institution,
+          type,
+          last4,
+          notes
+        };
+        await savePaymentMethod(method);
+      }
+
+      await loadManagementData();
+      cancelManagementPaymentEdit(true);
+      showManagementPayments();
+
+      showSuccessToast(
+        editing ? "Payment method updated" : "Payment method added",
+        nickname
+      );
+      setStatus(
+        "Payment methods updated.",
+        "success"
+      );
+
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast(
+        "Payment save failed",
+        "The payment method was not changed."
+      );
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+
+  async function toggleManagementPaymentActive(index) {
+
+    const record = managementPaymentMethods[index];
+    if (!record || record.builtIn) {
+      return;
+    }
+
+    const nextActive = !record.active;
+
+    try {
+      setStatus(
+        nextActive ? "Reactivating payment method..." : "Deactivating payment method...",
+        "working"
+      );
+
+      await sheetsValuesBatchUpdate(
+        [{
+          range: `'${PAYMENT_METHODS_SHEET}'!H${record.sheetRow}`,
+          values: [[nextActive]]
+        }],
+        "RAW"
+      );
+
+      record.active = nextActive;
+      showManagementPayments();
+
+      showSuccessToast(
+        nextActive ? "Payment method reactivated" : "Payment method deactivated",
+        record.nickname
+      );
+      setStatus(
+        "Payment methods updated.",
+        "success"
+      );
+
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast(
+        "Payment update failed",
+        "The payment method status was not changed."
+      );
+    }
+  }
+
+
   function showManagementStores() {
 
     cancelManagementProductEdit(
+      true
+    );
+    cancelManagementPaymentEdit(
       true
     );
 
@@ -19621,6 +20156,12 @@
     cancelManagementProductEdit(
       true
     );
+    cancelManagementPaymentEdit(
+      true
+    );
+    cancelManagementPaymentEdit(
+      true
+    );
 
     const box =
       document.getElementById(
@@ -19704,6 +20245,12 @@
     cancelManagementProductEdit(
       true
     );
+    cancelManagementPaymentEdit(
+      true
+    );
+    cancelManagementPaymentEdit(
+      true
+    );
 
     const box =
       document.getElementById(
@@ -19731,6 +20278,16 @@
         "</div>" +
       "</div>" +
       '<div class="management-row">' +
+        '<div class="management-row-name">Payment methods loaded</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            String(
+              managementPaymentMethods.length
+            )
+          ) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
         '<div class="management-row-name">Finished trips loaded</div>' +
         '<div class="management-row-meta">' +
           escapeHtml(
@@ -19750,6 +20307,9 @@
     cancelManagementProductEdit(
       true
     );
+    cancelManagementPaymentEdit(
+      true
+    );
 
     hide(
       "management-panel"
@@ -19758,7 +20318,7 @@
     const restoreId =
       managementReturnPanelId ||
       (
-        activeTrip
+        hasOpenActiveTrip()
           ? "active-trip-panel"
           : "home-panel"
       );
@@ -19775,7 +20335,7 @@
     }
 
     setStatus(
-      activeTrip
+      hasOpenActiveTrip()
         ? "Shopping is active."
         : "Shopping is selected.",
       "success"
@@ -19838,7 +20398,7 @@
       const safeRestoreId =
         restoreId ||
         (
-          activeTrip
+          hasOpenActiveTrip()
             ? "active-trip-panel"
             : "home-panel"
         );
@@ -19858,7 +20418,7 @@
 
 
     setStatus(
-      activeTrip
+      hasOpenActiveTrip()
         ? "Shopping is active."
         : "Shopping is selected.",
       "success"
