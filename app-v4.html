@@ -3037,15 +3037,37 @@
 
               <input
                 id="promo-quantity"
-                type="text"
-                inputmode="text"
-                placeholder="Example: 2 or 2 x 10"
-                autocomplete="off"
-                oninput="fieldChanged(this); syncXForYPromoInput(); updatePricing();"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                step="1"
+                placeholder="Example: 2"
+                oninput="fieldChanged(this); updatePricing();"
               >
 
               <div class="hint">
-                You can enter only X here and the price below, or type the whole offer here, e.g. 2 x 10 or 2 10.
+                How many complete promo bundles are you taking? Example: enter 2 if you are using the offer twice.
+              </div>
+
+            </div>
+
+            <div class="field">
+
+              <label for="promo-offer">
+                Promo Offer
+              </label>
+
+              <input
+                id="promo-offer"
+                type="text"
+                inputmode="text"
+                placeholder="Example: 3 x 50"
+                autocomplete="off"
+                oninput="fieldChanged(this); updatePricing();"
+              >
+
+              <div class="hint">
+                Enter the offer itself, such as 3 x 50, 3x50, or 3 50. This means 3 units for $50.
               </div>
 
             </div>
@@ -3058,16 +3080,15 @@
 
               <input
                 id="promo-total"
-                type="number"
-                inputmode="decimal"
-                min="0"
-                step="0.01"
-                placeholder="Example: 80"
-                oninput="fieldChanged(this); updatePricing();"
+                type="text"
+                inputmode="none"
+                placeholder="Calculated automatically"
+                readonly
+                tabindex="-1"
               >
 
               <div class="hint">
-                Example: for “2 for $80”, enter 2 and 80.
+                Calculated automatically from Promo Quantity × the offer price.
               </div>
 
             </div>
@@ -6688,6 +6709,7 @@
 
     [
       "promo-quantity",
+      "promo-offer",
       "promo-total",
       "promo-buy-quantity",
       "promo-free-quantity",
@@ -6832,29 +6854,19 @@
   }
 
 
-  function parseXForYPromoInput() {
-
-    const quantityInput =
-      document.getElementById(
-        "promo-quantity"
-      );
-
-    const totalInput =
-      document.getElementById(
-        "promo-total"
-      );
+  function parseXForYPromoOffer() {
 
     const raw =
       String(
-        quantityInput?.value || ""
+        document.getElementById(
+          "promo-offer"
+        )?.value || ""
       ).trim();
 
     if (!raw) {
       return {
-        quantity: null,
-        total: readPositiveNumber(
-          "promo-total"
-        )
+        unitsPerBundle: null,
+        pricePerBundle: null
       };
     }
 
@@ -6864,79 +6876,111 @@
         .match(/\d+(?:\.\d+)?/g);
 
     if (
-      numbers &&
-      numbers.length >= 2
+      !numbers ||
+      numbers.length < 2
     ) {
-
-      const quantity =
-        Number(numbers[0]);
-
-      const total =
-        Number(numbers[1]);
-
       return {
-        quantity:
-          Number.isFinite(quantity) && quantity > 0
-            ? quantity
-            : null,
-        total:
-          Number.isFinite(total) && total > 0
-            ? total
-            : null
+        unitsPerBundle: null,
+        pricePerBundle: null
       };
     }
 
-    const quantity =
-      Number(
-        raw.replace(/,/g, ".")
-      );
+    const unitsPerBundle =
+      Number(numbers[0]);
+
+    const pricePerBundle =
+      Number(numbers[1]);
 
     return {
-      quantity:
-        Number.isFinite(quantity) && quantity > 0
-          ? quantity
+      unitsPerBundle:
+        Number.isFinite(unitsPerBundle) && unitsPerBundle > 0
+          ? unitsPerBundle
           : null,
-      total:
-        readPositiveNumber(
-          "promo-total"
-        )
+      pricePerBundle:
+        Number.isFinite(pricePerBundle) && pricePerBundle > 0
+          ? pricePerBundle
+          : null
     };
   }
 
 
-  function syncXForYPromoInput() {
+  function readPromoBundleCount() {
 
-    const parsed =
-      parseXForYPromoInput();
-
-    const raw =
-      String(
-        document.getElementById(
-          "promo-quantity"
-        )?.value || ""
+    const value =
+      readPositiveNumber(
+        "promo-quantity"
       );
 
-    const containsTwoValues =
-      (
-        raw
-          .replace(/,/g, ".")
-          .match(/\d+(?:\.\d+)?/g) ||
-        []
-      ).length >= 2;
-
     if (
-      containsTwoValues &&
-      parsed.total !== null
+      value === null ||
+      !Number.isInteger(value)
     ) {
-      document.getElementById(
-        "promo-total"
-      ).value =
-        formatPlainNumber(
-          parsed.total
-        );
+      return null;
     }
+
+    return value;
   }
 
+
+  function buildXForYPromoDetails(
+    unitsPerBundle,
+    pricePerBundle,
+    bundleCount,
+    promoNote
+  ) {
+
+    let details =
+      `${formatPlainNumber(unitsPerBundle)} for ${formatMoney(pricePerBundle)} (${formatPlainNumber(bundleCount)} promo ${bundleCount === 1 ? "bundle" : "bundles"})`;
+
+    if (promoNote) {
+      details +=
+        ` — ${promoNote}`;
+    }
+
+    return details;
+  }
+
+
+  function parseSavedXForYOffer(
+    promoDetails
+  ) {
+
+    const text =
+      String(
+        promoDetails || ""
+      );
+
+    const match =
+      text.match(
+        /([\d.]+)\s*(?:for|x|×)\s*\$?([\d.]+)/i
+      );
+
+    if (!match) {
+      return null;
+    }
+
+    const unitsPerBundle =
+      Number(match[1]);
+
+    const pricePerBundle =
+      Number(match[2]);
+
+    if (
+      !Number.isFinite(unitsPerBundle) ||
+      unitsPerBundle <= 0 ||
+      !Number.isFinite(pricePerBundle) ||
+      pricePerBundle <= 0
+    ) {
+      return null;
+    }
+
+    return {
+      unitsPerBundle,
+      pricePerBundle,
+      usesBundleCountSemantics:
+        /promo\s+bundles?/i.test(text)
+    };
+  }
 
   function updatePricing() {
 
@@ -6945,6 +6989,36 @@
 
     const pricing =
       currentPricing;
+
+    const promoTotalInput =
+      document.getElementById(
+        "promo-total"
+      );
+
+    if (promoTotalInput) {
+      const promoStatus =
+        document.getElementById(
+          "promo-status"
+        )?.value;
+
+      const promoType =
+        document.getElementById(
+          "promo-type"
+        )?.value;
+
+      promoTotalInput.value =
+        (
+          promoStatus !== "NONE" &&
+          promoType === "X_FOR_Y" &&
+          isUsableNumber(
+            pricing.promoTotal
+          )
+        )
+          ? formatMoney(
+              pricing.promoTotal
+            )
+          : "";
+    }
 
     document.getElementById(
       "regular-total-display"
@@ -7123,62 +7197,66 @@
       promoType === "X_FOR_Y"
     ) {
 
-      const xForY =
-        parseXForYPromoInput();
+      const bundleCount =
+        readPromoBundleCount();
 
-      const quantity =
-        xForY.quantity;
+      const offer =
+        parseXForYPromoOffer();
 
-      const total =
-        xForY.total;
+      const unitsPerBundle =
+        offer.unitsPerBundle;
+
+      const pricePerBundle =
+        offer.pricePerBundle;
 
       if (
-        quantity === null ||
-        total === null
+        bundleCount === null ||
+        unitsPerBundle === null ||
+        pricePerBundle === null
       ) {
-
         return base;
       }
 
-      base.promoQuantity =
-        quantity;
-
-      base.promoTotal =
-        total;
-
-      base.promoDetails =
-        `${formatPlainNumber(quantity)} for ${formatMoney(total)}`;
+      const promoUnits =
+        bundleCount *
+        unitsPerBundle;
 
       if (
-        promoNote
+        promoUnits > amount + 0.0000001
       ) {
-
-        base.promoDetails +=
-          ` — ${promoNote}`;
+        return base;
       }
+
+      const calculatedPromoTotal =
+        roundMoney(
+          bundleCount *
+          pricePerBundle
+        );
+
+      base.promoQuantity =
+        bundleCount;
+
+      base.promoTotal =
+        calculatedPromoTotal;
+
+      base.promoDetails =
+        buildXForYPromoDetails(
+          unitsPerBundle,
+          pricePerBundle,
+          bundleCount,
+          promoNote
+        );
 
       if (
         promoStatus === "APPLIED"
       ) {
 
-        const fullBundles =
-          Math.floor(
-            amount /
-            quantity
-          );
-
         const leftover =
           amount -
-          (
-            fullBundles *
-            quantity
-          );
+          promoUnits;
 
         base.actualLineTotal =
-          (
-            fullBundles *
-            total
-          ) +
+          calculatedPromoTotal +
           (
             leftover *
             shelfPrice
@@ -7753,6 +7831,7 @@
       "amount",
       "shelf-price",
       "promo-quantity",
+      "promo-offer",
       "promo-total",
       "promo-buy-quantity",
       "promo-free-quantity",
@@ -8914,38 +8993,92 @@
         )
       ) {
 
-        const qty =
-          Number(
-            item.promoQuantity
+        const savedOffer =
+          parseSavedXForYOffer(
+            item.promoDetails
           );
 
-        const promoTotal =
-          Number(
-            item.promoTotal
-          );
+        if (
+          savedOffer &&
+          savedOffer.usesBundleCountSemantics
+        ) {
 
-        const bundles =
-          Math.floor(
-            amount /
-            qty
-          );
+          const bundleCount =
+            Number(
+              item.promoQuantity
+            );
 
-        const leftover =
-          amount -
-          (
-            bundles *
-            qty
-          );
+          if (
+            !Number.isInteger(bundleCount) ||
+            bundleCount <= 0
+          ) {
+            throw new Error(
+              "This X for $Y promotion has an invalid saved promo quantity."
+            );
+          }
 
-        actual =
-          (
-            bundles *
-            promoTotal
-          ) +
-          (
-            leftover *
-            shelf
-          );
+          const promoUnits =
+            bundleCount *
+            savedOffer.unitsPerBundle;
+
+          if (
+            promoUnits > amount + 0.0000001
+          ) {
+            throw new Error(
+              "The edited amount is too small for the saved number of promo bundles. Re-add the item from Shopping to change the promotion."
+            );
+          }
+
+          const leftover =
+            amount -
+            promoUnits;
+
+          actual =
+            Number(
+              item.promoTotal
+            ) +
+            (
+              leftover *
+              shelf
+            );
+
+        } else {
+
+          // Backward compatibility for trips created before Promo Quantity
+          // was changed to mean the number of promo bundles.
+          const qty =
+            Number(
+              item.promoQuantity
+            );
+
+          const promoTotal =
+            Number(
+              item.promoTotal
+            );
+
+          const bundles =
+            Math.floor(
+              amount /
+              qty
+            );
+
+          const leftover =
+            amount -
+            (
+              bundles *
+              qty
+            );
+
+          actual =
+            (
+              bundles *
+              promoTotal
+            ) +
+            (
+              leftover *
+              shelf
+            );
+        }
 
       } else if (
         item.promoType === "Buy X, get Y free"
