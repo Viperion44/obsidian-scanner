@@ -34,6 +34,11 @@
     defer
   ></script>
 
+  <script
+    src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"
+    defer
+  ></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -2218,7 +2223,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 PDF export test
+    V4 PDF pagination v2 test
   </div>
 
   <button
@@ -12563,6 +12568,1811 @@
   }
 
 
+  function pdfSetFill(
+    doc,
+    hex
+  ) {
+
+    const value =
+      String(
+        hex || "#000000"
+      ).replace(
+        "#",
+        ""
+      );
+
+    const r =
+      parseInt(
+        value.slice(
+          0,
+          2
+        ),
+        16
+      );
+
+    const g =
+      parseInt(
+        value.slice(
+          2,
+          4
+        ),
+        16
+      );
+
+    const b =
+      parseInt(
+        value.slice(
+          4,
+          6
+        ),
+        16
+      );
+
+    doc.setFillColor(
+      r,
+      g,
+      b
+    );
+  }
+
+
+  function pdfSetText(
+    doc,
+    hex
+  ) {
+
+    const value =
+      String(
+        hex || "#ffffff"
+      ).replace(
+        "#",
+        ""
+      );
+
+    const r =
+      parseInt(
+        value.slice(
+          0,
+          2
+        ),
+        16
+      );
+
+    const g =
+      parseInt(
+        value.slice(
+          2,
+          4
+        ),
+        16
+      );
+
+    const b =
+      parseInt(
+        value.slice(
+          4,
+          6
+        ),
+        16
+      );
+
+    doc.setTextColor(
+      r,
+      g,
+      b
+    );
+  }
+
+
+  function pdfSetDraw(
+    doc,
+    hex
+  ) {
+
+    const value =
+      String(
+        hex || "#ffffff"
+      ).replace(
+        "#",
+        ""
+      );
+
+    const r =
+      parseInt(
+        value.slice(
+          0,
+          2
+        ),
+        16
+      );
+
+    const g =
+      parseInt(
+        value.slice(
+          2,
+          4
+        ),
+        16
+      );
+
+    const b =
+      parseInt(
+        value.slice(
+          4,
+          6
+        ),
+        16
+      );
+
+    doc.setDrawColor(
+      r,
+      g,
+      b
+    );
+  }
+
+
+  function pdfRoundRect(
+    doc,
+    x,
+    y,
+    width,
+    height,
+    fill,
+    stroke,
+    radius = 8
+  ) {
+
+    if (
+      fill
+    ) {
+      pdfSetFill(
+        doc,
+        fill
+      );
+    }
+
+    if (
+      stroke
+    ) {
+      pdfSetDraw(
+        doc,
+        stroke
+      );
+    }
+
+    doc.roundedRect(
+      x,
+      y,
+      width,
+      height,
+      radius,
+      radius,
+      stroke
+        ? "FD"
+        : "F"
+    );
+  }
+
+
+  function pdfTextLines(
+    doc,
+    text,
+    width,
+    fontSize,
+    fontStyle = "normal"
+  ) {
+
+    doc.setFont(
+      "helvetica",
+      fontStyle
+    );
+
+    doc.setFontSize(
+      fontSize
+    );
+
+    return doc.splitTextToSize(
+      String(
+        text ?? ""
+      ),
+      width
+    );
+  }
+
+
+  function pdfDrawPageBackground(
+    doc
+  ) {
+
+    const pageWidth =
+      doc.internal.pageSize.getWidth();
+
+    const pageHeight =
+      doc.internal.pageSize.getHeight();
+
+    pdfSetFill(
+      doc,
+      "#111318"
+    );
+
+    doc.rect(
+      0,
+      0,
+      pageWidth,
+      pageHeight,
+      "F"
+    );
+  }
+
+
+  function pdfDrawContinuationHeader(
+    doc,
+    trip,
+    pageNumber
+  ) {
+
+    const pageWidth =
+      doc.internal.pageSize.getWidth();
+
+    const margin =
+      34;
+
+    pdfRoundRect(
+      doc,
+      margin,
+      25,
+      pageWidth -
+        (
+          margin *
+          2
+        ),
+      43,
+      "#1d2129",
+      "#343a47",
+      8
+    );
+
+    pdfSetText(
+      doc,
+      "#c9a7f2"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(
+      8.5
+    );
+
+    doc.text(
+      "OBSIDIAN SHOPPING",
+      margin +
+        13,
+      42
+    );
+
+    pdfSetText(
+      doc,
+      "#ffffff"
+    );
+
+    doc.setFontSize(
+      12
+    );
+
+    doc.text(
+      String(
+        trip.store ||
+        "Trip"
+      ),
+      margin +
+        13,
+      57
+    );
+
+    pdfSetText(
+      doc,
+      "#8f96a3"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(
+      8
+    );
+
+    doc.text(
+      "CONTINUED",
+      pageWidth -
+        margin -
+        13,
+      42,
+      {
+        align:
+          "right"
+      }
+    );
+
+    doc.text(
+      "Page " +
+        pageNumber,
+      pageWidth -
+        margin -
+        13,
+      57,
+      {
+        align:
+          "right"
+      }
+    );
+
+    return 82;
+  }
+
+
+  function pdfDrawFooter(
+    doc,
+    trip,
+    pageNumber,
+    pageCount
+  ) {
+
+    const pageWidth =
+      doc.internal.pageSize.getWidth();
+
+    const pageHeight =
+      doc.internal.pageSize.getHeight();
+
+    const margin =
+      34;
+
+    pdfSetDraw(
+      doc,
+      "#2d323e"
+    );
+
+    doc.setLineWidth(
+      0.6
+    );
+
+    doc.line(
+      margin,
+      pageHeight -
+        26,
+      pageWidth -
+        margin,
+      pageHeight -
+        26
+    );
+
+    pdfSetText(
+      doc,
+      "#747c89"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(
+      7.5
+    );
+
+    doc.text(
+      "Generated by Obsidian Shopping",
+      margin,
+      pageHeight -
+        14
+    );
+
+    doc.text(
+      (
+        trip.tripId
+          ? trip.tripId +
+            "  •  "
+          : ""
+      ) +
+      "Page " +
+      pageNumber +
+      " of " +
+      pageCount,
+      pageWidth -
+        margin,
+      pageHeight -
+        14,
+      {
+        align:
+          "right"
+      }
+    );
+  }
+
+
+  function pdfEstimateItemHeight(
+    doc,
+    item,
+    contentWidth
+  ) {
+
+    const innerWidth =
+      contentWidth -
+      30;
+
+    const nameLines =
+      pdfTextLines(
+        doc,
+        item.product ||
+        item.barcode ||
+        "Unnamed item",
+        innerWidth -
+          90,
+        12.5,
+        "bold"
+      );
+
+    let height =
+      22 +
+      (
+        nameLines.length *
+        14
+      );
+
+    if (
+      item.barcode
+    ) {
+      height +=
+        12;
+    }
+
+    height +=
+      49;
+
+    if (
+      item.promoDetails ||
+      item.promoType
+    ) {
+
+      const promoText =
+        (
+          String(
+            item.promoApplied || ""
+          ).toUpperCase() === "YES"
+            ? "PROMOTION APPLIED"
+            : "PROMOTION NOT USED"
+        ) +
+        (
+          item.promoType
+            ? " • " +
+              item.promoType
+            : ""
+        ) +
+        (
+          item.promoDetails
+            ? " • " +
+              item.promoDetails
+            : ""
+        ) +
+        (
+          isUsableNumber(
+            item.savings
+          ) &&
+          Number(
+            item.savings
+          ) > 0
+            ? " • Saved " +
+              formatMoney(
+                item.savings
+              )
+            : ""
+        );
+
+      const promoLines =
+        pdfTextLines(
+          doc,
+          promoText,
+          innerWidth -
+            20,
+          8.5,
+          "normal"
+        );
+
+      height +=
+        15 +
+        (
+          promoLines.length *
+          10
+        );
+    }
+
+    if (
+      item.notes
+    ) {
+
+      const noteLines =
+        pdfTextLines(
+          doc,
+          "NOTE • " +
+          item.notes,
+          innerWidth -
+            20,
+          8.5,
+          "normal"
+        );
+
+      height +=
+        14 +
+        (
+          noteLines.length *
+          10
+        );
+    }
+
+    return Math.max(
+      104,
+      height +
+        10
+    );
+  }
+
+
+  function pdfDrawItemCard(
+    doc,
+    item,
+    x,
+    y,
+    width,
+    height
+  ) {
+
+    pdfRoundRect(
+      doc,
+      x,
+      y,
+      width,
+      height,
+      "#20242d",
+      "#343a47",
+      9
+    );
+
+    const left =
+      x +
+      14;
+
+    const right =
+      x +
+      width -
+      14;
+
+    const innerWidth =
+      width -
+      28;
+
+    const nameLines =
+      pdfTextLines(
+        doc,
+        item.product ||
+        item.barcode ||
+        "Unnamed item",
+        innerWidth -
+          92,
+        12.5,
+        "bold"
+      );
+
+    pdfSetText(
+      doc,
+      "#ffffff"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(
+      12.5
+    );
+
+    doc.text(
+      nameLines,
+      left,
+      y +
+        20
+    );
+
+    doc.setFontSize(
+      12.5
+    );
+
+    doc.text(
+      formatMoney(
+        item.lineTotal || 0
+      ),
+      right,
+      y +
+        20,
+      {
+        align:
+          "right"
+      }
+    );
+
+    let cursor =
+      y +
+      20 +
+      (
+        nameLines.length *
+        14
+      );
+
+    if (
+      item.barcode
+    ) {
+
+      pdfSetText(
+        doc,
+        "#838b99"
+      );
+
+      doc.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      doc.setFontSize(
+        7.5
+      );
+
+      doc.text(
+        "BARCODE " +
+        item.barcode,
+        left,
+        cursor +
+          1
+      );
+
+      cursor +=
+        14;
+    }
+
+    const gap =
+      7;
+
+    const cellWidth =
+      (
+        innerWidth -
+        (
+          gap *
+          3
+        )
+      ) /
+      4;
+
+    const labels = [
+      "AMOUNT",
+      "SHELF / UNIT",
+      "EFFECTIVE / UNIT",
+      "REGULAR LINE"
+    ];
+
+    const regularLine =
+      isUsableNumber(
+        item.regularLineTotal
+      )
+        ? Number(
+            item.regularLineTotal
+          )
+        : (
+            isUsableNumber(
+              item.lineTotal
+            )
+              ? Number(
+                  item.lineTotal
+                )
+              : 0
+          );
+
+    const values = [
+      formatPlainNumber(
+        item.amount
+      ),
+      isUsableNumber(
+        item.shelfUnitPrice
+      )
+        ? formatMoney(
+            item.shelfUnitPrice
+          )
+        : "—",
+      isUsableNumber(
+        item.effectiveUnitPrice
+      )
+        ? formatMoney(
+            item.effectiveUnitPrice
+          )
+        : "—",
+      formatMoney(
+        regularLine
+      )
+    ];
+
+    for (
+      let i = 0;
+      i < 4;
+      i += 1
+    ) {
+
+      const cellX =
+        left +
+        (
+          i *
+          (
+            cellWidth +
+            gap
+          )
+        );
+
+      pdfRoundRect(
+        doc,
+        cellX,
+        cursor,
+        cellWidth,
+        40,
+        "#171a20",
+        null,
+        7
+      );
+
+      pdfSetText(
+        doc,
+        "#808896"
+      );
+
+      doc.setFont(
+        "helvetica",
+        "bold"
+      );
+
+      doc.setFontSize(
+        6.6
+      );
+
+      doc.text(
+        labels[
+          i
+        ],
+        cellX +
+          8,
+        cursor +
+          13
+      );
+
+      pdfSetText(
+        doc,
+        "#eef0f4"
+      );
+
+      doc.setFontSize(
+        9.2
+      );
+
+      doc.text(
+        String(
+          values[
+            i
+          ]
+        ),
+        cellX +
+          8,
+        cursor +
+          29
+      );
+    }
+
+    cursor +=
+      50;
+
+    const promoUsed =
+      String(
+        item.promoApplied || ""
+      ).toUpperCase() === "YES";
+
+    if (
+      item.promoDetails ||
+      item.promoType
+    ) {
+
+      let promoText =
+        (
+          promoUsed
+            ? "PROMOTION APPLIED"
+            : "PROMOTION NOT USED"
+        );
+
+      if (
+        item.promoType
+      ) {
+        promoText +=
+          " • " +
+          item.promoType;
+      }
+
+      if (
+        item.promoDetails
+      ) {
+        promoText +=
+          " • " +
+          item.promoDetails;
+      }
+
+      if (
+        isUsableNumber(
+          item.savings
+        ) &&
+        Number(
+          item.savings
+        ) > 0
+      ) {
+        promoText +=
+          " • Saved " +
+          formatMoney(
+            item.savings
+          );
+      }
+
+      const promoLines =
+        pdfTextLines(
+          doc,
+          promoText,
+          innerWidth -
+            20,
+          8.5,
+          "normal"
+        );
+
+      const promoHeight =
+        12 +
+        (
+          promoLines.length *
+          10
+        );
+
+      pdfRoundRect(
+        doc,
+        left,
+        cursor,
+        innerWidth,
+        promoHeight,
+        promoUsed
+          ? "#183124"
+          : "#30291d",
+        promoUsed
+          ? "#3e7650"
+          : "#5b4f39",
+        6
+      );
+
+      pdfSetText(
+        doc,
+        promoUsed
+          ? "#a9efba"
+          : "#e7c98c"
+      );
+
+      doc.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      doc.setFontSize(
+        8.5
+      );
+
+      doc.text(
+        promoLines,
+        left +
+          10,
+        cursor +
+          13
+      );
+
+      cursor +=
+        promoHeight +
+        8;
+    }
+
+    if (
+      item.notes
+    ) {
+
+      const noteLines =
+        pdfTextLines(
+          doc,
+          "NOTE • " +
+          item.notes,
+          innerWidth -
+            20,
+          8.5,
+          "normal"
+        );
+
+      const noteHeight =
+        12 +
+        (
+          noteLines.length *
+          10
+        );
+
+      pdfSetFill(
+        doc,
+        "#191d25"
+      );
+
+      doc.rect(
+        left,
+        cursor,
+        innerWidth,
+        noteHeight,
+        "F"
+      );
+
+      pdfSetFill(
+        doc,
+        "#7137b5"
+      );
+
+      doc.rect(
+        left,
+        cursor,
+        3,
+        noteHeight,
+        "F"
+      );
+
+      pdfSetText(
+        doc,
+        "#cfd3da"
+      );
+
+      doc.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      doc.setFontSize(
+        8.5
+      );
+
+      doc.text(
+        noteLines,
+        left +
+          10,
+        cursor +
+          13
+      );
+    }
+  }
+
+
+  function pdfDrawHero(
+    doc,
+    trip
+  ) {
+
+    const pageWidth =
+      doc.internal.pageSize.getWidth();
+
+    const margin =
+      34;
+
+    const width =
+      pageWidth -
+      (
+        margin *
+        2
+      );
+
+    pdfRoundRect(
+      doc,
+      margin,
+      30,
+      width,
+      112,
+      "#1b1721",
+      "#4a3a61",
+      12
+    );
+
+    pdfSetText(
+      doc,
+      "#c9a7f2"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(
+      8.5
+    );
+
+    doc.text(
+      "OBSIDIAN SHOPPING",
+      margin +
+        16,
+      50
+    );
+
+    pdfRoundRect(
+      doc,
+      pageWidth -
+        margin -
+        78,
+      41,
+      62,
+      18,
+      "#2b2138",
+      "#64468a",
+      8
+    );
+
+    pdfSetText(
+      doc,
+      "#d9c4f5"
+    );
+
+    doc.setFontSize(
+      6.8
+    );
+
+    doc.text(
+      "TRIP REPORT",
+      pageWidth -
+        margin -
+        47,
+      53,
+      {
+        align:
+          "center"
+      }
+    );
+
+    pdfSetText(
+      doc,
+      "#ffffff"
+    );
+
+    doc.setFontSize(
+      19
+    );
+
+    doc.text(
+      String(
+        trip.store ||
+        "Unknown store"
+      ),
+      margin +
+        16,
+      80
+    );
+
+    let metaY =
+      99;
+
+    if (
+      trip.address
+    ) {
+
+      pdfSetText(
+        doc,
+        "#c6cbd4"
+      );
+
+      doc.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      doc.setFontSize(
+        8.5
+      );
+
+      const addressLines =
+        doc.splitTextToSize(
+          String(
+            trip.address
+          ),
+          width -
+            32
+        );
+
+      doc.text(
+        addressLines,
+        margin +
+          16,
+        metaY
+      );
+
+      metaY +=
+        (
+          addressLines.length *
+          10
+        ) +
+        3;
+    }
+
+    pdfSetText(
+      doc,
+      "#9fa6b1"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(
+      7.7
+    );
+
+    const metaParts = [
+      pdfTripDateText(
+        trip
+      ),
+      pdfTripTimeText(
+        trip
+      ),
+      trip.tripId || ""
+    ].filter(
+      Boolean
+    );
+
+    doc.text(
+      metaParts.join(
+        "   •   "
+      ),
+      margin +
+        16,
+      metaY
+    );
+
+
+    const summaryY =
+      154;
+
+    const gap =
+      8;
+
+    const cardWidth =
+      (
+        width -
+        (
+          gap *
+          3
+        )
+      ) /
+      4;
+
+    const summary = [
+      [
+        "ITEMS",
+        String(
+          trip.itemCount
+        ),
+        "#ffffff"
+      ],
+      [
+        "REGULAR VALUE",
+        formatMoney(
+          trip.regularTotal
+        ),
+        "#ffffff"
+      ],
+      [
+        "SAVED",
+        formatMoney(
+          trip.savings
+        ),
+        "#7fe299"
+      ],
+      [
+        "FINAL TOTAL",
+        formatMoney(
+          trip.finalTotal
+        ),
+        "#ffffff"
+      ]
+    ];
+
+    summary.forEach(
+      (
+        entry,
+        index
+      ) => {
+
+        const x =
+          margin +
+          (
+            index *
+            (
+              cardWidth +
+              gap
+            )
+          );
+
+        pdfRoundRect(
+          doc,
+          x,
+          summaryY,
+          cardWidth,
+          54,
+          "#20242d",
+          "#343a47",
+          8
+        );
+
+        pdfSetText(
+          doc,
+          "#8f96a3"
+        );
+
+        doc.setFont(
+          "helvetica",
+          "bold"
+        );
+
+        doc.setFontSize(
+          6.6
+        );
+
+        doc.text(
+          entry[
+            0
+          ],
+          x +
+            10,
+          summaryY +
+            17
+        );
+
+        pdfSetText(
+          doc,
+          entry[
+            2
+          ]
+        );
+
+        doc.setFontSize(
+          12.5
+        );
+
+        doc.text(
+          entry[
+            1
+          ],
+          x +
+            10,
+          summaryY +
+            37
+        );
+      }
+    );
+
+    pdfSetText(
+      doc,
+      "#d9c4f5"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(
+      9
+    );
+
+    doc.text(
+      "PURCHASED ITEMS",
+      margin,
+      232
+    );
+
+    return 246;
+  }
+
+
+  function pdfEstimateTotalsHeight(
+    trip
+  ) {
+
+    return isUsableNumber(
+      trip.budget
+    )
+      ? 112
+      : 86;
+  }
+
+
+  function pdfDrawTotals(
+    doc,
+    trip,
+    x,
+    y,
+    width
+  ) {
+
+    const height =
+      pdfEstimateTotalsHeight(
+        trip
+      );
+
+    pdfRoundRect(
+      doc,
+      x,
+      y,
+      width,
+      height,
+      "#1b1721",
+      "#4a3a61",
+      10
+    );
+
+    const left =
+      x +
+      14;
+
+    const right =
+      x +
+      width -
+      14;
+
+    let cursor =
+      y +
+      20;
+
+    const drawRow =
+      (
+        label,
+        value,
+        color = "#ffffff"
+      ) => {
+
+        pdfSetText(
+          doc,
+          "#b9c0ca"
+        );
+
+        doc.setFont(
+          "helvetica",
+          "normal"
+        );
+
+        doc.setFontSize(
+          8.5
+        );
+
+        doc.text(
+          label,
+          left,
+          cursor
+        );
+
+        pdfSetText(
+          doc,
+          color
+        );
+
+        doc.setFont(
+          "helvetica",
+          "bold"
+        );
+
+        doc.text(
+          value,
+          right,
+          cursor,
+          {
+            align:
+              "right"
+          }
+        );
+
+        cursor +=
+          17;
+      };
+
+
+    drawRow(
+      "Regular value",
+      formatMoney(
+        trip.regularTotal
+      )
+    );
+
+    drawRow(
+      "Savings",
+      formatMoney(
+        trip.savings
+      ),
+      "#7fe299"
+    );
+
+
+    if (
+      isUsableNumber(
+        trip.budget
+      )
+    ) {
+
+      const budget =
+        Number(
+          trip.budget
+        );
+
+      const difference =
+        roundMoney(
+          budget -
+          trip.finalTotal
+        );
+
+      drawRow(
+        "Budget",
+        formatMoney(
+          budget
+        )
+      );
+
+      drawRow(
+        difference >= 0
+          ? "Remaining"
+          : "Over budget",
+        formatMoney(
+          Math.abs(
+            difference
+          )
+        ),
+        difference >= 0
+          ? "#7fe299"
+          : "#ff9999"
+      );
+    }
+
+
+    pdfSetDraw(
+      doc,
+      "#4a3a61"
+    );
+
+    doc.line(
+      left,
+      cursor -
+        5,
+      right,
+      cursor -
+        5
+    );
+
+    cursor +=
+      9;
+
+    pdfSetText(
+      doc,
+      "#ffffff"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(
+      13.5
+    );
+
+    doc.text(
+      "FINAL TOTAL",
+      left,
+      cursor
+    );
+
+    doc.text(
+      formatMoney(
+        trip.finalTotal
+      ),
+      right,
+      cursor,
+      {
+        align:
+          "right"
+      }
+    );
+
+    return height;
+  }
+
+
+  function generateTripPdfWithJsPdf(
+    rawTrip
+  ) {
+
+    if (
+      !window.jspdf ||
+      !window.jspdf.jsPDF
+    ) {
+
+      throw new Error(
+        "The PDF engine is not ready."
+      );
+    }
+
+    const trip =
+      normalizeTripForPdf(
+        rawTrip
+      );
+
+    const {
+      jsPDF
+    } =
+      window.jspdf;
+
+    const doc =
+      new jsPDF({
+        orientation:
+          "portrait",
+        unit:
+          "pt",
+        format:
+          "a4",
+        compress:
+          true
+      });
+
+    const pageWidth =
+      doc.internal.pageSize.getWidth();
+
+    const pageHeight =
+      doc.internal.pageSize.getHeight();
+
+    const margin =
+      34;
+
+    const contentWidth =
+      pageWidth -
+      (
+        margin *
+        2
+      );
+
+    const bottomLimit =
+      pageHeight -
+      48;
+
+    let pageNumber =
+      1;
+
+    let cursorY =
+      0;
+
+
+    const startNewPage =
+      function() {
+
+        if (
+          pageNumber >
+          1
+        ) {
+
+          doc.addPage();
+        }
+
+        pdfDrawPageBackground(
+          doc
+        );
+
+        if (
+          pageNumber === 1
+        ) {
+
+          cursorY =
+            pdfDrawHero(
+              doc,
+              trip
+            );
+
+        } else {
+
+          cursorY =
+            pdfDrawContinuationHeader(
+              doc,
+              trip,
+              pageNumber
+            );
+
+          pdfSetText(
+            doc,
+            "#d9c4f5"
+          );
+
+          doc.setFont(
+            "helvetica",
+            "bold"
+          );
+
+          doc.setFontSize(
+            9
+          );
+
+          doc.text(
+            "PURCHASED ITEMS - CONTINUED",
+            margin,
+            cursorY +
+              10
+          );
+
+          cursorY +=
+            24;
+        }
+      };
+
+
+    startNewPage();
+
+
+    if (
+      !trip.items.length
+    ) {
+
+      const emptyHeight =
+        62;
+
+      pdfRoundRect(
+        doc,
+        margin,
+        cursorY,
+        contentWidth,
+        emptyHeight,
+        "#1c2028",
+        "#4a505d",
+        9
+      );
+
+      pdfSetText(
+        doc,
+        "#aeb4c0"
+      );
+
+      doc.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      doc.setFontSize(
+        10
+      );
+
+      doc.text(
+        "No items were purchased on this trip.",
+        pageWidth /
+          2,
+        cursorY +
+          35,
+        {
+          align:
+            "center"
+        }
+      );
+
+      cursorY +=
+        emptyHeight +
+        14;
+
+    } else {
+
+      trip.items.forEach(
+        item => {
+
+          const itemHeight =
+            pdfEstimateItemHeight(
+              doc,
+              item,
+              contentWidth
+            );
+
+          if (
+            cursorY +
+              itemHeight >
+            bottomLimit
+          ) {
+
+            pageNumber +=
+              1;
+
+            startNewPage();
+          }
+
+          pdfDrawItemCard(
+            doc,
+            item,
+            margin,
+            cursorY,
+            contentWidth,
+            itemHeight
+          );
+
+          cursorY +=
+            itemHeight +
+            10;
+        }
+      );
+    }
+
+
+    const totalsHeight =
+      pdfEstimateTotalsHeight(
+        trip
+      );
+
+    if (
+      cursorY +
+        totalsHeight >
+      bottomLimit
+    ) {
+
+      pageNumber +=
+        1;
+
+      startNewPage();
+    }
+
+    pdfDrawTotals(
+      doc,
+      trip,
+      margin,
+      cursorY,
+      contentWidth
+    );
+
+
+    const pageCount =
+      doc.getNumberOfPages();
+
+    for (
+      let page = 1;
+      page <= pageCount;
+      page += 1
+    ) {
+
+      doc.setPage(
+        page
+      );
+
+      pdfDrawFooter(
+        doc,
+        trip,
+        page,
+        pageCount
+      );
+    }
+
+
+    return {
+      doc:
+        doc,
+      trip:
+        trip
+    };
+  }
+
+
   async function exportTripPdf(
     rawTrip,
     buttonId
@@ -12586,18 +14396,6 @@
       return;
     }
 
-    if (
-      typeof html2pdf === "undefined"
-    ) {
-
-      showErrorToast(
-        "PDF exporter not ready",
-        "Wait a moment and try again."
-      );
-
-      return;
-    }
-
 
     pdfExportInProgress =
       true;
@@ -12615,81 +14413,6 @@
     }
 
 
-    const trip =
-      normalizeTripForPdf(
-        rawTrip
-      );
-
-    const stage =
-      document.getElementById(
-        "pdf-export-stage"
-      );
-
-    stage.innerHTML =
-      buildTripPdfHtml(
-        trip
-      );
-
-    const element =
-      stage.firstElementChild;
-
-    const filename =
-      pdfSafeFilename(
-        "Obsidian Shopping - " +
-        (
-          trip.store ||
-          "Trip"
-        ) +
-        " - " +
-        pdfTripDateText(
-          trip
-        )
-      ) +
-      ".pdf";
-
-
-    const options = {
-      margin:
-        0,
-      filename:
-        filename,
-      image: {
-        type:
-          "jpeg",
-        quality:
-          0.98
-      },
-      html2canvas: {
-        scale:
-          2,
-        useCORS:
-          true,
-        backgroundColor:
-          "#111318",
-        logging:
-          false
-      },
-      jsPDF: {
-        unit:
-          "pt",
-        format:
-          "a4",
-        orientation:
-          "portrait"
-      },
-      pagebreak: {
-        mode: [
-          "css",
-          "legacy"
-        ],
-        avoid: [
-          ".pdf-item",
-          ".pdf-total-box"
-        ]
-      }
-    };
-
-
     try {
 
       setStatus(
@@ -12697,14 +14420,31 @@
         "working"
       );
 
-      await html2pdf()
-        .set(
-          options
-        )
-        .from(
-          element
-        )
-        .save();
+      const result =
+        generateTripPdfWithJsPdf(
+          rawTrip
+        );
+
+      const trip =
+        result.trip;
+
+      const filename =
+        pdfSafeFilename(
+          "Obsidian Shopping - " +
+          (
+            trip.store ||
+            "Trip"
+          ) +
+          " - " +
+          pdfTripDateText(
+            trip
+          )
+        ) +
+        ".pdf";
+
+      result.doc.save(
+        filename
+      );
 
       setStatus(
         "PDF export ready.",
@@ -12724,17 +14464,16 @@
 
       showErrorToast(
         "PDF export failed",
+        error?.message ||
         "The trip PDF could not be created."
       );
 
       fail(
+        error?.message ||
         "The trip PDF could not be created."
       );
 
     } finally {
-
-      stage.innerHTML =
-        "";
 
       pdfExportInProgress =
         false;
@@ -12747,7 +14486,6 @@
       }
     }
   }
-
 
   async function exportFinishedTripPdf() {
 
