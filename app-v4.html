@@ -1915,7 +1915,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 visited-store dropdown + editable final review
+    V4 final-review add-item fix
   </div>
 
   <button
@@ -8671,6 +8671,15 @@
 
     reviewEditingItemIndex =
       null;
+
+    /*
+      IMPORTANT:
+      A barcode lookup sets `processing = true` and that state is normally
+      cleared by resetCurrentItem() when moving on to the next item.
+      Returning from Final Review previously skipped that reset, so the
+      next manual LOOK UP was silently ignored by beginBarcodeLookup().
+    */
+    resetCurrentItem();
 
     hide(
       "review-edit-overlay"
