@@ -2731,17 +2731,26 @@
     .nearby-card-stage {
       position:relative;
       margin-top:12px;
+      overflow:visible;
+      background:transparent;
+      touch-action:pan-y;
+      min-height:420px;
+      perspective:900px;
+      padding:3px;
+    }
+
+    /* The shell itself is the full visible store card. This is intentional: the
+       border, map, details and buttons all tilt/throw together like a dating-app deck. */
+    .nearby-card-shell {
       border:1px solid #4a4f60;
       border-radius:18px;
       overflow:hidden;
       background:#181b23;
-      touch-action:pan-y;
-      min-height:420px;
-    }
-
-    .nearby-card-shell {
+      box-shadow:0 16px 36px rgba(0,0,0,.34);
       transform-origin:50% 92%;
       will-change:transform,opacity;
+      min-height:414px;
+      backface-visibility:hidden;
     }
 
     .nearby-card-stage.slide-next .nearby-card-shell {
@@ -2777,11 +2786,11 @@
     }
 
     @keyframes nearbyDeckThrowNext {
-      to { opacity:.15; transform:translateX(-115%) rotate(-14deg) scale(.94); }
+      to { opacity:.08; transform:translateX(-122%) translateY(10px) rotate(-18deg) scale(.93); }
     }
 
     @keyframes nearbyDeckThrowPrev {
-      to { opacity:.15; transform:translateX(115%) rotate(14deg) scale(.94); }
+      to { opacity:.08; transform:translateX(122%) translateY(10px) rotate(18deg) scale(.93); }
     }
 
     .nearby-map-info {
@@ -2843,6 +2852,25 @@
       width:100%;
       height:100%;
       pointer-events:none;
+    }
+
+    .nearby-mini-map-fallback {
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:18px;
+      box-sizing:border-box;
+      color:#c9ced8;
+      background:
+        linear-gradient(90deg,rgba(180,108,255,.08) 1px,transparent 1px),
+        linear-gradient(rgba(180,108,255,.08) 1px,transparent 1px),
+        #202532;
+      background-size:28px 28px;
+      font-size:12px;
+      line-height:1.45;
     }
 
 
@@ -5109,7 +5137,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2E — fuzzy saved-store search, Tinder-style card deck, and selectable nearby map pins. The live app is still index.html.
+    V5 Google Places Step 2F — full-card deck motion, fresh saved-store search, and stabilized reusable maps. The live app is still index.html.
   </div>
 
 </div>
@@ -6550,6 +6578,16 @@
   }
 
 
+  async function refreshStartStoreDirectory() {
+    // Stores can be created in Management or during another trip after the first
+    // directory load. Force a fresh Stores/Trips read whenever a search mode opens
+    // so manually saved branches never disappear behind stale in-memory data.
+    visitedStoresLoadedFromTrips = false;
+    await loadVisitedStoresFromTrips();
+    renderVisitedStores();
+  }
+
+
   function updateStartModeButtons() {
     ["NEAR", "REMOTE", "ONLINE"].forEach(mode => {
       const id = "start-mode-" + mode.toLowerCase();
@@ -6587,6 +6625,7 @@
       storeInput.placeholder = "Search store, branch, neighborhood, city, or address";
       note.textContent = "Remote Shopping does not request or use your device location.";
       note.className = "store-mode-note success";
+      await refreshStartStoreDirectory();
       await ensureGooglePlacesReady(true);
       storeInput.focus();
     } else {
@@ -6671,7 +6710,7 @@
 
     renderVisitedStores();
 
-    await loadVisitedStoresFromTrips();
+    await refreshStartStoreDirectory();
 
     setTimeout(
       function() {
@@ -7304,7 +7343,7 @@
     host.classList.add(direction === "prev" ? "slide-prev" : "slide-next");
 
     host.innerHTML =
-      '<div class="nearby-card-shell">' +
+      '<div class="nearby-card-shell" data-nearby-index="' + nearbyStoreIndex + '">' +
         '<div class="nearby-mini-map-wrap" role="button" tabindex="0" aria-label="Open larger map" onclick="openNearbyFullMap()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openNearbyFullMap();}">' +
           '<div id="nearby-mini-map" class="nearby-mini-map"></div><div class="nearby-map-pin">📍</div>' +
         '</div>' +
@@ -7334,22 +7373,40 @@
     host.onpointerup = nearbyDeckPointerUp;
     host.onpointercancel = nearbyDeckPointerUp;
 
+    // Do not create a Google map while the deck is still animating. Repeated map
+    // construction on every swipe was making the demo-key build flaky. Only render
+    // after the card has settled and only if this card is still current.
+    const expectedIndex = nearbyStoreIndex;
+    setTimeout(() => renderNearbyMiniMapStable(place, expectedIndex), 390);
+  }
+
+  async function renderNearbyMiniMapStable(place, expectedIndex) {
+    if (expectedIndex !== nearbyStoreIndex) return;
+    const shell = document.querySelector('#nearby-card-host .nearby-card-shell');
+    const mapEl = document.getElementById("nearby-mini-map");
+    if (!shell || !mapEl || Number(shell.dataset.nearbyIndex) !== expectedIndex) return;
+    const coords = placeLocationNumbers(place);
+    if (!Number.isFinite(Number(coords.latitude)) || !Number.isFinite(Number(coords.longitude))) {
+      mapEl.className = "nearby-mini-map-fallback";
+      mapEl.textContent = "Map coordinates are unavailable. Tap here to open the store map options.";
+      return;
+    }
     try {
+      await ensureGooglePlacesReady(false);
       const { Map } = await google.maps.importLibrary("maps");
-      const mapEl = document.getElementById("nearby-mini-map");
-      const coords = placeLocationNumbers(place);
-      if (mapEl && Number.isFinite(Number(coords.latitude)) && Number.isFinite(Number(coords.longitude))) {
-        nearbyStoreMap = new Map(mapEl, {
-          center:{lat:Number(coords.latitude), lng:Number(coords.longitude)},
-          zoom:16,
-          disableDefaultUI:true,
-          gestureHandling:"none",
-          clickableIcons:false,
-          keyboardShortcuts:false
-        });
-      }
+      if (expectedIndex !== nearbyStoreIndex || !document.body.contains(mapEl)) return;
+      nearbyStoreMap = new Map(mapEl, {
+        center:{lat:Number(coords.latitude), lng:Number(coords.longitude)},
+        zoom:16,
+        disableDefaultUI:true,
+        gestureHandling:"none",
+        clickableIcons:false,
+        keyboardShortcuts:false
+      });
     } catch (error) {
       console.warn("Mini map could not render", error);
+      mapEl.className = "nearby-mini-map-fallback";
+      mapEl.textContent = "Google map preview is temporarily unavailable. Tap to retry or open Google Maps.";
     }
   }
 
@@ -7371,9 +7428,10 @@
     const delta = event.clientX - nearbyPointerStartX;
     const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
     if (!shell) return;
-    const rotation = Math.max(-10, Math.min(10, delta / 14));
-    const opacity = Math.max(.68, 1 - Math.abs(delta) / 420);
-    shell.style.transform = `translateX(${delta}px) rotate(${rotation}deg)`;
+    const rotation = Math.max(-14, Math.min(14, delta / 11));
+    const lift = Math.min(10, Math.abs(delta) / 18);
+    const opacity = Math.max(.66, 1 - Math.abs(delta) / 430);
+    shell.style.transform = `translateX(${delta}px) translateY(${lift}px) rotate(${rotation}deg)`;
     shell.style.opacity = String(opacity);
   }
 
@@ -7450,26 +7508,39 @@
     if (!Number.isFinite(Number(selectedCoords.latitude)) || !Number.isFinite(Number(selectedCoords.longitude))) return;
 
     document.getElementById("nearby-map-title").textContent = "NEARBY STORE MAP";
-    document.getElementById("nearby-map-subtitle").textContent = "Tap a purple store pin to view that store's card.";
+    document.getElementById("nearby-map-subtitle").textContent = "Tap any purple store pin, then choose GO TO THIS STORE to jump to its card.";
     document.getElementById("nearby-full-map-google").disabled = !selectedRecord.googleMapsUrl;
     show("nearby-map-overlay");
 
-    await new Promise(resolve => setTimeout(resolve, 80));
+    await new Promise(resolve => setTimeout(resolve, 120));
     try {
+      await ensureGooglePlacesReady(false);
       const { Map, InfoWindow } = await google.maps.importLibrary("maps");
       const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
+      const mapEl = document.getElementById("nearby-full-map");
       const center = {lat:Number(selectedCoords.latitude), lng:Number(selectedCoords.longitude)};
-      nearbyFullMap = new Map(document.getElementById("nearby-full-map"), {
-        center,
-        zoom: 14,
-        mapId: "DEMO_MAP_ID",
-        gestureHandling: "greedy",
-        fullscreenControl: true,
-        streetViewControl: false,
-        mapTypeControl: false,
-        clickableIcons: false
-      });
 
+      // Reuse one map object for the lifetime of the page. Repeatedly destroying and
+      // recreating full Maps JS instances was especially unreliable with the demo key.
+      if (!nearbyFullMap) {
+        nearbyFullMap = new Map(mapEl, {
+          center,
+          zoom:14,
+          mapId:"DEMO_MAP_ID",
+          gestureHandling:"greedy",
+          fullscreenControl:true,
+          streetViewControl:false,
+          mapTypeControl:false,
+          clickableIcons:false
+        });
+      } else {
+        nearbyFullMap.setCenter(center);
+        nearbyFullMap.setZoom(14);
+        google.maps.event.trigger(nearbyFullMap, "resize");
+      }
+
+      nearbyFullMapInfoWindow?.close?.();
+      nearbyFullMapMarkers.forEach(marker => { try { marker.map = null; } catch (_) {} });
       nearbyFullMapMarkers = [];
       nearbyFullMapInfoWindow = new InfoWindow();
       const bounds = new google.maps.LatLngBounds();
@@ -7481,22 +7552,22 @@
         const position = {lat:Number(coords.latitude), lng:Number(coords.longitude)};
         bounds.extend(position);
         const pin = new PinElement({
-          background: index === nearbyStoreIndex ? "#8f52cf" : "#6d36a6",
-          borderColor: "#4a236e",
-          glyphColor: "#ffffff",
-          scale: index === nearbyStoreIndex ? 1.14 : 1
+          background:index === nearbyStoreIndex ? "#8f52cf" : "#6d36a6",
+          borderColor:"#4a236e",
+          glyphColor:"#ffffff",
+          scale:index === nearbyStoreIndex ? 1.14 : 1
         });
         const marker = new AdvancedMarkerElement({
-          map: nearbyFullMap,
+          map:nearbyFullMap,
           position,
-          title: record.name,
-          content: pin.element
+          title:record.name,
+          content:pin.element
         });
         marker.addListener("click", () => {
           const infoHtml = '<div class="nearby-map-info">' +
             '<strong>' + escapeHtml(record.name) + '</strong>' +
             '<div class="nearby-map-info-address">' + escapeHtml(record.address || "Address not provided") + '</div>' +
-            '<button type="button" onclick="focusNearbyStoreFromMap(' + index + ')">VIEW STORE CARD</button>' +
+            '<button type="button" onclick="focusNearbyStoreFromMap(' + index + ')">GO TO THIS STORE</button>' +
           '</div>';
           nearbyFullMapInfoWindow.setContent(infoHtml);
           nearbyFullMapInfoWindow.open({map:nearbyFullMap, anchor:marker});
@@ -7506,14 +7577,14 @@
       });
 
       if (nearbyFullMapMarkers.length > 1) {
-        nearbyFullMap.fitBounds(bounds, 58);
-        google.maps.event.addListenerOnce(nearbyFullMap, "idle", () => {
-          if (nearbyFullMap.getZoom() > 16) nearbyFullMap.setZoom(16);
+        nearbyFullMap.fitBounds(bounds,58);
+        google.maps.event.addListenerOnce(nearbyFullMap,"idle",() => {
+          if (nearbyFullMap?.getZoom?.() > 16) nearbyFullMap.setZoom(16);
         });
       }
     } catch (error) {
       console.warn("Full store map could not render", error);
-      document.getElementById("nearby-map-subtitle").textContent = "The in-app map could not load. You can still open this place in Google Maps.";
+      document.getElementById("nearby-map-subtitle").textContent = "The in-app Google map is temporarily unavailable. Store selection still works; use OPEN IN GOOGLE MAPS as a fallback.";
     }
   }
 
@@ -7521,10 +7592,7 @@
   function closeNearbyFullMap() {
     hide("nearby-map-overlay");
     nearbyFullMapInfoWindow?.close?.();
-    nearbyFullMapMarkers.forEach(marker => { try { marker.map = null; } catch (_) {} });
-    nearbyFullMapMarkers = [];
-    nearbyFullMapInfoWindow = null;
-    nearbyFullMap = null;
+    // Keep the single map instance alive for reuse. Markers are refreshed on next open.
     nearbyFullMapMarker = null;
   }
 
@@ -7644,6 +7712,17 @@
         latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes
       };
       selectedStartGoogleStore = record;
+      visitedStoresLoadedFromTrips = false;
+      const savedEntry = {
+        storeId, name, branchName, address, type, googlePlaceId:"",
+        latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes,
+        active:true, lastUsed:Date.now(), source:"saved"
+      };
+      const savedKey = [normalizeStore(name), normalizeStore(branchName), normalizeStore(address)].join("|");
+      visitedStores = visitedStores.filter(existing =>
+        [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
+      );
+      visitedStores.unshift(savedEntry);
       const displayValue = [name, branchName, address].filter(Boolean).join(" — ");
       document.getElementById("start-store").value = displayValue;
       document.getElementById("start-store-search").value = displayValue;
