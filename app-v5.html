@@ -2708,12 +2708,33 @@
     /* Step 2G: the modal controls stay fixed, but the store card itself is the
        only strong visual rectangle. This makes the Tinder-style motion read as
        the whole store card moving rather than content sliding inside a frame. */
+    /* Step 2H: the nearby modal itself scrolls. The store card remains the only
+       Tinder-style draggable area; the fixed controls below it become reachable
+       by ordinary vertical scrolling on mobile. */
+    #nearby-stores-overlay {
+      align-items:flex-start;
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      padding-top:max(18px, env(safe-area-inset-top));
+      padding-bottom:max(24px, env(safe-area-inset-bottom));
+    }
+
     .nearby-browser-card {
       background:transparent;
       border:0;
       box-shadow:none;
       overflow:visible;
-      padding:0 2px 6px;
+      padding:0 2px 18px;
+      max-height:none;
+      margin:auto 0;
+    }
+
+    /* Vertical gestures belong to the modal scroll; horizontal gestures belong
+       to the store card deck. */
+    .nearby-card-stage,
+    .nearby-card-shell {
+      touch-action:pan-y;
     }
 
     .nearby-browser-card > .change-title,
@@ -7560,48 +7581,51 @@
       const subtitle = document.getElementById("nearby-map-subtitle");
       if (subtitle) subtitle.textContent = "Google could not authorize the in-app map right now. Store selection still works; use OPEN IN GOOGLE MAPS as the fallback.";
     };
+
     const selectedPlace = nearbyStorePlaces[nearbyStoreIndex];
     if (!selectedPlace) return;
     const selectedRecord = nearbyPlaceRecord(selectedPlace);
     const selectedCoords = placeLocationNumbers(selectedPlace);
     if (!Number.isFinite(Number(selectedCoords.latitude)) || !Number.isFinite(Number(selectedCoords.longitude))) return;
 
+    const mapEl = document.getElementById("nearby-full-map");
     document.getElementById("nearby-map-title").textContent = "NEARBY STORE MAP";
-    document.getElementById("nearby-map-subtitle").textContent = "Tap any purple store pin, then choose GO TO THIS STORE to jump to its card.";
+    document.getElementById("nearby-map-subtitle").textContent = "Loading the interactive map…";
     document.getElementById("nearby-full-map-google").disabled = !selectedRecord.googleMapsUrl;
+    if (mapEl) mapEl.innerHTML = '<div class="nearby-loading">Loading Google Map…</div>';
     show("nearby-map-overlay");
 
-    await new Promise(resolve => setTimeout(resolve, 120));
+    /* A fresh, simple raster map is intentionally created on each open. Earlier
+       prototypes rendered this path more reliably on the demo key than reusing a
+       hidden vector map + AdvancedMarkerElement. Store discovery is independent
+       from this optional map. */
+    await new Promise(resolve => setTimeout(resolve, 260));
     try {
       await ensureGooglePlacesReady(false);
       const { Map, InfoWindow } = await google.maps.importLibrary("maps");
-      const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
-      const mapEl = document.getElementById("nearby-full-map");
-      const center = {lat:Number(selectedCoords.latitude), lng:Number(selectedCoords.longitude)};
+      const { Marker } = await google.maps.importLibrary("marker");
+      const container = document.getElementById("nearby-full-map");
+      if (!container) throw new Error("Map container is missing.");
+      container.innerHTML = "";
 
-      // Reuse one map object for the lifetime of the page. Repeatedly destroying and
-      // recreating full Maps JS instances was especially unreliable with the demo key.
-      if (!nearbyFullMap) {
-        nearbyFullMap = new Map(mapEl, {
-          center,
-          zoom:14,
-          mapId:"DEMO_MAP_ID",
-          gestureHandling:"greedy",
-          fullscreenControl:true,
-          streetViewControl:false,
-          mapTypeControl:false,
-          clickableIcons:false
-        });
-      } else {
-        nearbyFullMap.setCenter(center);
-        nearbyFullMap.setZoom(14);
-        google.maps.event.trigger(nearbyFullMap, "resize");
+      const center = {lat:Number(selectedCoords.latitude), lng:Number(selectedCoords.longitude)};
+      const mapOptions = {
+        center,
+        zoom:14,
+        gestureHandling:"greedy",
+        fullscreenControl:true,
+        streetViewControl:false,
+        mapTypeControl:false,
+        clickableIcons:false
+      };
+      if (google.maps.RenderingType?.RASTER) {
+        mapOptions.renderingType = google.maps.RenderingType.RASTER;
       }
 
-      nearbyFullMapInfoWindow?.close?.();
-      nearbyFullMapMarkers.forEach(marker => { try { marker.map = null; } catch (_) {} });
-      nearbyFullMapMarkers = [];
+      nearbyFullMap = new Map(container, mapOptions);
       nearbyFullMapInfoWindow = new InfoWindow();
+      nearbyFullMapMarkers = [];
+      nearbyFullMapMarker = null;
       const bounds = new google.maps.LatLngBounds();
 
       nearbyStorePlaces.forEach((place,index) => {
@@ -7610,17 +7634,15 @@
         if (!Number.isFinite(Number(coords.latitude)) || !Number.isFinite(Number(coords.longitude))) return;
         const position = {lat:Number(coords.latitude), lng:Number(coords.longitude)};
         bounds.extend(position);
-        const pin = new PinElement({
-          background:index === nearbyStoreIndex ? "#8f52cf" : "#6d36a6",
-          borderColor:"#4a236e",
-          glyphColor:"#ffffff",
-          scale:index === nearbyStoreIndex ? 1.14 : 1
-        });
-        const marker = new AdvancedMarkerElement({
+
+        /* Legacy Marker is deliberately used only for this demo-key prototype.
+           It does not need a mapId and remains supported, which removes another
+           rendering dependency while we stabilize the interaction. */
+        const marker = new Marker({
           map:nearbyFullMap,
           position,
           title:record.name,
-          content:pin.element
+          clickable:true
         });
         marker.addListener("click", () => {
           const infoHtml = '<div class="nearby-map-info">' +
@@ -7635,24 +7657,39 @@
         if (index === nearbyStoreIndex) nearbyFullMapMarker = marker;
       });
 
-      if (nearbyFullMapMarkers.length > 1) {
+      if (nearbyFullMapMarkers.length > 1 && !bounds.isEmpty()) {
         nearbyFullMap.fitBounds(bounds,58);
         google.maps.event.addListenerOnce(nearbyFullMap,"idle",() => {
           if (nearbyFullMap?.getZoom?.() > 16) nearbyFullMap.setZoom(16);
         });
       }
+
+      document.getElementById("nearby-map-subtitle").textContent = "Tap a store pin, then GO TO THIS STORE to jump to its card.";
     } catch (error) {
       console.warn("Full store map could not render", error);
-      document.getElementById("nearby-map-subtitle").textContent = "The in-app Google map is temporarily unavailable. Store selection still works; use OPEN IN GOOGLE MAPS as a fallback.";
+      nearbyFullMap = null;
+      nearbyFullMapMarkers = [];
+      nearbyFullMapMarker = null;
+      if (mapEl) {
+        mapEl.innerHTML = '<div class="nearby-empty">The in-app Google map could not render right now.<br><br>Store search and selection still work normally.</div>';
+      }
+      document.getElementById("nearby-map-subtitle").textContent = "The in-app map is temporarily unavailable. Use OPEN IN GOOGLE MAPS as the fallback.";
     }
   }
-
 
   function closeNearbyFullMap() {
     hide("nearby-map-overlay");
     nearbyFullMapInfoWindow?.close?.();
-    // Keep the single map instance alive for reuse. Markers are refreshed on next open.
+    nearbyFullMapMarkers.forEach(marker => {
+      try { marker.setMap?.(null); } catch (_) {
+        try { marker.map = null; } catch (_) {}
+      }
+    });
+    nearbyFullMapMarkers = [];
     nearbyFullMapMarker = null;
+    nearbyFullMap = null;
+    const mapEl = document.getElementById("nearby-full-map");
+    if (mapEl) mapEl.innerHTML = "";
   }
 
   function openCurrentNearbyStoreInGoogleMaps() {
