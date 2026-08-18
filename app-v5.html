@@ -2739,22 +2739,80 @@
       min-height:420px;
     }
 
+    .nearby-card-shell {
+      transform-origin:50% 92%;
+      will-change:transform,opacity;
+    }
+
     .nearby-card-stage.slide-next .nearby-card-shell {
-      animation: nearbySlideNext .24s ease both;
+      animation: nearbyDeckInNext .34s cubic-bezier(.2,.8,.2,1) both;
     }
 
     .nearby-card-stage.slide-prev .nearby-card-shell {
-      animation: nearbySlidePrev .24s ease both;
+      animation: nearbyDeckInPrev .34s cubic-bezier(.2,.8,.2,1) both;
     }
 
-    @keyframes nearbySlideNext {
-      from { opacity:.25; transform:translateX(34px); }
-      to { opacity:1; transform:translateX(0); }
+    .nearby-card-stage.throw-next .nearby-card-shell {
+      animation: nearbyDeckThrowNext .22s ease-in both;
     }
 
-    @keyframes nearbySlidePrev {
-      from { opacity:.25; transform:translateX(-34px); }
-      to { opacity:1; transform:translateX(0); }
+    .nearby-card-stage.throw-prev .nearby-card-shell {
+      animation: nearbyDeckThrowPrev .22s ease-in both;
+    }
+
+    .nearby-card-stage.snap-back .nearby-card-shell {
+      transition:transform .2s ease, opacity .2s ease;
+      transform:translateX(0) rotate(0deg)!important;
+      opacity:1!important;
+    }
+
+    @keyframes nearbyDeckInNext {
+      from { opacity:.2; transform:translateX(54px) rotate(5deg) scale(.96); }
+      to { opacity:1; transform:translateX(0) rotate(0deg) scale(1); }
+    }
+
+    @keyframes nearbyDeckInPrev {
+      from { opacity:.2; transform:translateX(-54px) rotate(-5deg) scale(.96); }
+      to { opacity:1; transform:translateX(0) rotate(0deg) scale(1); }
+    }
+
+    @keyframes nearbyDeckThrowNext {
+      to { opacity:.15; transform:translateX(-115%) rotate(-14deg) scale(.94); }
+    }
+
+    @keyframes nearbyDeckThrowPrev {
+      to { opacity:.15; transform:translateX(115%) rotate(14deg) scale(.94); }
+    }
+
+    .nearby-map-info {
+      min-width:210px;
+      max-width:280px;
+      color:#16181d;
+      font-family:Arial,sans-serif;
+      line-height:1.35;
+    }
+
+    .nearby-map-info strong {
+      display:block;
+      margin-bottom:4px;
+      font-size:14px;
+    }
+
+    .nearby-map-info-address {
+      font-size:12px;
+      color:#4f5661;
+      margin-bottom:8px;
+    }
+
+    .nearby-map-info button {
+      width:100%;
+      border:0;
+      border-radius:8px;
+      padding:8px 10px;
+      background:#6d36a6;
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
     }
 
     .nearby-mini-map-wrap {
@@ -5051,7 +5109,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2D — rich nearby cards, map view, saved-store search, and retry hardening. The live app is still index.html.
+    V5 Google Places Step 2E — fuzzy saved-store search, Tinder-style card deck, and selectable nearby map pins. The live app is still index.html.
   </div>
 
 </div>
@@ -5628,7 +5686,11 @@
   let nearbyStoreMap = null;
   let nearbyFullMap = null;
   let nearbyFullMapMarker = null;
+  let nearbyFullMapMarkers = [];
+  let nearbyFullMapInfoWindow = null;
   let nearbyTouchStartX = null;
+  let nearbyPointerStartX = null;
+  let nearbyPointerActive = false;
   let nearbyCardDirection = "next";
   const NEARBY_STORE_RADIUS_METERS = 5000;
   let managementEditingProductIndex = null;
@@ -6683,117 +6745,107 @@
   }
 
 
-  function renderVisitedStores() {
+  function normalizeStoreSearchText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
 
-    const list =
-      document.getElementById(
-        "start-store-list"
-      );
+  function savedStoreSearchScore(store, query) {
+    const normalizedQuery = normalizeStoreSearchText(query);
+    if (!normalizedQuery) return 1;
 
-    if (!list) {
-      return;
+    const fields = [store.name, store.branchName, store.address]
+      .map(normalizeStoreSearchText)
+      .filter(Boolean);
+    const haystack = fields.join(" ");
+    if (!haystack) return 0;
+
+    // Exact phrase first, then token-wise matches. This lets a saved store called
+    // "Test Walmart Local" surface for searches such as "Walmart Local" or
+    // "Walmart Test", rather than requiring the exact original phrase order.
+    let score = haystack.includes(normalizedQuery) ? 100 : 0;
+    const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+    let matched = 0;
+    for (const token of tokens) {
+      if (haystack.includes(token)) {
+        matched += 1;
+        score += 18;
+        if (fields[0]?.includes(token)) score += 8;
+        if (fields[1]?.includes(token)) score += 5;
+        if (fields[2]?.includes(token)) score += 3;
+      }
     }
 
-    const query =
-      String(
-        document.getElementById(
-          "start-store-search"
-        )?.value || ""
-      )
-        .trim()
-        .toLowerCase();
+    // Require every reasonably meaningful token to match so unrelated saved
+    // stores do not swamp the Google results.
+    if (tokens.length && matched < tokens.length) return 0;
+    if (store.source === "saved") score += 12;
+    if (store.lastUsed) score += 2;
+    return score;
+  }
 
-    const filtered =
-      visitedStores
-        .filter(
-          store => {
-            if (!query) return true;
-            const haystack = [store.name, store.branchName, store.address]
-              .filter(Boolean)
-              .join(" ")
-              .toLowerCase();
-            return haystack.includes(query);
-          }
-        )
-        .slice(
-          0,
-          40
-        );
+  function renderVisitedStores() {
+    const list = document.getElementById("start-store-list");
+    if (!list) return;
 
-    window.currentVisitedStoreResults =
-      filtered;
+    const query = String(document.getElementById("start-store-search")?.value || "").trim();
 
-    let html =
-      "";
+    const filtered = visitedStores
+      .map(store => ({store, score:savedStoreSearchScore(store, query)}))
+      .filter(item => item.score > 0)
+      .sort((a,b) => {
+        if (query && b.score !== a.score) return b.score - a.score;
+        if ((b.store.lastUsed || 0) !== (a.store.lastUsed || 0)) return (b.store.lastUsed || 0) - (a.store.lastUsed || 0);
+        if (a.store.source === "saved" && b.store.source !== "saved") return -1;
+        if (b.store.source === "saved" && a.store.source !== "saved") return 1;
+        return String(a.store.name || "").localeCompare(String(b.store.name || ""));
+      })
+      .slice(0,40)
+      .map(item => item.store);
+
+    window.currentVisitedStoreResults = filtered;
+
+    let html = "";
+
+    // Saved/manual entries are intentionally shown before Google predictions
+    // when they match, so stores the user deliberately added remain discoverable.
+    if (filtered.length) {
+      html += '<div class="start-store-empty" style="padding-bottom:6px;">Saved / previously used stores</div>';
+      html += filtered.map((store,index) => (
+        '<button class="start-store-option" type="button" onclick="selectVisitedStore(' + index + ')">' +
+          '<span class="start-store-option-name">' + escapeHtml(store.name) + '</span>' +
+          '<span class="start-store-option-meta">' + escapeHtml(
+            store.source === "saved"
+              ? ([store.branchName, store.address].filter(Boolean).join(" • ") || "Saved store")
+              : (store.lastUsed ? "Previously visited" : "Saved in product history")
+          ) + '</span>' +
+        '</button>'
+      )).join("");
+    } else {
+      html += '<div class="start-store-empty">' + (query ? "No saved/visited store matches that search yet." : "No saved/visited stores are stored yet.") + '</div>';
+    }
 
     if (startGooglePredictions.length) {
-      html += '<div class="start-store-empty" style="padding-bottom:6px;">Google Maps results</div>';
-      html += startGooglePredictions.map((prediction, index) => {
+      html += '<div class="start-store-empty" style="padding-top:10px;padding-bottom:6px;">Google Maps results</div>';
+      html += startGooglePredictions.map((prediction,index) => {
         const text = String(prediction?.text?.toString?.() || prediction?.text || "Google place");
         return '<button class="start-store-option" type="button" onclick="selectStartGooglePlace(' + index + ')">' +
           '<span class="start-store-option-name">' + escapeHtml(text) + '</span>' +
           '<span class="start-store-option-meta">Google Maps</span>' +
         '</button>';
       }).join("");
-      html += '<div class="start-store-empty" style="font-size:12px;padding-top:8px;padding-bottom:8px;">Google Maps</div>';
     }
 
-    if (
-      filtered.length
-    ) {
+    html += '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
+      '<span class="start-store-option-name">＋ Add store manually</span>' +
+      '<span class="start-store-option-meta">Permanent fallback when the desired store cannot be found.</span>' +
+    '</button>';
 
-      html +=
-        filtered
-          .map(
-            (store, index) => (
-
-              '<button class="start-store-option" type="button" onclick="selectVisitedStore(' +
-              index +
-              ')">' +
-
-                '<span class="start-store-option-name">' +
-                  escapeHtml(
-                    store.name
-                  ) +
-                "</span>" +
-
-                '<span class="start-store-option-meta">' +
-                  escapeHtml(
-                    store.source === "saved"
-                      ? ([store.branchName, store.address].filter(Boolean).join(" • ") || "Saved store")
-                      : (store.lastUsed ? "Previously visited" : "Saved in product history")
-                  ) +
-                "</span>" +
-
-              "</button>"
-            )
-          )
-          .join(
-            ""
-          );
-
-    } else {
-
-      html +=
-        '<div class="start-store-empty">' +
-          (
-            query
-              ? "No saved/visited store matches that search yet."
-              : "No saved/visited stores are stored yet."
-          ) +
-        "</div>";
-    }
-
-
-    html +=
-      '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
-        '<span class="start-store-option-name">＋ Add store manually</span>' +
-        '<span class="start-store-option-meta">Permanent fallback when the desired store cannot be found.</span>' +
-      "</button>";
-
-
-    list.innerHTML =
-      html;
+    list.innerHTML = html;
   }
 
 
@@ -7271,17 +7323,16 @@
     document.getElementById("nearby-carousel-count").textContent = `${nearbyStoreIndex + 1} of ${nearbyStorePlaces.length}`;
     document.getElementById("nearby-dots").innerHTML = nearbyStorePlaces.map((_,i) => '<span class="nearby-dot' + (i === nearbyStoreIndex ? ' active' : '') + '"></span>').join('');
 
-    host.ontouchstart = event => {
-      nearbyTouchStartX = event.changedTouches?.[0]?.clientX ?? null;
-    };
-    host.ontouchend = event => {
-      if (nearbyTouchStartX === null) return;
-      const endX = event.changedTouches?.[0]?.clientX ?? nearbyTouchStartX;
-      const delta = endX - nearbyTouchStartX;
-      nearbyTouchStartX = null;
-      if (Math.abs(delta) < 45) return;
-      if (delta < 0) nearbyCardNext(); else nearbyCardPrevious();
-    };
+    host.classList.remove("slide-next","slide-prev","throw-next","throw-prev","snap-back");
+    // Force the arrival animation to restart after innerHTML replacement.
+    void host.offsetWidth;
+    host.classList.add(direction === "prev" ? "slide-prev" : "slide-next");
+    setTimeout(() => host.classList.remove("slide-next","slide-prev"), 360);
+
+    host.onpointerdown = nearbyDeckPointerDown;
+    host.onpointermove = nearbyDeckPointerMove;
+    host.onpointerup = nearbyDeckPointerUp;
+    host.onpointercancel = nearbyDeckPointerUp;
 
     try {
       const { Map } = await google.maps.importLibrary("maps");
@@ -7302,59 +7353,177 @@
     }
   }
 
-  function nearbyCardNext() {
-    if (!nearbyStorePlaces.length) return;
-    nearbyCardDirection = "next";
-    nearbyStoreIndex = (nearbyStoreIndex + 1) % nearbyStorePlaces.length;
+  function nearbyDeckInteractiveTarget(target) {
+    return !!target?.closest?.("button,a,details,summary,.nearby-mini-map-wrap,input,textarea,select");
+  }
+
+  function nearbyDeckPointerDown(event) {
+    if (nearbyDeckInteractiveTarget(event.target)) return;
+    nearbyPointerActive = true;
+    nearbyPointerStartX = event.clientX;
+    const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
+    if (shell) shell.style.transition = "none";
+    try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch (_) {}
+  }
+
+  function nearbyDeckPointerMove(event) {
+    if (!nearbyPointerActive || nearbyPointerStartX === null) return;
+    const delta = event.clientX - nearbyPointerStartX;
+    const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
+    if (!shell) return;
+    const rotation = Math.max(-10, Math.min(10, delta / 14));
+    const opacity = Math.max(.68, 1 - Math.abs(delta) / 420);
+    shell.style.transform = `translateX(${delta}px) rotate(${rotation}deg)`;
+    shell.style.opacity = String(opacity);
+  }
+
+  function nearbyDeckPointerUp(event) {
+    if (!nearbyPointerActive) return;
+    nearbyPointerActive = false;
+    const delta = nearbyPointerStartX === null ? 0 : event.clientX - nearbyPointerStartX;
+    nearbyPointerStartX = null;
+    const host = document.getElementById("nearby-card-host");
+    const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
+    if (!host || !shell) return;
+
+    shell.style.transition = "";
+    if (Math.abs(delta) < 70) {
+      host.classList.add("snap-back");
+      setTimeout(() => host.classList.remove("snap-back"), 220);
+      return;
+    }
+
+    const goingNext = delta < 0;
+    host.classList.remove("slide-next","slide-prev","throw-next","throw-prev","snap-back");
+    host.classList.add(goingNext ? "throw-next" : "throw-prev");
+    setTimeout(() => {
+      host.classList.remove("throw-next","throw-prev");
+      nearbyCardDirection = goingNext ? "next" : "prev";
+      nearbyStoreIndex = goingNext
+        ? (nearbyStoreIndex + 1) % nearbyStorePlaces.length
+        : (nearbyStoreIndex - 1 + nearbyStorePlaces.length) % nearbyStorePlaces.length;
+      renderNearbyStoreCard(nearbyCardDirection);
+    }, 205);
+  }
+
+  function focusNearbyStoreFromMap(index) {
+    if (!Number.isInteger(Number(index))) return;
+    const numericIndex = Number(index);
+    if (numericIndex < 0 || numericIndex >= nearbyStorePlaces.length) return;
+    nearbyStoreIndex = numericIndex;
+    closeNearbyFullMap();
     renderNearbyStoreCard("next");
+    setTimeout(() => {
+      document.getElementById("nearby-card-host")?.scrollIntoView({behavior:"smooth", block:"center"});
+    }, 80);
+  }
+
+  function animateNearbyDeckChange(direction) {
+    if (!nearbyStorePlaces.length) return;
+    const host = document.getElementById("nearby-card-host");
+    if (!host) return;
+    host.classList.remove("slide-next","slide-prev","throw-next","throw-prev","snap-back");
+    host.classList.add(direction === "next" ? "throw-next" : "throw-prev");
+    setTimeout(() => {
+      host.classList.remove("throw-next","throw-prev");
+      nearbyCardDirection = direction;
+      nearbyStoreIndex = direction === "next"
+        ? (nearbyStoreIndex + 1) % nearbyStorePlaces.length
+        : (nearbyStoreIndex - 1 + nearbyStorePlaces.length) % nearbyStorePlaces.length;
+      renderNearbyStoreCard(direction);
+    }, 205);
+  }
+
+  function nearbyCardNext() {
+    animateNearbyDeckChange("next");
   }
 
   function nearbyCardPrevious() {
-    if (!nearbyStorePlaces.length) return;
-    nearbyCardDirection = "prev";
-    nearbyStoreIndex = (nearbyStoreIndex - 1 + nearbyStorePlaces.length) % nearbyStorePlaces.length;
-    renderNearbyStoreCard("prev");
+    animateNearbyDeckChange("prev");
   }
 
   async function openNearbyFullMap() {
-    const place = nearbyStorePlaces[nearbyStoreIndex];
-    if (!place) return;
-    const record = nearbyPlaceRecord(place);
-    const coords = placeLocationNumbers(place);
-    if (!Number.isFinite(Number(coords.latitude)) || !Number.isFinite(Number(coords.longitude))) return;
+    const selectedPlace = nearbyStorePlaces[nearbyStoreIndex];
+    if (!selectedPlace) return;
+    const selectedRecord = nearbyPlaceRecord(selectedPlace);
+    const selectedCoords = placeLocationNumbers(selectedPlace);
+    if (!Number.isFinite(Number(selectedCoords.latitude)) || !Number.isFinite(Number(selectedCoords.longitude))) return;
 
-    document.getElementById("nearby-map-title").textContent = record.name || "STORE MAP";
-    document.getElementById("nearby-map-subtitle").textContent = record.address || "Google Maps location";
-    document.getElementById("nearby-full-map-google").disabled = !record.googleMapsUrl;
+    document.getElementById("nearby-map-title").textContent = "NEARBY STORE MAP";
+    document.getElementById("nearby-map-subtitle").textContent = "Tap a purple store pin to view that store's card.";
+    document.getElementById("nearby-full-map-google").disabled = !selectedRecord.googleMapsUrl;
     show("nearby-map-overlay");
 
     await new Promise(resolve => setTimeout(resolve, 80));
     try {
-      const { Map } = await google.maps.importLibrary("maps");
-      const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-      const position = {lat:Number(coords.latitude), lng:Number(coords.longitude)};
+      const { Map, InfoWindow } = await google.maps.importLibrary("maps");
+      const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
+      const center = {lat:Number(selectedCoords.latitude), lng:Number(selectedCoords.longitude)};
       nearbyFullMap = new Map(document.getElementById("nearby-full-map"), {
-        center: position,
-        zoom: 17,
+        center,
+        zoom: 14,
         mapId: "DEMO_MAP_ID",
         gestureHandling: "greedy",
         fullscreenControl: true,
         streetViewControl: false,
-        mapTypeControl: false
+        mapTypeControl: false,
+        clickableIcons: false
       });
-      nearbyFullMapMarker = new AdvancedMarkerElement({
-        map: nearbyFullMap,
-        position,
-        title: record.name
+
+      nearbyFullMapMarkers = [];
+      nearbyFullMapInfoWindow = new InfoWindow();
+      const bounds = new google.maps.LatLngBounds();
+
+      nearbyStorePlaces.forEach((place,index) => {
+        const record = nearbyPlaceRecord(place);
+        const coords = placeLocationNumbers(place);
+        if (!Number.isFinite(Number(coords.latitude)) || !Number.isFinite(Number(coords.longitude))) return;
+        const position = {lat:Number(coords.latitude), lng:Number(coords.longitude)};
+        bounds.extend(position);
+        const pin = new PinElement({
+          background: index === nearbyStoreIndex ? "#8f52cf" : "#6d36a6",
+          borderColor: "#4a236e",
+          glyphColor: "#ffffff",
+          scale: index === nearbyStoreIndex ? 1.14 : 1
+        });
+        const marker = new AdvancedMarkerElement({
+          map: nearbyFullMap,
+          position,
+          title: record.name,
+          content: pin.element
+        });
+        marker.addListener("click", () => {
+          const infoHtml = '<div class="nearby-map-info">' +
+            '<strong>' + escapeHtml(record.name) + '</strong>' +
+            '<div class="nearby-map-info-address">' + escapeHtml(record.address || "Address not provided") + '</div>' +
+            '<button type="button" onclick="focusNearbyStoreFromMap(' + index + ')">VIEW STORE CARD</button>' +
+          '</div>';
+          nearbyFullMapInfoWindow.setContent(infoHtml);
+          nearbyFullMapInfoWindow.open({map:nearbyFullMap, anchor:marker});
+        });
+        nearbyFullMapMarkers.push(marker);
+        if (index === nearbyStoreIndex) nearbyFullMapMarker = marker;
       });
+
+      if (nearbyFullMapMarkers.length > 1) {
+        nearbyFullMap.fitBounds(bounds, 58);
+        google.maps.event.addListenerOnce(nearbyFullMap, "idle", () => {
+          if (nearbyFullMap.getZoom() > 16) nearbyFullMap.setZoom(16);
+        });
+      }
     } catch (error) {
       console.warn("Full store map could not render", error);
       document.getElementById("nearby-map-subtitle").textContent = "The in-app map could not load. You can still open this place in Google Maps.";
     }
   }
 
+
   function closeNearbyFullMap() {
     hide("nearby-map-overlay");
+    nearbyFullMapInfoWindow?.close?.();
+    nearbyFullMapMarkers.forEach(marker => { try { marker.map = null; } catch (_) {} });
+    nearbyFullMapMarkers = [];
+    nearbyFullMapInfoWindow = null;
     nearbyFullMap = null;
     nearbyFullMapMarker = null;
   }
