@@ -2879,7 +2879,7 @@
                 type="search"
                 autocomplete="off"
                 placeholder="Search stores..."
-                oninput="renderVisitedStores()"
+                oninput="startStoreSearchChanged()"
               >
             </div>
 
@@ -2893,7 +2893,8 @@
         </div>
 
         <div id="start-google-placeholder" class="store-google-placeholder hidden">
-          Google Places connection will plug into this search component next. Until the API key is configured, saved/visited stores remain available as a safe fallback.
+          Google Places search is available in this V5 test build. Insert your Maps Demo Key into the MAPS_DEMO_KEY constant in this file before committing.
+          
         </div>
 
         <div class="store-search-actions">
@@ -4692,7 +4693,7 @@
   </div>
 
   <div class="help">
-    V5 development copy. The live app is still index.html.
+    V5 Google Places Step 2B. The live app is still index.html.
   </div>
 
 </div>
@@ -4987,6 +4988,20 @@
   </div>
 </div>
 
+<div id="maps-key-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="maps-key-title">
+  <div class="change-card">
+    <div id="maps-key-title" class="change-title">GOOGLE PLACES DEMO KEY</div>
+    <div class="change-body">Paste the Maps Demo Key you created. It is saved only in this browser/device local storage and is not written to Google Sheets or GitHub.</div>
+    <label for="maps-demo-key-input">Demo key</label>
+    <input id="maps-demo-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste demo key here">
+    <div id="maps-key-status" class="store-mode-note" style="margin-top:12px;">The demo key is for V5 prototyping only.</div>
+    <div class="change-actions">
+      <button class="change-cancel" type="button" onclick="closeMapsDemoKeySetup()">CANCEL</button>
+      <button class="change-history" type="button" onclick="saveMapsDemoKeySetup()">SAVE &amp; CONNECT</button>
+    </div>
+  </div>
+</div>
+
 <div id="pdf-export-stage"></div>
 
 <nav
@@ -5135,6 +5150,15 @@
   let managementHistoryRows = [];
   let managementPaymentMethods = [];
   let managementStores = [];
+
+  const MAPS_DEMO_KEY = "AIzaSyAmQ04bPmcnGJWygaTq4zA8G6t6B0f_wQc";
+  let googleMapsLoadPromise = null;
+  let googlePlacesReady = false;
+  let startGooglePredictions = [];
+  let startAutocompleteSessionToken = null;
+  let startGoogleSearchTimer = null;
+  let selectedStartGoogleStore = null;
+  let newestStartGoogleRequestId = 0;
   let managementEditingProductIndex = null;
   let managementEditingPaymentIndex = null;
   let managementEditingStoreIndex = null;
@@ -5514,6 +5538,12 @@
 
         store:
           store,
+
+        address:
+          selectedStartGoogleStore?.address || "",
+
+        googlePlaceId:
+          selectedStartGoogleStore?.googlePlaceId || "",
 
         start:
           localIsoWithOffset(now),
@@ -6052,11 +6082,13 @@
       note.textContent = "Near Me uses your device location only while this app is active. You can still search for any store.";
       note.className = "store-mode-note";
       await requestNearMeLocation();
+      await ensureGooglePlacesReady(true);
     } else if (mode === "REMOTE") {
       startLocationSnapshot = null;
       storeInput.placeholder = "Search store, branch, neighborhood, city, or address";
       note.textContent = "Remote Shopping does not request or use your device location.";
       note.className = "store-mode-note success";
+      await ensureGooglePlacesReady(true);
       storeInput.focus();
     } else {
       startLocationSnapshot = null;
@@ -6088,7 +6120,7 @@
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy
           };
-          note.textContent = "Location ready. Nearby Google results will be biased around your current position once Places is connected.";
+          note.textContent = "Location ready. Google store results will be biased around your current position.";
           note.className = "store-mode-note success";
           document.getElementById("start-store").focus();
           resolve(startLocationSnapshot);
@@ -6175,6 +6207,8 @@
         "start-store"
       ).value;
 
+    selectedStartGoogleStore = null;
+
     document.getElementById(
       "start-store-search"
     ).value =
@@ -6187,6 +6221,14 @@
     );
 
     renderVisitedStores();
+    scheduleStartGoogleAutocomplete(value);
+  }
+
+
+  function startStoreSearchChanged() {
+    const value = String(document.getElementById("start-store-search")?.value || "");
+    renderVisitedStores();
+    scheduleStartGoogleAutocomplete(value);
   }
 
 
@@ -6231,6 +6273,18 @@
 
     let html =
       "";
+
+    if (startGooglePredictions.length) {
+      html += '<div class="start-store-empty" style="padding-bottom:6px;">Google Maps results</div>';
+      html += startGooglePredictions.map((prediction, index) => {
+        const text = String(prediction?.text?.toString?.() || prediction?.text || "Google place");
+        return '<button class="start-store-option" type="button" onclick="selectStartGooglePlace(' + index + ')">' +
+          '<span class="start-store-option-name">' + escapeHtml(text) + '</span>' +
+          '<span class="start-store-option-meta">Google Maps</span>' +
+        '</button>';
+      }).join("");
+      html += '<div class="start-store-empty" style="font-size:12px;padding-top:8px;padding-bottom:8px;">Google Maps</div>';
+    }
 
     if (
       filtered.length
@@ -6291,6 +6345,216 @@
   }
 
 
+  function getMapsDemoKey() {
+    const key = String(MAPS_DEMO_KEY || "").trim();
+    if (!key || key === "PASTE_YOUR_MAPS_DEMO_KEY_HERE") return "";
+    return key;
+  }
+
+  function openMapsDemoKeySetup() {
+    showErrorToast(
+      "Google Places key not configured",
+      "Open app-v5.html in VS Code and replace PASTE_YOUR_MAPS_DEMO_KEY_HERE in the MAPS_DEMO_KEY constant."
+    );
+  }
+
+  function closeMapsDemoKeySetup() {
+    hide("maps-key-overlay");
+  }
+
+  async function saveMapsDemoKeySetup() {
+    openMapsDemoKeySetup();
+  }
+
+  async function ensureGooglePlacesReady(promptIfMissing = false) {
+    if (googlePlacesReady && window.google?.maps?.importLibrary) return true;
+    const key = getMapsDemoKey();
+    if (!key) {
+      if (promptIfMissing) openMapsDemoKeySetup();
+      return false;
+    }
+    if (!googleMapsLoadPromise) {
+      googleMapsLoadPromise = new Promise((resolve, reject) => {
+        if (window.google?.maps?.importLibrary) {
+          resolve();
+          return;
+        }
+        const existing = document.getElementById("obsidian-google-maps-loader");
+        if (existing) {
+          existing.addEventListener("load", resolve, {once:true});
+          existing.addEventListener("error", reject, {once:true});
+          return;
+        }
+        const script = document.createElement("script");
+        script.id = "obsidian-google-maps-loader";
+        script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(key) + "&v=weekly&loading=async";
+        script.async = true;
+        script.defer = true;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Google Maps script failed to load."));
+        document.head.appendChild(script);
+      });
+    }
+    await googleMapsLoadPromise;
+    await google.maps.importLibrary("places");
+    googlePlacesReady = true;
+    if (!startAutocompleteSessionToken) {
+      const { AutocompleteSessionToken } = await google.maps.importLibrary("places");
+      startAutocompleteSessionToken = new AutocompleteSessionToken();
+    }
+    return true;
+  }
+
+  function scheduleStartGoogleAutocomplete(value, delay = 280) {
+    clearTimeout(startGoogleSearchTimer);
+    const query = String(value || "").trim();
+    if (startShoppingMode === "ONLINE" || query.length < 2) {
+      startGooglePredictions = [];
+      renderVisitedStores();
+      return;
+    }
+    startGoogleSearchTimer = setTimeout(() => searchStartGooglePlaces(query), delay);
+  }
+
+  async function searchStartGooglePlaces(query) {
+    const requestId = ++newestStartGoogleRequestId;
+    try {
+      const ready = await ensureGooglePlacesReady(true);
+      if (!ready) return;
+      const { AutocompleteSuggestion, AutocompleteSessionToken } = await google.maps.importLibrary("places");
+      if (!startAutocompleteSessionToken) startAutocompleteSessionToken = new AutocompleteSessionToken();
+      const request = {
+        input: query,
+        sessionToken: startAutocompleteSessionToken,
+        language: "es-MX",
+        region: "mx"
+      };
+      if (startShoppingMode === "NEAR" && startLocationSnapshot) {
+        request.locationBias = {
+          center: {
+            lat: startLocationSnapshot.latitude,
+            lng: startLocationSnapshot.longitude
+          },
+          radius: 25000
+        };
+        request.origin = {
+          lat: startLocationSnapshot.latitude,
+          lng: startLocationSnapshot.longitude
+        };
+      }
+      const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      if (requestId !== newestStartGoogleRequestId) return;
+      startGooglePredictions = (suggestions || [])
+        .map(item => item.placePrediction)
+        .filter(Boolean)
+        .slice(0, 8);
+      renderVisitedStores();
+    } catch (error) {
+      if (requestId !== newestStartGoogleRequestId) return;
+      startGooglePredictions = [];
+      renderVisitedStores();
+      const note = document.getElementById("start-mode-note");
+      if (note) {
+        note.textContent = "Google Places search failed. Saved stores and manual fallback are still available.";
+        note.className = "store-mode-note error";
+      }
+    }
+  }
+
+  function readableBusinessStatus(value) {
+    const text = String(value || "").replaceAll("_", " ").trim();
+    return text ? text.charAt(0) + text.slice(1).toLowerCase() : "";
+  }
+
+  async function selectStartGooglePlace(index) {
+    const prediction = startGooglePredictions[index];
+    if (!prediction) return;
+    try {
+      setStatus("Loading Google store details...", "working");
+      const place = prediction.toPlace();
+      try {
+        await place.fetchFields({
+          fields: ["displayName", "formattedAddress", "location", "businessStatus", "regularOpeningHours", "googleMapsURI"]
+        });
+      } catch (error) {
+        await place.fetchFields({
+          fields: ["displayName", "formattedAddress", "location", "googleMapsURI"]
+        });
+      }
+      const name = String(place.displayName || prediction.text?.toString?.() || "Google store").trim();
+      const address = String(place.formattedAddress || "").trim();
+      const displayValue = [name, address].filter(Boolean).join(" — ");
+      const location = place.location;
+      const record = {
+        id: place.id || "",
+        name,
+        branchName: "",
+        address,
+        type: "Physical",
+        googlePlaceId: place.id || "",
+        latitude: location?.lat?.() ?? "",
+        longitude: location?.lng?.() ?? "",
+        businessStatus: readableBusinessStatus(place.businessStatus),
+        openingHours: Array.isArray(place.regularOpeningHours?.weekdayDescriptions)
+          ? place.regularOpeningHours.weekdayDescriptions.join(" | ")
+          : "",
+        googleMapsUrl: String(place.googleMapsURI || "").trim()
+      };
+      selectedStartGoogleStore = record;
+      document.getElementById("start-store").value = displayValue;
+      document.getElementById("start-store-search").value = displayValue;
+      closeStartStoreDropdown();
+      await saveGoogleStoreIfNeeded(record);
+      const note = document.getElementById("start-mode-note");
+      if (note) {
+        note.textContent = address ? "Google store selected: " + name + " — " + address : "Google store selected: " + name;
+        note.className = "store-mode-note success";
+      }
+      showSuccessToast("Google store selected", address || name);
+      setStatus("Store ready.", "success");
+      const { AutocompleteSessionToken } = await google.maps.importLibrary("places");
+      startAutocompleteSessionToken = new AutocompleteSessionToken();
+      startGooglePredictions = [];
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast("Google store selection failed", "You can retry the search or use Add store manually.");
+    }
+  }
+
+  async function saveGoogleStoreIfNeeded(record) {
+    if (!record?.googlePlaceId || !accessToken) return;
+    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:M`, "UNFORMATTED_VALUE");
+    const rows = data.values || [];
+    const existingIndex = rows.findIndex(row => String(row?.[5] || "").trim() === record.googlePlaceId);
+    if (existingIndex >= 0) return;
+    let rowNumber = rows.length + 2;
+    for (let i = 0; i < rows.length; i++) {
+      if (blank(rows[i]?.[0])) {
+        rowNumber = i + 2;
+        break;
+      }
+    }
+    await sheetsValuesBatchUpdate([{
+      range: `'${STORES_SHEET}'!A${rowNumber}:M${rowNumber}`,
+      values: [[
+        "STORE-G-" + Date.now(),
+        record.name,
+        record.branchName || "",
+        record.address || "",
+        "Physical",
+        record.googlePlaceId,
+        record.latitude ?? "",
+        record.longitude ?? "",
+        record.businessStatus || "",
+        record.openingHours || "",
+        record.googleMapsUrl || "",
+        "",
+        true
+      ]]
+    }], "RAW");
+  }
+
+
   function selectVisitedStore(
     index
   ) {
@@ -6306,6 +6570,8 @@
     if (!store) {
       return;
     }
+
+    selectedStartGoogleStore = null;
 
     document.getElementById(
       "start-store"
@@ -11667,7 +11933,10 @@
       selectedPaymentDraftId =
         "";
 
-      paymentMode = "SINGLE";
+      selectedStartGoogleStore = null;
+    startGooglePredictions = [];
+
+    paymentMode = "SINGLE";
       paymentAllocations = [];
       cashEditingAllocationId = "";
 
