@@ -2609,7 +2609,93 @@
         margin-top: 9px;
       }
     }
-  </style>
+  
+
+    /* V5 Store discovery modes: Near Me / Remote / Online */
+    .shopping-mode-grid,
+    .management-store-mode-grid {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin:10px 0 14px;
+    }
+
+    .shopping-mode-button,
+    .management-store-mode-button {
+      min-height:58px;
+      padding:10px 8px;
+      border:1px solid #4a5161;
+      border-radius:14px;
+      background:#20242e;
+      color:#f4f4f7;
+      font-size:13px;
+      font-weight:800;
+      line-height:1.15;
+    }
+
+    .shopping-mode-button.selected,
+    .management-store-mode-button.selected {
+      border-color:#9c55e8;
+      background:#4b286b;
+      box-shadow:0 0 0 1px rgba(156,85,232,.25) inset;
+    }
+
+    .store-mode-note {
+      margin:8px 0 12px;
+      padding:11px 12px;
+      border-radius:12px;
+      background:#191d26;
+      border:1px solid #343a48;
+      color:#b9bfcc;
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .store-mode-note.success {
+      border-color:#2f714b;
+      color:#9ee1b6;
+    }
+
+    .store-mode-note.error {
+      border-color:#7c343d;
+      color:#ffafb7;
+    }
+
+    .store-search-actions {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:9px;
+      margin-top:10px;
+    }
+
+    .store-secondary-button {
+      background:#3a4050;
+      color:#fff;
+      border:0;
+      border-radius:13px;
+      min-height:52px;
+      font-weight:800;
+    }
+
+    .store-google-placeholder {
+      margin-top:10px;
+      padding:12px;
+      border-radius:12px;
+      background:#302744;
+      border:1px dashed #7b55a5;
+      color:#d7c5ec;
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    @media (max-width:460px) {
+      .shopping-mode-grid,
+      .management-store-mode-grid {
+        grid-template-columns:1fr;
+      }
+    }
+
+</style>
 </head>
 
 <body>
@@ -2739,9 +2825,19 @@
 
       <div class="field">
 
-        <label for="start-store">
-          Store
-        </label>
+        <label>How are you shopping?</label>
+
+        <div class="shopping-mode-grid">
+          <button id="start-mode-near" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('NEAR')">📍 NEAR ME</button>
+          <button id="start-mode-remote" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('REMOTE')">🔎 REMOTE SHOPPING</button>
+          <button id="start-mode-online" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('ONLINE')">🛒 ONLINE STORE</button>
+        </div>
+
+        <div id="start-mode-note" class="store-mode-note">
+          Choose a shopping mode. Location permission is requested only if you choose NEAR ME.
+        </div>
+
+        <label for="start-store">Store</label>
 
         <div class="start-store-picker">
 
@@ -2751,16 +2847,19 @@
               id="start-store"
               type="text"
               autocomplete="off"
-              placeholder="Choose a visited store or type a new one"
+              placeholder="Choose a shopping mode first"
               oninput="startStoreInputChanged()"
+              disabled
             >
 
             <button
+              id="start-store-toggle"
               class="start-store-toggle"
               type="button"
               onclick="toggleStartStoreDropdown()"
-              aria-label="Show visited stores"
-              title="Show visited stores"
+              aria-label="Show store suggestions"
+              title="Show store suggestions"
+              disabled
             >
               ▾
             </button>
@@ -2779,7 +2878,7 @@
                 id="start-store-search"
                 type="search"
                 autocomplete="off"
-                placeholder="Search visited stores..."
+                placeholder="Search stores..."
                 oninput="renderVisitedStores()"
               >
             </div>
@@ -2791,6 +2890,15 @@
 
           </div>
 
+        </div>
+
+        <div id="start-google-placeholder" class="store-google-placeholder hidden">
+          Google Places connection will plug into this search component next. Until the API key is configured, saved/visited stores remain available as a safe fallback.
+        </div>
+
+        <div class="store-search-actions">
+          <button id="start-manual-store-button" class="store-secondary-button hidden" type="button" onclick="chooseManualStoreEntry()">＋ ADD MANUALLY</button>
+          <button id="start-online-shortcut" class="store-secondary-button" type="button" onclick="setStartShoppingMode('ONLINE')">🛒 ONLINE STORE</button>
         </div>
 
       </div>
@@ -4525,39 +4633,58 @@
     >
 
       <div id="management-store-editor-title" class="management-editor-title">
-        Add Store
+        Find or Add Store
       </div>
 
-      <label for="management-store-name">Store Name</label>
-      <input id="management-store-name" type="text" autocomplete="off" placeholder="Example: Walmart">
+      <div id="management-store-discovery" class="">
+        <label>Store kind / search mode</label>
+        <div class="management-store-mode-grid">
+          <button id="management-store-mode-near" class="management-store-mode-button" type="button" onclick="setManagementStoreMode('NEAR')">📍 NEAR ME</button>
+          <button id="management-store-mode-remote" class="management-store-mode-button" type="button" onclick="setManagementStoreMode('REMOTE')">🔎 REMOTE SHOPPING</button>
+          <button id="management-store-mode-online" class="management-store-mode-button" type="button" onclick="setManagementStoreMode('ONLINE')">🛒 ONLINE</button>
+        </div>
 
-      <label for="management-store-branch">Branch Name (optional)</label>
-      <input id="management-store-branch" type="text" autocomplete="off" placeholder="Example: Universidad">
+        <div id="management-store-mode-note" class="store-mode-note">
+          NEAR ME is the only mode that requests device location. REMOTE SHOPPING never uses your location.
+        </div>
 
-      <label for="management-store-address">Address (optional)</label>
-      <textarea id="management-store-address" rows="3" autocomplete="street-address" placeholder="Street, neighborhood, city, etc."></textarea>
+        <label for="management-store-google-search">Search Google stores</label>
+        <input id="management-store-google-search" type="search" autocomplete="off" placeholder="Choose a mode first" disabled>
 
-      <label for="management-store-type">Store Type</label>
-      <select id="management-store-type">
-        <option value="Physical">Physical</option>
-        <option value="Online">Online</option>
-        <option value="Manual">Manual</option>
-      </select>
+        <div id="management-google-placeholder" class="store-google-placeholder hidden">
+          This is the Google-backed search slot. The next connection step will wire Places Autocomplete here; the manual form remains the permanent fallback.
+        </div>
 
-      <label for="management-store-notes">Notes (optional)</label>
-      <textarea id="management-store-notes" rows="3" autocomplete="off"></textarea>
-
-      <div class="management-editor-note">
-        Manual entry is the permanent fallback. Google Place ID, coordinates, business status, hours, and Maps URL stay blank for now and will be populated by later V5 location stages.
+        <button id="management-open-manual-store" class="management-save-button hidden" type="button" style="margin-top:12px;width:100%;" onclick="openManagementManualStoreFields()">＋ CAN'T FIND IT? ADD MANUALLY</button>
       </div>
 
-      <div class="management-editor-actions">
-        <button class="management-cancel-button" type="button" onclick="cancelManagementStoreEdit()">
-          CANCEL
-        </button>
-        <button id="management-save-store-button" class="management-save-button" type="button" onclick="saveManagementStoreEdit()">
-          SAVE STORE
-        </button>
+      <div id="management-store-manual-fields" class="hidden">
+        <label for="management-store-name">Store Name</label>
+        <input id="management-store-name" type="text" autocomplete="off" placeholder="Example: Walmart">
+
+        <label for="management-store-branch">Branch Name (optional)</label>
+        <input id="management-store-branch" type="text" autocomplete="off" placeholder="Example: Universidad">
+
+        <label for="management-store-address">Address (optional)</label>
+        <textarea id="management-store-address" rows="3" autocomplete="street-address" placeholder="Street, neighborhood, city, etc."></textarea>
+
+        <input id="management-store-type" type="hidden" value="Physical">
+
+        <label for="management-store-notes">Notes (optional)</label>
+        <textarea id="management-store-notes" rows="3" autocomplete="off"></textarea>
+
+        <div class="management-editor-note">
+          Manual is a data source, not a store type. Stores saved here are Physical or Online; Google-specific fields stay blank when manual fallback is used.
+        </div>
+
+        <div class="management-editor-actions">
+          <button class="management-cancel-button" type="button" onclick="cancelManagementStoreEdit()">
+            CANCEL
+          </button>
+          <button id="management-save-store-button" class="management-save-button" type="button" onclick="saveManagementStoreEdit()">
+            SAVE STORE
+          </button>
+        </div>
       </div>
 
     </div>
@@ -4986,6 +5113,9 @@
   let cashEditingAllocationId = "";
 
   let visitedStores = [];
+  let startShoppingMode = "";
+  let startLocationSnapshot = null;
+  let managementStoreMode = "";
   let visitedStoresLoadedFromTrips = false;
 
   let historyTrips = [];
@@ -5296,6 +5426,11 @@
 
 
   async function startNewTrip() {
+
+    if (!startShoppingMode) {
+      fail("Choose Near Me, Remote Shopping, or Online Store first.");
+      return;
+    }
 
     const store =
       document.getElementById(
@@ -5886,6 +6021,96 @@
   }
 
 
+  function updateStartModeButtons() {
+    ["NEAR", "REMOTE", "ONLINE"].forEach(mode => {
+      const id = "start-mode-" + mode.toLowerCase();
+      const button = document.getElementById(id);
+      if (button) {
+        button.classList.toggle("selected", startShoppingMode === mode);
+      }
+    });
+  }
+
+  async function setStartShoppingMode(mode) {
+    startShoppingMode = mode;
+    updateStartModeButtons();
+    closeStartStoreDropdown();
+
+    const storeInput = document.getElementById("start-store");
+    const toggle = document.getElementById("start-store-toggle");
+    const note = document.getElementById("start-mode-note");
+    const googleNote = document.getElementById("start-google-placeholder");
+    const manualButton = document.getElementById("start-manual-store-button");
+
+    storeInput.disabled = false;
+    toggle.disabled = false;
+    manualButton.classList.remove("hidden");
+    googleNote.classList.remove("hidden");
+
+    if (mode === "NEAR") {
+      storeInput.placeholder = "Search nearby stores by name, branch, or address";
+      note.textContent = "Near Me uses your device location only while this app is active. You can still search for any store.";
+      note.className = "store-mode-note";
+      await requestNearMeLocation();
+    } else if (mode === "REMOTE") {
+      startLocationSnapshot = null;
+      storeInput.placeholder = "Search store, branch, neighborhood, city, or address";
+      note.textContent = "Remote Shopping does not request or use your device location.";
+      note.className = "store-mode-note success";
+      storeInput.focus();
+    } else {
+      startLocationSnapshot = null;
+      storeInput.placeholder = "Enter or choose the online merchant";
+      note.textContent = "Online Store does not use geolocation. Receipt/document import will be added in the later OCR stage.";
+      note.className = "store-mode-note success";
+      googleNote.classList.add("hidden");
+      storeInput.focus();
+    }
+  }
+
+  function requestNearMeLocation() {
+    const note = document.getElementById("start-mode-note");
+
+    if (!navigator.geolocation) {
+      note.textContent = "This browser does not provide geolocation. You can still search or add the store manually.";
+      note.className = "store-mode-note error";
+      return Promise.resolve(null);
+    }
+
+    note.textContent = "Requesting your location for Near Me…";
+    note.className = "store-mode-note";
+
+    return new Promise(resolve => {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          startLocationSnapshot = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          };
+          note.textContent = "Location ready. Nearby Google results will be biased around your current position once Places is connected.";
+          note.className = "store-mode-note success";
+          document.getElementById("start-store").focus();
+          resolve(startLocationSnapshot);
+        },
+        error => {
+          startLocationSnapshot = null;
+          note.textContent = error.code === 1
+            ? "Location permission was not granted. Near Me can still be used as a normal store search, or you can choose Remote Shopping."
+            : "Your location could not be read right now. Store search and manual fallback remain available.";
+          note.className = "store-mode-note error";
+          document.getElementById("start-store").focus();
+          resolve(null);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 300000
+        }
+      );
+    });
+  }
+
   async function openStartStoreDropdown() {
 
     document.getElementById(
@@ -6047,8 +6272,8 @@
         '<div class="start-store-empty">' +
           (
             query
-              ? "No visited store matches that search."
-              : "No previously visited stores are stored yet."
+              ? "No saved/visited store matches that search yet."
+              : "No saved/visited stores are stored yet."
           ) +
         "</div>";
     }
@@ -6056,8 +6281,8 @@
 
     html +=
       '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
-        '<span class="start-store-option-name">＋ Enter a new store manually</span>' +
-        '<span class="start-store-option-meta">For a store not already listed here.</span>' +
+        '<span class="start-store-option-name">＋ Add store manually</span>' +
+        '<span class="start-store-option-meta">Permanent fallback when the desired store cannot be found.</span>' +
       "</button>";
 
 
@@ -6111,7 +6336,7 @@
     input.focus();
 
     setStatus(
-      "Enter the new store name manually.",
+      "Manual fallback enabled. Enter the store name.",
       "success"
     );
   }
@@ -19547,7 +19772,7 @@
               name,
               branchName: String(row[2] ?? "").trim(),
               address: String(row[3] ?? "").trim(),
-              type: String(row[4] ?? "Manual").trim() || "Manual",
+              type: (String(row[4] ?? "Physical").trim() || "Physical") === "Manual" ? "Physical" : (String(row[4] ?? "Physical").trim() || "Physical"),
               googlePlaceId: String(row[5] ?? "").trim(),
               latitude: row[6] ?? "",
               longitude: row[7] ?? "",
@@ -20525,7 +20750,7 @@
 
     box.innerHTML =
       '<div class="management-section-title">Stores</div>' +
-      '<button class="management-save-button" type="button" style="margin:0 0 12px;width:100%;" onclick="openManagementStoreEditor()">＋ ADD STORE MANUALLY</button>' +
+      '<button class="management-save-button" type="button" style="margin:0 0 12px;width:100%;" onclick="openManagementStoreEditor()">＋ FIND / ADD STORE</button>' +
       (
         rows.length
           ? rows.map(
@@ -20556,7 +20781,7 @@
                 );
               }
             ).join("")
-          : '<div class="management-empty">No saved Stores records yet. Use ADD STORE MANUALLY to create the first one.</div>'
+          : '<div class="management-empty">No saved Stores records yet. Use FIND / ADD STORE to create the first one.</div>'
       );
 
     scrollManagementContentIntoView();
@@ -20575,37 +20800,120 @@
         ? null
         : managementStores[managementEditingStoreIndex];
 
-    document.getElementById(
-      "management-store-editor-title"
-    ).textContent =
-      record
-        ? "Edit Store"
-        : "Add Store Manually";
+    managementStoreMode = "";
+
+    document.getElementById("management-store-editor-title").textContent =
+      record ? "Edit Store" : "Find or Add Store";
 
     document.getElementById("management-store-name").value = record?.name || "";
     document.getElementById("management-store-branch").value = record?.branchName || "";
     document.getElementById("management-store-address").value = record?.address || "";
-    document.getElementById("management-store-type").value = record?.type || "Physical";
+    document.getElementById("management-store-type").value = record?.type === "Online" ? "Online" : "Physical";
     document.getElementById("management-store-notes").value = record?.notes || "";
 
-    document.getElementById(
-      "management-save-store-button"
-    ).textContent =
-      record
-        ? "SAVE CHANGES"
-        : "SAVE STORE";
+    document.getElementById("management-store-google-search").value = "";
+    document.getElementById("management-store-google-search").disabled = true;
+    document.getElementById("management-store-google-search").placeholder = "Choose a mode first";
+    document.getElementById("management-open-manual-store").classList.add("hidden");
+    document.getElementById("management-google-placeholder").classList.add("hidden");
 
-    show(
-      "management-store-editor"
-    );
+    ["near", "remote", "online"].forEach(key => {
+      document.getElementById("management-store-mode-" + key)?.classList.remove("selected");
+    });
 
-    document.getElementById(
-      "management-store-editor"
-    ).scrollIntoView({
+    document.getElementById("management-save-store-button").textContent =
+      record ? "SAVE CHANGES" : "SAVE STORE";
+
+    if (record) {
+      managementStoreMode = record.type === "Online" ? "ONLINE" : "REMOTE";
+      document.getElementById("management-store-manual-fields").classList.remove("hidden");
+      document.getElementById("management-store-discovery").classList.add("hidden");
+    } else {
+      document.getElementById("management-store-manual-fields").classList.add("hidden");
+      document.getElementById("management-store-discovery").classList.remove("hidden");
+    }
+
+    show("management-store-editor");
+
+    document.getElementById("management-store-editor").scrollIntoView({
       behavior: "smooth",
       block: "start"
     });
   }
+
+  function setManagementStoreMode(mode) {
+    managementStoreMode = mode;
+
+    ["NEAR", "REMOTE", "ONLINE"].forEach(candidate => {
+      const button = document.getElementById("management-store-mode-" + candidate.toLowerCase());
+      button?.classList.toggle("selected", candidate === mode);
+    });
+
+    const search = document.getElementById("management-store-google-search");
+    const manual = document.getElementById("management-open-manual-store");
+    const googlePlaceholder = document.getElementById("management-google-placeholder");
+    const note = document.getElementById("management-store-mode-note");
+
+    search.disabled = false;
+    manual.classList.remove("hidden");
+
+    if (mode === "NEAR") {
+      search.placeholder = "Search nearby stores by name, branch, or address";
+      googlePlaceholder.classList.remove("hidden");
+      note.textContent = "Near Me will request geolocation only when selected. Google Places connection is the next wiring step.";
+      note.className = "store-mode-note";
+      requestManagementNearMeLocation();
+    } else if (mode === "REMOTE") {
+      search.placeholder = "Search store, branch, city, neighborhood, or address";
+      googlePlaceholder.classList.remove("hidden");
+      note.textContent = "Remote Shopping never requests or uses your device location.";
+      note.className = "store-mode-note success";
+      search.focus();
+    } else {
+      search.placeholder = "Search or enter online merchant";
+      googlePlaceholder.classList.add("hidden");
+      note.textContent = "Online stores do not use geolocation. OCR/import comes in the later online-purchase stage.";
+      note.className = "store-mode-note success";
+      document.getElementById("management-store-type").value = "Online";
+      search.focus();
+    }
+  }
+
+  function requestManagementNearMeLocation() {
+    const note = document.getElementById("management-store-mode-note");
+    if (!navigator.geolocation) {
+      note.textContent = "This browser does not provide geolocation. Remote search and manual fallback are still available.";
+      note.className = "store-mode-note error";
+      return;
+    }
+    note.textContent = "Requesting location for Near Me…";
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        note.textContent = "Location ready (accuracy about " + Math.round(position.coords.accuracy) + " m). It will bias nearby Google results once Places is connected.";
+        note.className = "store-mode-note success";
+        document.getElementById("management-store-google-search").focus();
+      },
+      error => {
+        note.textContent = error.code === 1
+          ? "Location permission was not granted. You can use Remote Shopping or manual fallback instead."
+          : "Location could not be read. Remote search and manual fallback remain available.";
+        note.className = "store-mode-note error";
+        document.getElementById("management-store-google-search").focus();
+      },
+      { enableHighAccuracy:false, timeout:10000, maximumAge:300000 }
+    );
+  }
+
+  function openManagementManualStoreFields() {
+    const type = managementStoreMode === "ONLINE" ? "Online" : "Physical";
+    document.getElementById("management-store-type").value = type;
+    document.getElementById("management-store-manual-fields").classList.remove("hidden");
+    document.getElementById("management-store-name").value =
+      String(document.getElementById("management-store-google-search").value || "").trim();
+    document.getElementById("management-store-name").focus();
+    document.getElementById("management-store-manual-fields").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
 
 
   function editManagementStore(index) {
@@ -20669,7 +20977,7 @@
     const name = String(document.getElementById("management-store-name").value || "").trim();
     const branchName = String(document.getElementById("management-store-branch").value || "").trim();
     const address = String(document.getElementById("management-store-address").value || "").trim();
-    const type = String(document.getElementById("management-store-type").value || "Manual").trim();
+    const type = String(document.getElementById("management-store-type").value || "Physical").trim();
     const notes = String(document.getElementById("management-store-notes").value || "").trim();
 
     if (!name) {
