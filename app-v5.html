@@ -2893,8 +2893,8 @@
         </div>
 
         <div id="start-google-placeholder" class="store-google-placeholder hidden">
-          Google Places search is available in this V5 test build. Insert your Maps Demo Key into the MAPS_DEMO_KEY constant in this file before committing.
-          
+          Google Places search is available in this V5 test build. Enter the demo key once on this device; it is stored locally in this browser and is not committed to GitHub.
+          <button type="button" class="store-secondary-button" style="margin-top:10px;width:100%;" onclick="openMapsDemoKeySetup()">⚙️ GOOGLE PLACES KEY</button>
         </div>
 
         <div class="store-search-actions">
@@ -4693,7 +4693,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2B. The live app is still index.html.
+    V5 Google Places Step 2B — local key storage. The live app is still index.html.
   </div>
 
 </div>
@@ -5151,7 +5151,7 @@
   let managementPaymentMethods = [];
   let managementStores = [];
 
-  const MAPS_DEMO_KEY = "";
+  const MAPS_DEMO_KEY_STORAGE = "obsidianShoppingMapsDemoKey";
   let googleMapsLoadPromise = null;
   let googlePlacesReady = false;
   let startGooglePredictions = [];
@@ -6346,16 +6346,23 @@
 
 
   function getMapsDemoKey() {
-    const key = String(MAPS_DEMO_KEY || "").trim();
-    if (!key || key === "PASTE_YOUR_MAPS_DEMO_KEY_HERE") return "";
-    return key;
+    try {
+      return String(localStorage.getItem(MAPS_DEMO_KEY_STORAGE) || "").trim();
+    } catch (error) {
+      return "";
+    }
   }
 
   function openMapsDemoKeySetup() {
-    showErrorToast(
-      "Google Places key not configured",
-      "Open app-v5.html in VS Code and replace PASTE_YOUR_MAPS_DEMO_KEY_HERE in the MAPS_DEMO_KEY constant."
-    );
+    const input = document.getElementById("maps-demo-key-input");
+    input.value = getMapsDemoKey();
+    const status = document.getElementById("maps-key-status");
+    status.textContent = getMapsDemoKey()
+      ? "A demo key is already stored on this device. Saving a new one will replace it."
+      : "Paste the demo key you created on Google Maps Platform.";
+    status.className = "store-mode-note";
+    show("maps-key-overlay");
+    setTimeout(() => input.focus(), 80);
   }
 
   function closeMapsDemoKeySetup() {
@@ -6363,7 +6370,33 @@
   }
 
   async function saveMapsDemoKeySetup() {
-    openMapsDemoKeySetup();
+    const input = document.getElementById("maps-demo-key-input");
+    const key = String(input.value || "").trim();
+    const status = document.getElementById("maps-key-status");
+    if (!key) {
+      status.textContent = "Paste the demo key first.";
+      status.className = "store-mode-note error";
+      return;
+    }
+    try {
+      localStorage.setItem(MAPS_DEMO_KEY_STORAGE, key);
+      googleMapsLoadPromise = null;
+      googlePlacesReady = false;
+      status.textContent = "Connecting to Google Places…";
+      status.className = "store-mode-note";
+      await ensureGooglePlacesReady(false);
+      status.textContent = "Google Places connected on this device.";
+      status.className = "store-mode-note success";
+      setTimeout(() => {
+        closeMapsDemoKeySetup();
+        showSuccessToast("Google Places connected", "The demo key stays only on this browser/device.");
+        const query = String(document.getElementById("start-store-search")?.value || document.getElementById("start-store")?.value || "").trim();
+        if (query) scheduleStartGoogleAutocomplete(query, 0);
+      }, 450);
+    } catch (error) {
+      status.textContent = "Google Places could not connect with this key. Check the key and try again.";
+      status.className = "store-mode-note error";
+    }
   }
 
   async function ensureGooglePlacesReady(promptIfMissing = false) {
