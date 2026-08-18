@@ -2705,6 +2705,23 @@
       overflow:auto;
     }
 
+    /* Step 2G: the modal controls stay fixed, but the store card itself is the
+       only strong visual rectangle. This makes the Tinder-style motion read as
+       the whole store card moving rather than content sliding inside a frame. */
+    .nearby-browser-card {
+      background:transparent;
+      border:0;
+      box-shadow:none;
+      overflow:visible;
+      padding:0 2px 6px;
+    }
+
+    .nearby-browser-card > .change-title,
+    .nearby-browser-card > .change-body {
+      padding-left:10px;
+      padding-right:10px;
+    }
+
     .nearby-choice-actions {
       display:grid;
       gap:10px;
@@ -2742,15 +2759,16 @@
     /* The shell itself is the full visible store card. This is intentional: the
        border, map, details and buttons all tilt/throw together like a dating-app deck. */
     .nearby-card-shell {
-      border:1px solid #4a4f60;
-      border-radius:18px;
+      border:1px solid #5b4a71;
+      border-radius:22px;
       overflow:hidden;
       background:#181b23;
-      box-shadow:0 16px 36px rgba(0,0,0,.34);
-      transform-origin:50% 92%;
+      box-shadow:0 18px 42px rgba(0,0,0,.44), 0 0 0 1px rgba(143,82,207,.10);
+      transform-origin:50% 94%;
       will-change:transform,opacity;
       min-height:414px;
       backface-visibility:hidden;
+      touch-action:pan-y;
     }
 
     .nearby-card-stage.slide-next .nearby-card-shell {
@@ -2826,63 +2844,45 @@
 
     .nearby-mini-map-wrap {
       position:relative;
-      height:172px;
-      background:#242936;
-      overflow:hidden;
-      cursor:pointer;
-    }
-
-    .nearby-mini-map-wrap::after {
-      content:"Tap to open map";
-      position:absolute;
-      right:10px;
-      bottom:10px;
-      z-index:7;
-      padding:6px 9px;
-      border-radius:999px;
-      background:rgba(17,19,24,.84);
-      color:#f0e6ff;
-      font-size:11px;
-      font-weight:800;
-      pointer-events:none;
-      backdrop-filter:blur(5px);
-    }
-
-    .nearby-mini-map {
-      width:100%;
-      height:100%;
-      pointer-events:none;
-    }
-
-    .nearby-mini-map-fallback {
-      width:100%;
-      height:100%;
+      min-height:150px;
       display:flex;
       align-items:center;
       justify-content:center;
-      text-align:center;
-      padding:18px;
-      box-sizing:border-box;
-      color:#c9ced8;
       background:
-        linear-gradient(90deg,rgba(180,108,255,.08) 1px,transparent 1px),
-        linear-gradient(rgba(180,108,255,.08) 1px,transparent 1px),
-        #202532;
-      background-size:28px 28px;
-      font-size:12px;
-      line-height:1.45;
+        radial-gradient(circle at 50% 38%, rgba(143,82,207,.23), transparent 34%),
+        linear-gradient(145deg,#252a36,#151820);
+      border-bottom:1px solid #373c4b;
+      cursor:pointer;
+      user-select:none;
     }
 
+    .nearby-mini-map-wrap:active {
+      background:linear-gradient(145deg,#2b3040,#181b24);
+    }
 
-    .nearby-map-pin {
-      position:absolute;
-      left:50%;
-      top:50%;
-      transform:translate(-50%,-100%);
-      z-index:5;
-      font-size:34px;
-      filter:drop-shadow(0 3px 3px rgba(0,0,0,.65));
-      pointer-events:none;
+    .nearby-map-launch-inner {
+      text-align:center;
+      padding:22px 18px;
+    }
+
+    .nearby-map-launch-pin {
+      display:block;
+      font-size:38px;
+      line-height:1;
+      margin-bottom:8px;
+      filter:drop-shadow(0 6px 12px rgba(0,0,0,.35));
+    }
+
+    .nearby-map-launch-title {
+      color:#f2eaff;
+      font-weight:900;
+      letter-spacing:.02em;
+    }
+
+    .nearby-map-launch-sub {
+      color:#aeb5c6;
+      font-size:12px;
+      margin-top:4px;
     }
 
     .nearby-card-body {
@@ -5678,6 +5678,7 @@
   let cashEditingAllocationId = "";
 
   let visitedStores = [];
+  let savedStoreDirectory = [];
   let startShoppingMode = "";
   let startLocationSnapshot = null;
   let managementStoreMode = "";
@@ -6550,6 +6551,8 @@
         }))
         .filter(store => store.active && store.name && String(store.type).toLowerCase() !== "online");
 
+      savedStoreDirectory = savedDirectoryStores.map(store => ({...store}));
+
       const combined = Array.from(ordinaryStores.values());
       const seenSaved = new Set();
       savedDirectoryStores.forEach(store => {
@@ -6578,12 +6581,43 @@
   }
 
 
+  async function loadSavedStoreDirectoryDirect() {
+    if (!accessToken) {
+      savedStoreDirectory = [];
+      return [];
+    }
+    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:M`, "UNFORMATTED_VALUE");
+    savedStoreDirectory = (data.values || []).map((row,index) => ({
+      sheetRow:index + 2,
+      storeId:String(row[0] ?? "").trim(),
+      name:String(row[1] ?? "").trim(),
+      branchName:String(row[2] ?? "").trim(),
+      address:String(row[3] ?? "").trim(),
+      type:String(row[4] ?? "Physical").trim() || "Physical",
+      googlePlaceId:String(row[5] ?? "").trim(),
+      latitude:row[6] ?? "",
+      longitude:row[7] ?? "",
+      businessStatus:String(row[8] ?? "").trim(),
+      openingHours:String(row[9] ?? "").trim(),
+      googleMapsUrl:String(row[10] ?? "").trim(),
+      notes:String(row[11] ?? "").trim(),
+      active:row[12] === true || String(row[12] ?? "").toUpperCase() === "TRUE" || Number(row[12]) === 1,
+      lastUsed:0,
+      source:"saved"
+    })).filter(store => store.active && store.name && String(store.type).toLowerCase() !== "online");
+    return savedStoreDirectory;
+  }
+
   async function refreshStartStoreDirectory() {
-    // Stores can be created in Management or during another trip after the first
-    // directory load. Force a fresh Stores/Trips read whenever a search mode opens
-    // so manually saved branches never disappear behind stale in-memory data.
+    // Saved Stores are loaded independently of Products/Trips so a manual branch can
+    // never vanish just because another source is stale or Google Places is failing.
     visitedStoresLoadedFromTrips = false;
-    await loadVisitedStoresFromTrips();
+    const results = await Promise.allSettled([
+      loadSavedStoreDirectoryDirect(),
+      loadVisitedStoresFromTrips()
+    ]);
+    const savedFailure = results[0].status === "rejected";
+    if (savedFailure) console.warn("Saved Stores directory could not refresh", results[0].reason);
     renderVisitedStores();
   }
 
@@ -6827,20 +6861,41 @@
     return score;
   }
 
+  function googlePredictionLabel(entry) {
+    const prediction = entry?.prediction || entry;
+    const explicit = String(entry?.label || "").trim();
+    if (explicit && explicit !== "undefined" && explicit !== "null") return explicit;
+    try {
+      const value = prediction?.text?.toString?.();
+      if (value && value !== "undefined" && value !== "null") return String(value).trim();
+    } catch (_) {}
+    return "Google place";
+  }
+
   function renderVisitedStores() {
     const list = document.getElementById("start-store-list");
     if (!list) return;
 
     const query = String(document.getElementById("start-store-search")?.value || "").trim();
 
-    const filtered = visitedStores
+    const combinedDirectory = [];
+    const seenDirectoryKeys = new Set();
+    [...savedStoreDirectory, ...visitedStores].forEach(store => {
+      if (!store?.name) return;
+      const key = [normalizeStore(store.name), normalizeStore(store.branchName), normalizeStore(store.address)].join("|");
+      if (seenDirectoryKeys.has(key)) return;
+      seenDirectoryKeys.add(key);
+      combinedDirectory.push(store);
+    });
+
+    const filtered = combinedDirectory
       .map(store => ({store, score:savedStoreSearchScore(store, query)}))
       .filter(item => item.score > 0)
       .sort((a,b) => {
         if (query && b.score !== a.score) return b.score - a.score;
-        if ((b.store.lastUsed || 0) !== (a.store.lastUsed || 0)) return (b.store.lastUsed || 0) - (a.store.lastUsed || 0);
         if (a.store.source === "saved" && b.store.source !== "saved") return -1;
         if (b.store.source === "saved" && a.store.source !== "saved") return 1;
+        if ((b.store.lastUsed || 0) !== (a.store.lastUsed || 0)) return (b.store.lastUsed || 0) - (a.store.lastUsed || 0);
         return String(a.store.name || "").localeCompare(String(b.store.name || ""));
       })
       .slice(0,40)
@@ -6870,8 +6925,8 @@
 
     if (startGooglePredictions.length) {
       html += '<div class="start-store-empty" style="padding-top:10px;padding-bottom:6px;">Google Maps results</div>';
-      html += startGooglePredictions.map((prediction,index) => {
-        const text = String(prediction?.text?.toString?.() || prediction?.text || "Google place");
+      html += startGooglePredictions.map((entry,index) => {
+        const text = googlePredictionLabel(entry);
         return '<button class="start-store-option" type="button" onclick="selectStartGooglePlace(' + index + ')">' +
           '<span class="start-store-option-name">' + escapeHtml(text) + '</span>' +
           '<span class="start-store-option-meta">Google Maps</span>' +
@@ -7018,11 +7073,29 @@
           lng: startLocationSnapshot.longitude
         };
       }
-      const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      let response;
+      try {
+        response = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      } catch (firstError) {
+        // The demo build occasionally loses the very first Places request while the
+        // library is warming up. Retry once internally instead of making the user back out.
+        await new Promise(resolve => setTimeout(resolve, 650));
+        await ensureGooglePlacesReady(false);
+        response = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      }
+      const suggestions = response?.suggestions || [];
       if (requestId !== newestStartGoogleRequestId) return;
-      startGooglePredictions = (suggestions || [])
-        .map(item => item.placePrediction)
+      startGooglePredictions = suggestions
+        .map(item => item?.placePrediction)
         .filter(Boolean)
+        .map(prediction => {
+          let label = "Google place";
+          try {
+            const candidate = prediction?.text?.toString?.();
+            if (candidate && candidate !== "undefined" && candidate !== "null") label = String(candidate).trim();
+          } catch (_) {}
+          return {prediction, label};
+        })
         .slice(0, 8);
       renderVisitedStores();
     } catch (error) {
@@ -7043,7 +7116,8 @@
   }
 
   async function selectStartGooglePlace(index) {
-    const prediction = startGooglePredictions[index];
+    const entry = startGooglePredictions[index];
+    const prediction = entry?.prediction || entry;
     if (!prediction) return;
     try {
       setStatus("Loading Google store details...", "working");
@@ -7057,7 +7131,8 @@
           fields: ["displayName", "formattedAddress", "location", "googleMapsURI"]
         });
       }
-      const name = String(place.displayName || prediction.text?.toString?.() || "Google store").trim();
+      const fallbackLabel = googlePredictionLabel(entry);
+      const name = String(place.displayName || fallbackLabel || "Google store").trim();
       const address = String(place.formattedAddress || "").trim();
       const displayValue = [name, address].filter(Boolean).join(" — ");
       const location = place.location;
@@ -7287,8 +7362,17 @@
         language: "es-MX",
         region: "mx"
       };
-      const { places } = await Place.searchNearby(request);
-      nearbyStorePlaces = Array.isArray(places) ? places.filter(p => p?.location) : [];
+      let nearbyResponse;
+      try {
+        nearbyResponse = await Place.searchNearby(request);
+      } catch (firstError) {
+        subtitle.textContent = "Google Places is warming up. Retrying nearby stores once…";
+        await new Promise(resolve => setTimeout(resolve, 800));
+        await ensureGooglePlacesReady(false);
+        nearbyResponse = await Place.searchNearby(request);
+      }
+      const places = nearbyResponse?.places || [];
+      nearbyStorePlaces = Array.isArray(places) ? places.filter(p => p?.location && p?.displayName) : [];
       nearbyStoreIndex = 0;
       if (!nearbyStorePlaces.length) {
         subtitle.textContent = "Google did not return nearby retail stores in this radius.";
@@ -7344,8 +7428,8 @@
 
     host.innerHTML =
       '<div class="nearby-card-shell" data-nearby-index="' + nearbyStoreIndex + '">' +
-        '<div class="nearby-mini-map-wrap" role="button" tabindex="0" aria-label="Open larger map" onclick="openNearbyFullMap()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openNearbyFullMap();}">' +
-          '<div id="nearby-mini-map" class="nearby-mini-map"></div><div class="nearby-map-pin">📍</div>' +
+        '<div class="nearby-mini-map-wrap" role="button" tabindex="0" aria-label="Open interactive map" onclick="openNearbyFullMap()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openNearbyFullMap();}">' +
+          '<div class="nearby-map-launch-inner"><span class="nearby-map-launch-pin">📍</span><div class="nearby-map-launch-title">VIEW INTERACTIVE MAP</div><div class="nearby-map-launch-sub">Tap to see nearby Google stores and choose a pin</div></div>' +
         '</div>' +
         '<div class="nearby-card-body">' +
           '<div class="nearby-card-name">' + escapeHtml(record.name) + '</div>' +
@@ -7368,46 +7452,17 @@
     host.classList.add(direction === "prev" ? "slide-prev" : "slide-next");
     setTimeout(() => host.classList.remove("slide-next","slide-prev"), 360);
 
-    host.onpointerdown = nearbyDeckPointerDown;
-    host.onpointermove = nearbyDeckPointerMove;
-    host.onpointerup = nearbyDeckPointerUp;
-    host.onpointercancel = nearbyDeckPointerUp;
-
-    // Do not create a Google map while the deck is still animating. Repeated map
-    // construction on every swipe was making the demo-key build flaky. Only render
-    // after the card has settled and only if this card is still current.
-    const expectedIndex = nearbyStoreIndex;
-    setTimeout(() => renderNearbyMiniMapStable(place, expectedIndex), 390);
-  }
-
-  async function renderNearbyMiniMapStable(place, expectedIndex) {
-    if (expectedIndex !== nearbyStoreIndex) return;
-    const shell = document.querySelector('#nearby-card-host .nearby-card-shell');
-    const mapEl = document.getElementById("nearby-mini-map");
-    if (!shell || !mapEl || Number(shell.dataset.nearbyIndex) !== expectedIndex) return;
-    const coords = placeLocationNumbers(place);
-    if (!Number.isFinite(Number(coords.latitude)) || !Number.isFinite(Number(coords.longitude))) {
-      mapEl.className = "nearby-mini-map-fallback";
-      mapEl.textContent = "Map coordinates are unavailable. Tap here to open the store map options.";
-      return;
+    const activeCardShell = host.querySelector(".nearby-card-shell");
+    if (activeCardShell) {
+      activeCardShell.onpointerdown = nearbyDeckPointerDown;
+      activeCardShell.onpointermove = nearbyDeckPointerMove;
+      activeCardShell.onpointerup = nearbyDeckPointerUp;
+      activeCardShell.onpointercancel = nearbyDeckPointerUp;
     }
-    try {
-      await ensureGooglePlacesReady(false);
-      const { Map } = await google.maps.importLibrary("maps");
-      if (expectedIndex !== nearbyStoreIndex || !document.body.contains(mapEl)) return;
-      nearbyStoreMap = new Map(mapEl, {
-        center:{lat:Number(coords.latitude), lng:Number(coords.longitude)},
-        zoom:16,
-        disableDefaultUI:true,
-        gestureHandling:"none",
-        clickableIcons:false,
-        keyboardShortcuts:false
-      });
-    } catch (error) {
-      console.warn("Mini map could not render", error);
-      mapEl.className = "nearby-mini-map-fallback";
-      mapEl.textContent = "Google map preview is temporarily unavailable. Tap to retry or open Google Maps.";
-    }
+
+    // Step 2G intentionally does not instantiate a Google Map inside every card.
+    // One interactive full map is created only when the user asks for it, which
+    // greatly reduces Maps JS churn on the demo key and on slower phones.
   }
 
   function nearbyDeckInteractiveTarget(target) {
@@ -7501,6 +7556,10 @@
   }
 
   async function openNearbyFullMap() {
+    window.gm_authFailure = function() {
+      const subtitle = document.getElementById("nearby-map-subtitle");
+      if (subtitle) subtitle.textContent = "Google could not authorize the in-app map right now. Store selection still works; use OPEN IN GOOGLE MAPS as the fallback.";
+    };
     const selectedPlace = nearbyStorePlaces[nearbyStoreIndex];
     if (!selectedPlace) return;
     const selectedRecord = nearbyPlaceRecord(selectedPlace);
@@ -7723,6 +7782,10 @@
         [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
       );
       visitedStores.unshift(savedEntry);
+      savedStoreDirectory = savedStoreDirectory.filter(existing =>
+        [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
+      );
+      savedStoreDirectory.unshift({...savedEntry});
       const displayValue = [name, branchName, address].filter(Boolean).join(" — ");
       document.getElementById("start-store").value = displayValue;
       document.getElementById("start-store-search").value = displayValue;
