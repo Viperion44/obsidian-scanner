@@ -2695,6 +2695,246 @@
       }
     }
 
+
+    /* V5 Step 2C — Nearby-store discovery cards */
+    .nearby-choice-card,
+    .nearby-browser-card,
+    .start-manual-store-card {
+      width:min(94vw,560px);
+      max-height:90vh;
+      overflow:auto;
+    }
+
+    .nearby-choice-actions {
+      display:grid;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .nearby-choice-actions button {
+      min-height:58px;
+      border:0;
+      border-radius:14px;
+      font-weight:900;
+    }
+
+    .nearby-choice-primary {
+      background:#6d36a6;
+      color:#fff;
+    }
+
+    .nearby-choice-secondary {
+      background:#343a49;
+      color:#fff;
+    }
+
+    .nearby-card-stage {
+      position:relative;
+      margin-top:12px;
+      border:1px solid #4a4f60;
+      border-radius:18px;
+      overflow:hidden;
+      background:#181b23;
+      touch-action:pan-y;
+    }
+
+    .nearby-mini-map-wrap {
+      position:relative;
+      height:172px;
+      background:#242936;
+      overflow:hidden;
+    }
+
+    .nearby-mini-map {
+      width:100%;
+      height:100%;
+    }
+
+    .nearby-map-pin {
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-100%);
+      z-index:5;
+      font-size:34px;
+      filter:drop-shadow(0 3px 3px rgba(0,0,0,.65));
+      pointer-events:none;
+    }
+
+    .nearby-card-body {
+      padding:16px;
+    }
+
+    .nearby-card-name {
+      font-size:21px;
+      font-weight:900;
+      line-height:1.18;
+      color:#fff;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-card-type {
+      margin-top:5px;
+      color:#b990e6;
+      font-size:12px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+
+    .nearby-card-address {
+      margin-top:10px;
+      color:#d2d5dc;
+      font-size:14px;
+      line-height:1.4;
+    }
+
+    .nearby-card-status {
+      display:inline-block;
+      margin-top:11px;
+      padding:6px 9px;
+      border-radius:999px;
+      background:#253b2e;
+      color:#9ee3b6;
+      font-size:12px;
+      font-weight:900;
+    }
+
+
+
+    .nearby-card-status.closed {
+      background:#48252a;
+      color:#ffadb5;
+    }
+
+    .nearby-maps-link {
+      display:inline-block;
+      margin-top:10px;
+      color:#c696ff;
+      font-size:12px;
+      font-weight:800;
+      text-decoration:none;
+    }
+
+    .nearby-card-hours {
+      margin-top:12px;
+      border-top:1px solid #343946;
+      padding-top:10px;
+      color:#bfc4cf;
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .nearby-card-hours summary {
+      cursor:pointer;
+      color:#d9c5ef;
+      font-weight:800;
+    }
+
+    .nearby-card-hours-list {
+      margin-top:8px;
+      display:grid;
+      gap:4px;
+    }
+
+    .nearby-card-select {
+      width:100%;
+      margin-top:14px;
+      min-height:52px;
+      border:0;
+      border-radius:13px;
+      background:#6d36a6;
+      color:#fff;
+      font-weight:900;
+    }
+
+    .nearby-carousel-nav {
+      display:grid;
+      grid-template-columns:48px 1fr 48px;
+      align-items:center;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .nearby-carousel-arrow {
+      height:42px;
+      border:1px solid #4b5160;
+      border-radius:12px;
+      background:#2c313d;
+      color:#fff;
+      font-size:22px;
+      font-weight:900;
+    }
+
+    .nearby-carousel-count {
+      text-align:center;
+      color:#c9ced8;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .nearby-dots {
+      display:flex;
+      justify-content:center;
+      flex-wrap:wrap;
+      gap:5px;
+      margin-top:8px;
+    }
+
+    .nearby-dot {
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:#555c6b;
+    }
+
+    .nearby-dot.active {
+      background:#b46cff;
+      transform:scale(1.25);
+    }
+
+    .nearby-browser-footer {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:9px;
+      margin-top:14px;
+    }
+
+    .nearby-loading,
+    .nearby-empty {
+      padding:26px 14px;
+      text-align:center;
+      color:#c8ccd5;
+      line-height:1.45;
+    }
+
+    .start-manual-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .start-manual-grid .wide {
+      grid-column:1 / -1;
+    }
+
+    .start-manual-store-card input,
+    .start-manual-store-card textarea,
+    .start-manual-store-card select {
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    @media(max-width:520px) {
+      .nearby-browser-footer,
+      .start-manual-grid {
+        grid-template-columns:1fr;
+      }
+      .start-manual-grid .wide {
+        grid-column:auto;
+      }
+    }
+
 </style>
 </head>
 
@@ -2705,7 +2945,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 payment + PDF privacy test
+    V5 store discovery — nearby cards + manual fallback
   </div>
 
   <button
@@ -4693,7 +4933,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2B — local key storage. The live app is still index.html.
+    V5 Google Places Step 2C — nearby store cards + manual fallback. The live app is still index.html.
   </div>
 
 </div>
@@ -4988,6 +5228,100 @@
   </div>
 </div>
 
+
+<div id="nearby-choice-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-choice-title">
+  <div class="change-card nearby-choice-card">
+    <div id="nearby-choice-title" class="change-title">NEAR ME</div>
+    <div class="change-body">How would you like to choose the store?</div>
+    <div id="nearby-choice-location" class="store-mode-note">Your current location will only be used for nearby results.</div>
+    <div class="nearby-choice-actions">
+      <button id="nearby-show-button" class="nearby-choice-primary" type="button" onclick="showNearbyStores()">📍 SHOW NEARBY STORES</button>
+      <button class="nearby-choice-secondary" type="button" onclick="useNearMeSearchByName()">🔎 SEARCH BY NAME</button>
+    </div>
+    <div class="change-actions" style="margin-top:12px;">
+      <button class="change-cancel" type="button" onclick="closeNearbyChoice()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<div id="nearby-stores-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-stores-title">
+  <div class="change-card nearby-browser-card">
+    <div id="nearby-stores-title" class="change-title">STORES NEAR YOU</div>
+    <div id="nearby-stores-subtitle" class="change-body">Looking for stores around your current position…</div>
+    <div id="nearby-card-host" class="nearby-card-stage">
+      <div class="nearby-loading">Searching Google Maps…</div>
+    </div>
+    <div id="nearby-carousel-nav" class="nearby-carousel-nav hidden">
+      <button class="nearby-carousel-arrow" type="button" onclick="nearbyCardPrevious()">‹</button>
+      <div id="nearby-carousel-count" class="nearby-carousel-count">—</div>
+      <button class="nearby-carousel-arrow" type="button" onclick="nearbyCardNext()">›</button>
+    </div>
+    <div id="nearby-dots" class="nearby-dots"></div>
+    <div class="nearby-browser-footer">
+      <button class="store-secondary-button" type="button" onclick="useNearMeSearchByName()">🔎 SEARCH BY NAME</button>
+      <button class="store-secondary-button" type="button" onclick="chooseManualStoreEntry()">＋ ADD STORE MANUALLY</button>
+    </div>
+    <div class="change-actions" style="margin-top:10px;">
+      <button class="change-cancel" type="button" onclick="closeNearbyStores()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<div id="start-manual-store-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="start-manual-store-title">
+  <div class="change-card start-manual-store-card">
+    <div id="start-manual-store-title" class="change-title">ADD STORE MANUALLY</div>
+    <div class="change-body">Use this only when Google cannot find the store. Fill what you know; only Store Name is required.</div>
+    <div class="start-manual-grid">
+      <div class="wide">
+        <label for="start-manual-name">Store name *</label>
+        <input id="start-manual-name" type="text" autocomplete="organization" placeholder="Example: Abarrotes Lupita">
+      </div>
+      <div class="wide">
+        <label for="start-manual-branch">Branch / location name</label>
+        <input id="start-manual-branch" type="text" autocomplete="off" placeholder="Example: Del Valle">
+      </div>
+      <div class="wide">
+        <label for="start-manual-address">Full address</label>
+        <textarea id="start-manual-address" rows="3" autocomplete="street-address" placeholder="Street, neighborhood, city, state…"></textarea>
+      </div>
+      <div>
+        <label for="start-manual-business-status">Business status</label>
+        <select id="start-manual-business-status">
+          <option value="">Unknown / not entered</option>
+          <option value="Operational">Operational</option>
+          <option value="Temporarily closed">Temporarily closed</option>
+          <option value="Permanently closed">Permanently closed</option>
+        </select>
+      </div>
+      <div>
+        <label for="start-manual-maps-url">Google Maps / website URL</label>
+        <input id="start-manual-maps-url" type="url" inputmode="url" placeholder="Optional">
+      </div>
+      <div>
+        <label for="start-manual-latitude">Latitude</label>
+        <input id="start-manual-latitude" type="number" inputmode="decimal" step="any" placeholder="Optional">
+      </div>
+      <div>
+        <label for="start-manual-longitude">Longitude</label>
+        <input id="start-manual-longitude" type="number" inputmode="decimal" step="any" placeholder="Optional">
+      </div>
+      <div class="wide">
+        <label for="start-manual-hours">Opening hours</label>
+        <textarea id="start-manual-hours" rows="3" placeholder="Example: Mon–Sat 08:00–22:00; Sun 09:00–20:00"></textarea>
+      </div>
+      <div class="wide">
+        <label for="start-manual-notes">Notes</label>
+        <textarea id="start-manual-notes" rows="3" placeholder="Anything useful about this branch"></textarea>
+      </div>
+    </div>
+    <div id="start-manual-store-status" class="store-mode-note" style="margin-top:12px;">Manual entries are saved in the Stores sheet for later trips.</div>
+    <div class="change-actions">
+      <button class="change-cancel" type="button" onclick="closeStartManualStoreForm()">CANCEL</button>
+      <button id="start-manual-save-button" class="change-history" type="button" onclick="saveStartManualStore()">SAVE &amp; USE STORE</button>
+    </div>
+  </div>
+</div>
+
 <div id="maps-key-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="maps-key-title">
   <div class="change-card">
     <div id="maps-key-title" class="change-title">GOOGLE PLACES DEMO KEY</div>
@@ -5159,6 +5493,11 @@
   let startGoogleSearchTimer = null;
   let selectedStartGoogleStore = null;
   let newestStartGoogleRequestId = 0;
+  let nearbyStorePlaces = [];
+  let nearbyStoreIndex = 0;
+  let nearbyStoreMap = null;
+  let nearbyTouchStartX = null;
+  const NEARBY_STORE_RADIUS_METERS = 5000;
   let managementEditingProductIndex = null;
   let managementEditingPaymentIndex = null;
   let managementEditingStoreIndex = null;
@@ -6078,11 +6417,11 @@
     googleNote.classList.remove("hidden");
 
     if (mode === "NEAR") {
-      storeInput.placeholder = "Search nearby stores by name, branch, or address";
-      note.textContent = "Near Me uses your device location only while this app is active. You can still search for any store.";
+      storeInput.placeholder = "Search store by name, branch, or address";
+      note.textContent = "Near Me uses your device location only after you choose it. You can browse nearby stores or search by name.";
       note.className = "store-mode-note";
       await requestNearMeLocation();
-      await ensureGooglePlacesReady(true);
+      openNearbyChoice();
     } else if (mode === "REMOTE") {
       startLocationSnapshot = null;
       storeInput.placeholder = "Search store, branch, neighborhood, city, or address";
@@ -6122,7 +6461,6 @@
           };
           note.textContent = "Location ready. Google store results will be biased around your current position.";
           note.className = "store-mode-note success";
-          document.getElementById("start-store").focus();
           resolve(startLocationSnapshot);
         },
         error => {
@@ -6131,7 +6469,6 @@
             ? "Location permission was not granted. Near Me can still be used as a normal store search, or you can choose Remote Shopping."
             : "Your location could not be read right now. Store search and manual fallback remain available.";
           note.className = "store-mode-note error";
-          document.getElementById("start-store").focus();
           resolve(null);
         },
         {
@@ -6620,25 +6957,320 @@
   }
 
 
-  function chooseManualStoreEntry() {
-
-    const input =
-      document.getElementById(
-        "start-store"
-      );
-
-    input.value =
-      "";
-
-    closeStartStoreDropdown();
-
-    input.focus();
-
-    setStatus(
-      "Manual fallback enabled. Enter the store name.",
-      "success"
-    );
+  function openNearbyChoice() {
+    const loc = document.getElementById("nearby-choice-location");
+    const showButton = document.getElementById("nearby-show-button");
+    if (startLocationSnapshot) {
+      loc.textContent = "Location ready. Nearby stores will be searched within about 5 km and ranked by distance.";
+      loc.className = "store-mode-note success";
+      showButton.disabled = false;
+    } else {
+      loc.textContent = "Location is not available yet. Search by name is still available, or retry Near Me to request location again.";
+      loc.className = "store-mode-note error";
+      showButton.disabled = true;
+    }
+    show("nearby-choice-overlay");
   }
+
+  function closeNearbyChoice() {
+    hide("nearby-choice-overlay");
+  }
+
+  function closeNearbyStores() {
+    hide("nearby-stores-overlay");
+  }
+
+  async function useNearMeSearchByName() {
+    closeNearbyChoice();
+    closeNearbyStores();
+    const ready = await ensureGooglePlacesReady(true);
+    if (!ready) return;
+    const input = document.getElementById("start-store");
+    input.placeholder = "Search store by name, branch, neighborhood, or address";
+    input.focus();
+    await openStartStoreDropdown();
+  }
+
+  function placeLocationNumbers(place) {
+    const location = place?.location;
+    if (!location) return {latitude:"", longitude:""};
+    const latitude = typeof location.lat === "function" ? location.lat() : location.lat;
+    const longitude = typeof location.lng === "function" ? location.lng() : location.lng;
+    return {latitude, longitude};
+  }
+
+  function nearbyPlaceRecord(place) {
+    const coords = placeLocationNumbers(place);
+    const hours = place.currentOpeningHours?.weekdayDescriptions || place.regularOpeningHours?.weekdayDescriptions || [];
+    return {
+      id: place.id || "",
+      name: String(place.displayName || "Google store").trim(),
+      branchName: "",
+      address: String(place.formattedAddress || "").trim(),
+      type: "Physical",
+      googlePlaceId: place.id || "",
+      latitude: coords.latitude ?? "",
+      longitude: coords.longitude ?? "",
+      businessStatus: readableBusinessStatus(place.businessStatus),
+      openingHours: Array.isArray(hours) ? hours.join(" | ") : "",
+      openingHoursLines: Array.isArray(hours) ? hours : [],
+      googleMapsUrl: String(place.googleMapsURI || "").trim(),
+      primaryTypeDisplayName: String(place.primaryTypeDisplayName || "Store").trim()
+    };
+  }
+
+  async function showNearbyStores() {
+    closeNearbyChoice();
+    show("nearby-stores-overlay");
+    const host = document.getElementById("nearby-card-host");
+    const subtitle = document.getElementById("nearby-stores-subtitle");
+    host.innerHTML = '<div class="nearby-loading">Searching Google Maps for nearby stores…</div>';
+    document.getElementById("nearby-carousel-nav").classList.add("hidden");
+    document.getElementById("nearby-dots").innerHTML = "";
+
+    if (!startLocationSnapshot) {
+      subtitle.textContent = "Your location is needed to browse nearby stores.";
+      host.innerHTML = '<div class="nearby-empty">Location is unavailable. Use Search by Name, or close this window and select Near Me again to retry.</div>';
+      return;
+    }
+
+    try {
+      const ready = await ensureGooglePlacesReady(true);
+      if (!ready) return;
+      subtitle.textContent = "Searching within about 5 km of your current position.";
+      const { Place, SearchNearbyRankPreference } = await google.maps.importLibrary("places");
+      const request = {
+        fields: [
+          "id", "displayName", "formattedAddress", "location", "businessStatus",
+          "regularOpeningHours", "currentOpeningHours", "googleMapsURI", "primaryTypeDisplayName"
+        ],
+        locationRestriction: {
+          center: {lat:startLocationSnapshot.latitude, lng:startLocationSnapshot.longitude},
+          radius: NEARBY_STORE_RADIUS_METERS
+        },
+        includedPrimaryTypes: [
+          "supermarket", "grocery_store", "discount_supermarket", "hypermarket",
+          "convenience_store", "department_store", "warehouse_store", "discount_store",
+          "food_store", "market", "general_store", "store", "shopping_mall", "wholesaler"
+        ],
+        maxResultCount: 20,
+        rankPreference: SearchNearbyRankPreference.DISTANCE,
+        language: "es-MX",
+        region: "mx"
+      };
+      const { places } = await Place.searchNearby(request);
+      nearbyStorePlaces = Array.isArray(places) ? places.filter(p => p?.location) : [];
+      nearbyStoreIndex = 0;
+      if (!nearbyStorePlaces.length) {
+        subtitle.textContent = "Google did not return nearby retail stores in this radius.";
+        host.innerHTML = '<div class="nearby-empty">No nearby store cards were found. Try Search by Name or add the store manually.</div>';
+        return;
+      }
+      subtitle.textContent = `${nearbyStorePlaces.length} nearby Google Maps result${nearbyStorePlaces.length === 1 ? "" : "s"}. Swipe the card or use the arrows.`;
+      document.getElementById("nearby-carousel-nav").classList.remove("hidden");
+      renderNearbyStoreCard();
+    } catch (error) {
+      console.error(error);
+      subtitle.textContent = "Nearby Google search could not be completed.";
+      host.innerHTML = '<div class="nearby-empty">Google Places could not load nearby stores. Search by Name and manual entry are still available.</div>';
+    }
+  }
+
+  async function renderNearbyStoreCard() {
+    const place = nearbyStorePlaces[nearbyStoreIndex];
+    const host = document.getElementById("nearby-card-host");
+    if (!place || !host) return;
+    const record = nearbyPlaceRecord(place);
+    const status = record.businessStatus || "Status not provided";
+    const statusClass = /closed/i.test(status) ? "nearby-card-status closed" : "nearby-card-status";
+    const mapsLinkHtml = record.googleMapsUrl
+      ? '<a class="nearby-maps-link" href="' + escapeHtml(record.googleMapsUrl) + '" target="_blank" rel="noopener">Open in Google Maps ↗</a>'
+      : '';
+    const hoursLines = record.openingHoursLines || [];
+    const hoursHtml = hoursLines.length
+      ? '<details class="nearby-card-hours"><summary>Opening hours</summary><div class="nearby-card-hours-list">' + hoursLines.map(line => '<div>' + escapeHtml(line) + '</div>').join('') + '</div></details>'
+      : '<div class="nearby-card-hours">Opening hours are not listed for this place.</div>';
+    host.innerHTML =
+      '<div class="nearby-mini-map-wrap"><div id="nearby-mini-map" class="nearby-mini-map"></div><div class="nearby-map-pin">📍</div></div>' +
+      '<div class="nearby-card-body">' +
+        '<div class="nearby-card-name">' + escapeHtml(record.name) + '</div>' +
+        '<div class="nearby-card-type">' + escapeHtml(record.primaryTypeDisplayName || 'Store') + '</div>' +
+        '<div class="nearby-card-address">' + escapeHtml(record.address || 'Address not provided by Google') + '</div>' +
+        '<div class="' + statusClass + '">' + escapeHtml(status) + '</div>' +
+        mapsLinkHtml +
+        hoursHtml +
+        '<button class="nearby-card-select" type="button" onclick="selectNearbyStoreCurrent()">SELECT THIS STORE</button>' +
+      '</div>';
+
+    document.getElementById("nearby-carousel-count").textContent = `${nearbyStoreIndex + 1} of ${nearbyStorePlaces.length}`;
+    document.getElementById("nearby-dots").innerHTML = nearbyStorePlaces.map((_,i) => '<span class="nearby-dot' + (i === nearbyStoreIndex ? ' active' : '') + '"></span>').join('');
+
+    host.ontouchstart = event => {
+      nearbyTouchStartX = event.changedTouches?.[0]?.clientX ?? null;
+    };
+    host.ontouchend = event => {
+      if (nearbyTouchStartX === null) return;
+      const endX = event.changedTouches?.[0]?.clientX ?? nearbyTouchStartX;
+      const delta = endX - nearbyTouchStartX;
+      nearbyTouchStartX = null;
+      if (Math.abs(delta) < 45) return;
+      if (delta < 0) nearbyCardNext(); else nearbyCardPrevious();
+    };
+
+    try {
+      const { Map } = await google.maps.importLibrary("maps");
+      const mapEl = document.getElementById("nearby-mini-map");
+      const coords = placeLocationNumbers(place);
+      if (mapEl && Number.isFinite(Number(coords.latitude)) && Number.isFinite(Number(coords.longitude))) {
+        nearbyStoreMap = new Map(mapEl, {
+          center:{lat:Number(coords.latitude), lng:Number(coords.longitude)},
+          zoom:16,
+          disableDefaultUI:true,
+          gestureHandling:"none",
+          clickableIcons:false,
+          keyboardShortcuts:false
+        });
+      }
+    } catch (error) {
+      console.warn("Mini map could not render", error);
+    }
+  }
+
+  function nearbyCardNext() {
+    if (!nearbyStorePlaces.length) return;
+    nearbyStoreIndex = (nearbyStoreIndex + 1) % nearbyStorePlaces.length;
+    renderNearbyStoreCard();
+  }
+
+  function nearbyCardPrevious() {
+    if (!nearbyStorePlaces.length) return;
+    nearbyStoreIndex = (nearbyStoreIndex - 1 + nearbyStorePlaces.length) % nearbyStorePlaces.length;
+    renderNearbyStoreCard();
+  }
+
+  async function selectNearbyStoreCurrent() {
+    const place = nearbyStorePlaces[nearbyStoreIndex];
+    if (!place) return;
+    const record = nearbyPlaceRecord(place);
+    selectedStartGoogleStore = record;
+    const displayValue = [record.name, record.address].filter(Boolean).join(" — ");
+    document.getElementById("start-store").value = displayValue;
+    document.getElementById("start-store-search").value = displayValue;
+    try {
+      await saveGoogleStoreIfNeeded(record);
+      closeNearbyStores();
+      document.getElementById("start-mode-note").textContent = record.address
+        ? `Google store selected: ${record.name} — ${record.address}`
+        : `Google store selected: ${record.name}`;
+      document.getElementById("start-mode-note").className = "store-mode-note success";
+      showSuccessToast("Store selected", record.address || record.name);
+      setStatus("Store ready.", "success");
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast("Store save failed", "The Google result was selected, but could not be saved to Stores.");
+    }
+  }
+
+  function clearStartManualStoreForm() {
+    ["start-manual-name","start-manual-branch","start-manual-address","start-manual-maps-url","start-manual-latitude","start-manual-longitude","start-manual-hours","start-manual-notes"]
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+    document.getElementById("start-manual-business-status").value = "";
+    const status = document.getElementById("start-manual-store-status");
+    status.textContent = "Manual entries are saved in the Stores sheet for later trips.";
+    status.className = "store-mode-note";
+  }
+
+  function chooseManualStoreEntry() {
+    closeStartStoreDropdown();
+    closeNearbyChoice();
+    closeNearbyStores();
+    clearStartManualStoreForm();
+    show("start-manual-store-overlay");
+    setTimeout(() => document.getElementById("start-manual-name").focus(), 80);
+  }
+
+  function closeStartManualStoreForm() {
+    hide("start-manual-store-overlay");
+  }
+
+  async function saveStartManualStore() {
+    const name = String(document.getElementById("start-manual-name").value || "").trim();
+    const branchName = String(document.getElementById("start-manual-branch").value || "").trim();
+    const address = String(document.getElementById("start-manual-address").value || "").trim();
+    const businessStatus = String(document.getElementById("start-manual-business-status").value || "").trim();
+    const googleMapsUrl = String(document.getElementById("start-manual-maps-url").value || "").trim();
+    const latRaw = String(document.getElementById("start-manual-latitude").value || "").trim();
+    const lngRaw = String(document.getElementById("start-manual-longitude").value || "").trim();
+    const openingHours = String(document.getElementById("start-manual-hours").value || "").trim();
+    const notes = String(document.getElementById("start-manual-notes").value || "").trim();
+    const status = document.getElementById("start-manual-store-status");
+    const button = document.getElementById("start-manual-save-button");
+
+    if (!name) {
+      status.textContent = "Store Name is required.";
+      status.className = "store-mode-note error";
+      return;
+    }
+    const latitude = latRaw === "" ? "" : Number(latRaw);
+    const longitude = lngRaw === "" ? "" : Number(lngRaw);
+    if ((latRaw !== "" && !Number.isFinite(latitude)) || (lngRaw !== "" && !Number.isFinite(longitude))) {
+      status.textContent = "Latitude/longitude must be valid numbers or left blank.";
+      status.className = "store-mode-note error";
+      return;
+    }
+
+    button.disabled = true;
+    status.textContent = "Saving manual store…";
+    status.className = "store-mode-note";
+    try {
+      const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:M`, "UNFORMATTED_VALUE");
+      const rows = data.values || [];
+      const duplicate = rows.some(row =>
+        normalizeStore(row?.[1]) === normalizeStore(name) &&
+        normalizeStore(row?.[2]) === normalizeStore(branchName) &&
+        normalizeStore(row?.[3]) === normalizeStore(address)
+      );
+      if (duplicate) {
+        status.textContent = "That store is already saved with the same name, branch, and address.";
+        status.className = "store-mode-note error";
+        return;
+      }
+      let rowNumber = rows.length + 2;
+      for (let i=0;i<rows.length;i++) {
+        if (blank(rows[i]?.[0])) { rowNumber = i + 2; break; }
+      }
+      const storeId = "STORE-M-" + Date.now();
+      const type = startShoppingMode === "ONLINE" ? "Online" : "Physical";
+      await sheetsValuesBatchUpdate([{
+        range:`'${STORES_SHEET}'!A${rowNumber}:M${rowNumber}`,
+        values:[[
+          storeId, name, branchName, address, type, "", latitude, longitude,
+          businessStatus, openingHours, googleMapsUrl, notes, true
+        ]]
+      }], "RAW");
+
+      const record = {
+        id:storeId, name, branchName, address, type, googlePlaceId:"",
+        latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes
+      };
+      selectedStartGoogleStore = record;
+      const displayValue = [name, branchName, address].filter(Boolean).join(" — ");
+      document.getElementById("start-store").value = displayValue;
+      document.getElementById("start-store-search").value = displayValue;
+      closeStartManualStoreForm();
+      document.getElementById("start-mode-note").textContent = `Manual store ready: ${displayValue}`;
+      document.getElementById("start-mode-note").className = "store-mode-note success";
+      showSuccessToast("Manual store saved", displayValue);
+      setStatus("Store ready.", "success");
+    } catch (error) {
+      handleApiError(error);
+      status.textContent = "The manual store could not be saved.";
+      status.className = "store-mode-note error";
+    } finally {
+      button.disabled = false;
+    }
+  }
+
 
   async function writeCurrentStore(
     store
