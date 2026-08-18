@@ -2736,6 +2736,25 @@
       overflow:hidden;
       background:#181b23;
       touch-action:pan-y;
+      min-height:420px;
+    }
+
+    .nearby-card-stage.slide-next .nearby-card-shell {
+      animation: nearbySlideNext .24s ease both;
+    }
+
+    .nearby-card-stage.slide-prev .nearby-card-shell {
+      animation: nearbySlidePrev .24s ease both;
+    }
+
+    @keyframes nearbySlideNext {
+      from { opacity:.25; transform:translateX(34px); }
+      to { opacity:1; transform:translateX(0); }
+    }
+
+    @keyframes nearbySlidePrev {
+      from { opacity:.25; transform:translateX(-34px); }
+      to { opacity:1; transform:translateX(0); }
     }
 
     .nearby-mini-map-wrap {
@@ -2743,12 +2762,31 @@
       height:172px;
       background:#242936;
       overflow:hidden;
+      cursor:pointer;
+    }
+
+    .nearby-mini-map-wrap::after {
+      content:"Tap to open map";
+      position:absolute;
+      right:10px;
+      bottom:10px;
+      z-index:7;
+      padding:6px 9px;
+      border-radius:999px;
+      background:rgba(17,19,24,.84);
+      color:#f0e6ff;
+      font-size:11px;
+      font-weight:800;
+      pointer-events:none;
+      backdrop-filter:blur(5px);
     }
 
     .nearby-mini-map {
       width:100%;
       height:100%;
+      pointer-events:none;
     }
+
 
     .nearby-map-pin {
       position:absolute;
@@ -2787,6 +2825,63 @@
       color:#d2d5dc;
       font-size:14px;
       line-height:1.4;
+    }
+
+    .nearby-rating-row {
+      display:flex;
+      align-items:center;
+      gap:7px;
+      flex-wrap:wrap;
+      margin-top:9px;
+      color:#f1d67a;
+      font-size:13px;
+      font-weight:900;
+    }
+
+    .nearby-rating-count {
+      color:#aeb4c0;
+      font-weight:700;
+    }
+
+    .nearby-contact-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      margin-top:12px;
+    }
+
+    .nearby-contact-link {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:42px;
+      border:1px solid #454b59;
+      border-radius:11px;
+      background:#292e39;
+      color:#eadcff;
+      text-decoration:none;
+      font-size:12px;
+      font-weight:850;
+      text-align:center;
+      padding:6px 8px;
+      box-sizing:border-box;
+    }
+
+    .nearby-contact-link.wide {
+      grid-column:1 / -1;
+    }
+
+    .nearby-saved-badge {
+      display:inline-flex;
+      margin-top:6px;
+      padding:4px 7px;
+      border-radius:999px;
+      background:#2d3749;
+      color:#a9c4f5;
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.04em;
     }
 
     .nearby-card-status {
@@ -2906,6 +3001,29 @@
       text-align:center;
       color:#c8ccd5;
       line-height:1.45;
+    }
+
+    .nearby-map-card {
+      width:min(96vw,680px);
+      max-height:92vh;
+      overflow:auto;
+    }
+
+    .nearby-full-map {
+      height:min(62vh,520px);
+      min-height:330px;
+      border-radius:16px;
+      overflow:hidden;
+      background:#242936;
+      margin-top:12px;
+      border:1px solid #484e5d;
+    }
+
+    .nearby-full-map-title {
+      margin-top:8px;
+      color:#d2d5dc;
+      font-size:13px;
+      line-height:1.4;
     }
 
     .start-manual-grid {
@@ -4933,7 +5051,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2C — nearby store cards + manual fallback. The live app is still index.html.
+    V5 Google Places Step 2D — rich nearby cards, map view, saved-store search, and retry hardening. The live app is still index.html.
   </div>
 
 </div>
@@ -5267,6 +5385,18 @@
   </div>
 </div>
 
+<div id="nearby-map-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-map-title">
+  <div class="change-card nearby-map-card">
+    <div id="nearby-map-title" class="change-title">STORE MAP</div>
+    <div id="nearby-map-subtitle" class="nearby-full-map-title">Selected Google store</div>
+    <div id="nearby-full-map" class="nearby-full-map"></div>
+    <div class="change-actions" style="margin-top:12px;">
+      <button class="change-cancel" type="button" onclick="closeNearbyFullMap()">CLOSE</button>
+      <button id="nearby-full-map-google" class="change-history" type="button" onclick="openCurrentNearbyStoreInGoogleMaps()">OPEN IN GOOGLE MAPS</button>
+    </div>
+  </div>
+</div>
+
 <div id="start-manual-store-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="start-manual-store-title">
   <div class="change-card start-manual-store-card">
     <div id="start-manual-store-title" class="change-title">ADD STORE MANUALLY</div>
@@ -5496,7 +5626,10 @@
   let nearbyStorePlaces = [];
   let nearbyStoreIndex = 0;
   let nearbyStoreMap = null;
+  let nearbyFullMap = null;
+  let nearbyFullMapMarker = null;
   let nearbyTouchStartX = null;
+  let nearbyCardDirection = "next";
   const NEARBY_STORE_RADIUS_METERS = 5000;
   let managementEditingProductIndex = null;
   let managementEditingPaymentIndex = null;
@@ -6265,127 +6398,92 @@
     }
 
     try {
-
-      const result =
-        await sheetsGetValues(
+      const [tripsResult, storesResult] = await Promise.all([
+        sheetsGetValues(
           `'${TRIPS_SHEET}'!A2:H`,
           "UNFORMATTED_VALUE"
-        );
-
-      const stores =
-        new Map();
-
-      visitedStores.forEach(
-        store => {
-          stores.set(
-            normalizeStore(
-              store.name
-            ),
-            {
-              ...store
-            }
-          );
-        }
-      );
-
-      (result.values || [])
-        .forEach(
-          row => {
-
-            const store =
-              String(
-                row[1] ?? ""
-              ).trim();
-
-            if (!store) {
-              return;
-            }
-
-            const key =
-              normalizeStore(
-                store
-              );
-
-            const rawDate =
-              String(
-                row[3] ??
-                row[2] ??
-                ""
-              ).trim();
-
-            const parsed =
-              new Date(
-                rawDate
-              ).getTime();
-
-            const lastUsed =
-              Number.isFinite(
-                parsed
-              )
-                ? parsed
-                : 0;
-
-            const previous =
-              stores.get(
-                key
-              );
-
-            if (
-              !previous ||
-              lastUsed >
-                (
-                  previous.lastUsed ||
-                  0
-                )
-            ) {
-              stores.set(
-                key,
-                {
-                  name:
-                    store,
-                  lastUsed:
-                    lastUsed,
-                  source:
-                    "trip"
-                }
-              );
-            }
-          }
-        );
-
-      visitedStores =
-        Array.from(
-          stores.values()
+        ),
+        sheetsGetValues(
+          `'${STORES_SHEET}'!A2:M`,
+          "UNFORMATTED_VALUE"
         )
-          .sort(
-            (a, b) => {
+      ]);
 
-              if (
-                (b.lastUsed || 0) !==
-                (a.lastUsed || 0)
-              ) {
-                return (
-                  (b.lastUsed || 0) -
-                  (a.lastUsed || 0)
-                );
-              }
+      const ordinaryStores = new Map();
 
-              return a.name.localeCompare(
-                b.name
-              );
-            }
-          );
+      visitedStores.forEach(store => {
+        ordinaryStores.set(
+          normalizeStore(store.name),
+          { ...store }
+        );
+      });
 
-      visitedStoresLoadedFromTrips =
-        true;
+      (tripsResult.values || []).forEach(row => {
+        const store = String(row[1] ?? "").trim();
+        if (!store) return;
 
+        const key = normalizeStore(store);
+        const rawDate = String(row[3] ?? row[2] ?? "").trim();
+        const parsed = new Date(rawDate).getTime();
+        const lastUsed = Number.isFinite(parsed) ? parsed : 0;
+        const previous = ordinaryStores.get(key);
+
+        if (!previous || lastUsed > (previous.lastUsed || 0)) {
+          ordinaryStores.set(key, {
+            name: store,
+            branchName: "",
+            address: "",
+            lastUsed,
+            source: "trip"
+          });
+        }
+      });
+
+      const savedDirectoryStores = (storesResult.values || [])
+        .map((row, index) => ({
+          sheetRow: index + 2,
+          storeId: String(row[0] ?? "").trim(),
+          name: String(row[1] ?? "").trim(),
+          branchName: String(row[2] ?? "").trim(),
+          address: String(row[3] ?? "").trim(),
+          type: String(row[4] ?? "Physical").trim() || "Physical",
+          googlePlaceId: String(row[5] ?? "").trim(),
+          latitude: row[6] ?? "",
+          longitude: row[7] ?? "",
+          businessStatus: String(row[8] ?? "").trim(),
+          openingHours: String(row[9] ?? "").trim(),
+          googleMapsUrl: String(row[10] ?? "").trim(),
+          notes: String(row[11] ?? "").trim(),
+          active: row[12] === true || String(row[12] ?? "").toUpperCase() === "TRUE",
+          lastUsed: 0,
+          source: "saved"
+        }))
+        .filter(store => store.active && store.name && String(store.type).toLowerCase() !== "online");
+
+      const combined = Array.from(ordinaryStores.values());
+      const seenSaved = new Set();
+      savedDirectoryStores.forEach(store => {
+        const key = [normalizeStore(store.name), normalizeStore(store.branchName), normalizeStore(store.address)].join("|");
+        if (!seenSaved.has(key)) {
+          seenSaved.add(key);
+          combined.push(store);
+        }
+      });
+
+      visitedStores = combined.sort((a, b) => {
+        if ((b.lastUsed || 0) !== (a.lastUsed || 0)) {
+          return (b.lastUsed || 0) - (a.lastUsed || 0);
+        }
+        if (a.source === "saved" && b.source !== "saved") return -1;
+        if (b.source === "saved" && a.source !== "saved") return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      visitedStoresLoadedFromTrips = true;
       renderVisitedStores();
 
     } catch (error) {
-
-      // The Product database still gives us a useful fallback list.
-      visitedStoresLoadedFromTrips =
-        false;
+      visitedStoresLoadedFromTrips = false;
     }
   }
 
@@ -6451,34 +6549,50 @@
     note.textContent = "Requesting your location for Near Me…";
     note.className = "store-mode-note";
 
-    return new Promise(resolve => {
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          startLocationSnapshot = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy
-          };
-          note.textContent = "Location ready. Google store results will be biased around your current position.";
-          note.className = "store-mode-note success";
-          resolve(startLocationSnapshot);
-        },
-        error => {
-          startLocationSnapshot = null;
-          note.textContent = error.code === 1
-            ? "Location permission was not granted. Near Me can still be used as a normal store search, or you can choose Remote Shopping."
-            : "Your location could not be read right now. Store search and manual fallback remain available.";
-          note.className = "store-mode-note error";
-          resolve(null);
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 300000
-        }
-      );
+    const attempt = (options) => new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, options);
     });
+
+    return (async () => {
+      try {
+        let position;
+        try {
+          position = await attempt({
+            enableHighAccuracy: false,
+            timeout: 12000,
+            maximumAge: 300000
+          });
+        } catch (firstError) {
+          if (firstError?.code === 1) throw firstError;
+          note.textContent = "Location is taking a moment. Retrying once automatically…";
+          note.className = "store-mode-note";
+          await new Promise(resolve => setTimeout(resolve, 700));
+          position = await attempt({
+            enableHighAccuracy: true,
+            timeout: 18000,
+            maximumAge: 0
+          });
+        }
+
+        startLocationSnapshot = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        };
+        note.textContent = "Location ready. Google store results will be biased around your current position.";
+        note.className = "store-mode-note success";
+        return startLocationSnapshot;
+      } catch (error) {
+        startLocationSnapshot = null;
+        note.textContent = error?.code === 1
+          ? "Location permission was not granted. Near Me can still be used as a normal store search, or you can choose Remote Shopping."
+          : "Your location could not be read right now. Store search and manual fallback remain available.";
+        note.className = "store-mode-note error";
+        return null;
+      }
+    })();
   }
+
 
   async function openStartStoreDropdown() {
 
@@ -6592,13 +6706,14 @@
     const filtered =
       visitedStores
         .filter(
-          store =>
-            !query ||
-            store.name
-              .toLowerCase()
-              .includes(
-                query
-              )
+          store => {
+            if (!query) return true;
+            const haystack = [store.name, store.branchName, store.address]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase();
+            return haystack.includes(query);
+          }
         )
         .slice(
           0,
@@ -6643,10 +6758,10 @@
                 "</span>" +
 
                 '<span class="start-store-option-meta">' +
-                  (
-                    store.lastUsed
-                      ? "Previously visited"
-                      : "Saved in product history"
+                  escapeHtml(
+                    store.source === "saved"
+                      ? ([store.branchName, store.address].filter(Boolean).join(" • ") || "Saved store")
+                      : (store.lastUsed ? "Previously visited" : "Saved in product history")
                   ) +
                 "</span>" +
 
@@ -6844,7 +6959,7 @@
       const place = prediction.toPlace();
       try {
         await place.fetchFields({
-          fields: ["displayName", "formattedAddress", "location", "businessStatus", "regularOpeningHours", "googleMapsURI"]
+          fields: ["displayName", "formattedAddress", "location", "businessStatus", "regularOpeningHours", "currentOpeningHours", "googleMapsURI", "rating", "userRatingCount", "nationalPhoneNumber", "internationalPhoneNumber", "websiteURI"]
         });
       } catch (error) {
         await place.fetchFields({
@@ -6941,18 +7056,31 @@
       return;
     }
 
-    selectedStartGoogleStore = null;
-
-    document.getElementById(
-      "start-store"
-    ).value =
-      store.name;
+    if (store.source === "saved") {
+      selectedStartGoogleStore = {
+        id: store.storeId || "",
+        name: store.name,
+        branchName: store.branchName || "",
+        address: store.address || "",
+        type: store.type || "Physical",
+        googlePlaceId: store.googlePlaceId || "",
+        latitude: store.latitude ?? "",
+        longitude: store.longitude ?? "",
+        businessStatus: store.businessStatus || "",
+        openingHours: store.openingHours || "",
+        googleMapsUrl: store.googleMapsUrl || ""
+      };
+      document.getElementById("start-store").value = [store.name, store.branchName, store.address].filter(Boolean).join(" — ");
+    } else {
+      selectedStartGoogleStore = null;
+      document.getElementById("start-store").value = store.name;
+    }
 
     closeStartStoreDropdown();
 
     showSuccessToast(
       "Store selected",
-      store.name
+      store.source === "saved" && store.address ? `${store.name} — ${store.address}` : store.name
     );
   }
 
@@ -7015,9 +7143,14 @@
       openingHours: Array.isArray(hours) ? hours.join(" | ") : "",
       openingHoursLines: Array.isArray(hours) ? hours : [],
       googleMapsUrl: String(place.googleMapsURI || "").trim(),
-      primaryTypeDisplayName: String(place.primaryTypeDisplayName || "Store").trim()
+      primaryTypeDisplayName: String(place.primaryTypeDisplayName || "Store").trim(),
+      rating: Number.isFinite(Number(place.rating)) ? Number(place.rating) : null,
+      userRatingCount: Number.isFinite(Number(place.userRatingCount)) ? Number(place.userRatingCount) : null,
+      phone: String(place.nationalPhoneNumber || place.internationalPhoneNumber || "").trim(),
+      websiteUrl: String(place.websiteURI || "").trim()
     };
   }
+
 
   async function showNearbyStores() {
     closeNearbyChoice();
@@ -7035,14 +7168,19 @@
     }
 
     try {
-      const ready = await ensureGooglePlacesReady(true);
+      let ready = await ensureGooglePlacesReady(true);
+      if (!ready) return;
+      // A short readiness barrier avoids the first-request race seen on some mobile browsers.
+      await new Promise(resolve => setTimeout(resolve, 180));
+      ready = await ensureGooglePlacesReady(true);
       if (!ready) return;
       subtitle.textContent = "Searching within about 5 km of your current position.";
       const { Place, SearchNearbyRankPreference } = await google.maps.importLibrary("places");
       const request = {
         fields: [
           "id", "displayName", "formattedAddress", "location", "businessStatus",
-          "regularOpeningHours", "currentOpeningHours", "googleMapsURI", "primaryTypeDisplayName"
+          "regularOpeningHours", "currentOpeningHours", "googleMapsURI", "primaryTypeDisplayName",
+          "rating", "userRatingCount", "nationalPhoneNumber", "internationalPhoneNumber", "websiteURI"
         ],
         locationRestriction: {
           center: {lat:startLocationSnapshot.latitude, lng:startLocationSnapshot.longitude},
@@ -7076,7 +7214,13 @@
     }
   }
 
-  async function renderNearbyStoreCard() {
+  function nearbyStars(rating) {
+    if (!Number.isFinite(Number(rating))) return "";
+    const rounded = Math.max(0, Math.min(5, Math.round(Number(rating))));
+    return "★".repeat(rounded) + "☆".repeat(5 - rounded);
+  }
+
+  async function renderNearbyStoreCard(direction = nearbyCardDirection) {
     const place = nearbyStorePlaces[nearbyStoreIndex];
     const host = document.getElementById("nearby-card-host");
     if (!place || !host) return;
@@ -7084,22 +7228,44 @@
     const status = record.businessStatus || "Status not provided";
     const statusClass = /closed/i.test(status) ? "nearby-card-status closed" : "nearby-card-status";
     const mapsLinkHtml = record.googleMapsUrl
-      ? '<a class="nearby-maps-link" href="' + escapeHtml(record.googleMapsUrl) + '" target="_blank" rel="noopener">Open in Google Maps ↗</a>'
+      ? '<a class="nearby-contact-link" href="' + escapeHtml(record.googleMapsUrl) + '" target="_blank" rel="noopener">📍 Google Maps</a>'
+      : '';
+    const phoneHtml = record.phone
+      ? '<a class="nearby-contact-link" href="tel:' + escapeHtml(record.phone.replace(/[^+\d]/g, "")) + '">☎ Call</a>'
+      : '';
+    const websiteHtml = record.websiteUrl
+      ? '<a class="nearby-contact-link wide" href="' + escapeHtml(record.websiteUrl) + '" target="_blank" rel="noopener">🌐 Website / store page</a>'
       : '';
     const hoursLines = record.openingHoursLines || [];
     const hoursHtml = hoursLines.length
       ? '<details class="nearby-card-hours"><summary>Opening hours</summary><div class="nearby-card-hours-list">' + hoursLines.map(line => '<div>' + escapeHtml(line) + '</div>').join('') + '</div></details>'
       : '<div class="nearby-card-hours">Opening hours are not listed for this place.</div>';
+    const ratingHtml = record.rating !== null
+      ? '<div class="nearby-rating-row"><span>' + escapeHtml(nearbyStars(record.rating)) + '</span><span>' + escapeHtml(record.rating.toFixed(1)) + '</span>' +
+        (record.userRatingCount !== null ? '<span class="nearby-rating-count">(' + escapeHtml(record.userRatingCount.toLocaleString()) + ' ratings)</span>' : '') + '</div>'
+      : '<div class="nearby-rating-row"><span class="nearby-rating-count">No Google rating available</span></div>';
+    const contactParts = [phoneHtml, mapsLinkHtml, websiteHtml].filter(Boolean).join('');
+    const contactHtml = contactParts ? '<div class="nearby-contact-grid">' + contactParts + '</div>' : '';
+
+    host.classList.remove("slide-next", "slide-prev");
+    void host.offsetWidth;
+    host.classList.add(direction === "prev" ? "slide-prev" : "slide-next");
+
     host.innerHTML =
-      '<div class="nearby-mini-map-wrap"><div id="nearby-mini-map" class="nearby-mini-map"></div><div class="nearby-map-pin">📍</div></div>' +
-      '<div class="nearby-card-body">' +
-        '<div class="nearby-card-name">' + escapeHtml(record.name) + '</div>' +
-        '<div class="nearby-card-type">' + escapeHtml(record.primaryTypeDisplayName || 'Store') + '</div>' +
-        '<div class="nearby-card-address">' + escapeHtml(record.address || 'Address not provided by Google') + '</div>' +
-        '<div class="' + statusClass + '">' + escapeHtml(status) + '</div>' +
-        mapsLinkHtml +
-        hoursHtml +
-        '<button class="nearby-card-select" type="button" onclick="selectNearbyStoreCurrent()">SELECT THIS STORE</button>' +
+      '<div class="nearby-card-shell">' +
+        '<div class="nearby-mini-map-wrap" role="button" tabindex="0" aria-label="Open larger map" onclick="openNearbyFullMap()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openNearbyFullMap();}">' +
+          '<div id="nearby-mini-map" class="nearby-mini-map"></div><div class="nearby-map-pin">📍</div>' +
+        '</div>' +
+        '<div class="nearby-card-body">' +
+          '<div class="nearby-card-name">' + escapeHtml(record.name) + '</div>' +
+          '<div class="nearby-card-type">' + escapeHtml(record.primaryTypeDisplayName || 'Store') + '</div>' +
+          ratingHtml +
+          '<div class="nearby-card-address">' + escapeHtml(record.address || 'Address not provided by Google') + '</div>' +
+          '<div class="' + statusClass + '">' + escapeHtml(status) + '</div>' +
+          contactHtml +
+          hoursHtml +
+          '<button class="nearby-card-select" type="button" onclick="selectNearbyStoreCurrent()">SELECT THIS STORE</button>' +
+        '</div>' +
       '</div>';
 
     document.getElementById("nearby-carousel-count").textContent = `${nearbyStoreIndex + 1} of ${nearbyStorePlaces.length}`;
@@ -7138,15 +7304,70 @@
 
   function nearbyCardNext() {
     if (!nearbyStorePlaces.length) return;
+    nearbyCardDirection = "next";
     nearbyStoreIndex = (nearbyStoreIndex + 1) % nearbyStorePlaces.length;
-    renderNearbyStoreCard();
+    renderNearbyStoreCard("next");
   }
 
   function nearbyCardPrevious() {
     if (!nearbyStorePlaces.length) return;
+    nearbyCardDirection = "prev";
     nearbyStoreIndex = (nearbyStoreIndex - 1 + nearbyStorePlaces.length) % nearbyStorePlaces.length;
-    renderNearbyStoreCard();
+    renderNearbyStoreCard("prev");
   }
+
+  async function openNearbyFullMap() {
+    const place = nearbyStorePlaces[nearbyStoreIndex];
+    if (!place) return;
+    const record = nearbyPlaceRecord(place);
+    const coords = placeLocationNumbers(place);
+    if (!Number.isFinite(Number(coords.latitude)) || !Number.isFinite(Number(coords.longitude))) return;
+
+    document.getElementById("nearby-map-title").textContent = record.name || "STORE MAP";
+    document.getElementById("nearby-map-subtitle").textContent = record.address || "Google Maps location";
+    document.getElementById("nearby-full-map-google").disabled = !record.googleMapsUrl;
+    show("nearby-map-overlay");
+
+    await new Promise(resolve => setTimeout(resolve, 80));
+    try {
+      const { Map } = await google.maps.importLibrary("maps");
+      const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+      const position = {lat:Number(coords.latitude), lng:Number(coords.longitude)};
+      nearbyFullMap = new Map(document.getElementById("nearby-full-map"), {
+        center: position,
+        zoom: 17,
+        mapId: "DEMO_MAP_ID",
+        gestureHandling: "greedy",
+        fullscreenControl: true,
+        streetViewControl: false,
+        mapTypeControl: false
+      });
+      nearbyFullMapMarker = new AdvancedMarkerElement({
+        map: nearbyFullMap,
+        position,
+        title: record.name
+      });
+    } catch (error) {
+      console.warn("Full store map could not render", error);
+      document.getElementById("nearby-map-subtitle").textContent = "The in-app map could not load. You can still open this place in Google Maps.";
+    }
+  }
+
+  function closeNearbyFullMap() {
+    hide("nearby-map-overlay");
+    nearbyFullMap = null;
+    nearbyFullMapMarker = null;
+  }
+
+  function openCurrentNearbyStoreInGoogleMaps() {
+    const place = nearbyStorePlaces[nearbyStoreIndex];
+    if (!place) return;
+    const record = nearbyPlaceRecord(place);
+    if (record.googleMapsUrl) {
+      window.open(record.googleMapsUrl, "_blank", "noopener");
+    }
+  }
+
 
   async function selectNearbyStoreCurrent() {
     const place = nearbyStorePlaces[nearbyStoreIndex];
