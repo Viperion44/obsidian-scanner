@@ -2728,7 +2728,7 @@
     }
 
 
-    /* V5 Step 2O — in-app back navigation for modal subflows */
+    /* V5 Step 2P — polished back navigation + exit confirmation */
     .nearby-choice-card,
     .nearby-browser-card,
     .nearby-map-card,
@@ -2737,25 +2737,50 @@
     }
 
     .app-modal-back {
+      position:relative;
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      width:38px;
-      height:38px;
-      margin:0 0 10px;
+      width:44px;
+      height:44px;
+      margin:0 0 12px;
       padding:0;
-      border:1px solid #495062;
-      border-radius:999px;
-      background:#20242e;
-      color:#ffffff;
-      font-size:24px;
+      border:1px solid #555d70;
+      border-radius:13px;
+      background:#262b36;
+      color:transparent;
+      font-size:0;
       line-height:1;
-      font-weight:800;
-      box-shadow:0 6px 18px rgba(0,0,0,.22);
+      box-shadow:0 7px 20px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);
+      flex:0 0 44px;
+    }
+
+    .app-modal-back::before {
+      content:"←";
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-53%);
+      color:#ffffff;
+      font-family:Arial, Helvetica, sans-serif;
+      font-size:27px;
+      line-height:1;
+      font-weight:900;
+      letter-spacing:-1px;
     }
 
     .app-modal-back:active {
-      transform:scale(.96);
+      transform:scale(.95);
+      background:#303644;
+    }
+
+    .app-exit-card {
+      width:min(90vw,420px);
+      border:1px solid #555d70;
+    }
+
+    .app-exit-title {
+      color:#ffffff;
     }
 
     /* V5 Step 2C — Nearby-store discovery cards */
@@ -5645,6 +5670,17 @@
 </div>
 
 
+<div id="app-exit-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="app-exit-title">
+  <div class="change-card app-exit-card">
+    <div id="app-exit-title" class="change-title app-exit-title">EXIT OBSIDIAN SHOPPING?</div>
+    <div class="change-body">Are you sure you want to leave the app?</div>
+    <div class="change-actions">
+      <button class="change-cancel" type="button" onclick="cancelAppExit()">STAY IN APP</button>
+      <button class="change-history" type="button" onclick="confirmAppExit()">EXIT APP</button>
+    </div>
+  </div>
+</div>
+
 <div id="nearby-choice-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-choice-title">
   <div class="change-card nearby-choice-card">
     <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
@@ -6002,12 +6038,19 @@
 
   window.addEventListener("popstate", function() {
     if (!appBackGuardActive) return;
+
     appBackHandlingPopstate = true;
     appBackGuardActive = false;
-    appNavigateBackDirect();
+
+    if (hasVisibleAppSubflow()) {
+      appNavigateBackDirect();
+    } else {
+      showAppExitPrompt();
+    }
+
     setTimeout(function() {
       appBackHandlingPopstate = false;
-      if (hasVisibleAppSubflow()) armAppBackGuard();
+      if (!appLayerVisible("app-exit-overlay")) armAppBackGuard();
     }, 0);
   });
 
@@ -6278,6 +6321,11 @@
         "hidden"
       );
     }
+
+    // Keep one browser-history guard at the root of the authenticated app so
+    // Android's Back button asks before leaving Obsidian Shopping. Subflows
+    // temporarily consume/re-arm the same guard as the user navigates inward.
+    setTimeout(armAppBackGuard, 0);
   }
 
 
@@ -15392,6 +15440,28 @@
     appNavigateBackDirect();
   }
 
+  function showAppExitPrompt() {
+    show("app-exit-overlay");
+  }
+
+  function cancelAppExit() {
+    hide("app-exit-overlay");
+    armAppBackGuard();
+  }
+
+  function confirmAppExit() {
+    hide("app-exit-overlay");
+    appBackGuardActive = false;
+    appBackHandlingPopstate = false;
+
+    // In a standalone/PWA window, history.back() hands control back to the
+    // platform. In an ordinary browser tab it returns to the previous page.
+    // Browsers intentionally do not expose a reliable force-close API.
+    try {
+      history.back();
+    } catch (_) {}
+  }
+
   function appNavigateBackDirect() {
     if (appLayerVisible("nearby-map-overlay")) {
       closeNearbyFullMap();
@@ -15421,6 +15491,7 @@
 
     if (appLayerVisible("nearby-choice-overlay")) {
       closeNearbyChoice();
+      setTimeout(armAppBackGuard, 0);
     }
   }
 
