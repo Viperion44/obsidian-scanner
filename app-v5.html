@@ -2728,6 +2728,36 @@
     }
 
 
+    /* V5 Step 2O — in-app back navigation for modal subflows */
+    .nearby-choice-card,
+    .nearby-browser-card,
+    .nearby-map-card,
+    .start-manual-store-card {
+      position: relative;
+    }
+
+    .app-modal-back {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:38px;
+      height:38px;
+      margin:0 0 10px;
+      padding:0;
+      border:1px solid #495062;
+      border-radius:999px;
+      background:#20242e;
+      color:#ffffff;
+      font-size:24px;
+      line-height:1;
+      font-weight:800;
+      box-shadow:0 6px 18px rgba(0,0,0,.22);
+    }
+
+    .app-modal-back:active {
+      transform:scale(.96);
+    }
+
     /* V5 Step 2C — Nearby-store discovery cards */
     .nearby-choice-card,
     .nearby-browser-card,
@@ -5617,6 +5647,7 @@
 
 <div id="nearby-choice-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-choice-title">
   <div class="change-card nearby-choice-card">
+    <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
     <div id="nearby-choice-title" class="change-title">NEAR ME</div>
     <div class="change-body">How would you like to choose the store?</div>
     <div id="nearby-choice-location" class="store-mode-note">Your current location will only be used for nearby results.</div>
@@ -5632,6 +5663,7 @@
 
 <div id="nearby-stores-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-stores-title">
   <div class="change-card nearby-browser-card">
+    <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
     <div id="nearby-stores-title" class="change-title">STORES NEAR YOU</div>
     <div id="nearby-stores-subtitle" class="change-body">Looking for stores around your current position…</div>
     <details id="nearby-debug-details" class="nearby-debug-panel">
@@ -5659,6 +5691,7 @@
 
 <div id="nearby-map-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-map-title">
   <div class="change-card nearby-map-card">
+    <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
     <div id="nearby-map-title" class="change-title">STORE MAP</div>
     <div id="nearby-map-subtitle" class="nearby-full-map-title">Selected Google store</div>
     <div id="nearby-full-map" class="nearby-full-map"></div>
@@ -5679,6 +5712,7 @@
 
 <div id="start-manual-store-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="start-manual-store-title">
   <div class="change-card start-manual-store-card">
+    <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
     <div id="start-manual-store-title" class="change-title">ADD STORE MANUALLY</div>
     <div class="change-body">Use this only when Google cannot find the store. Fill what you know; only Store Name is required.</div>
     <div class="start-manual-grid">
@@ -5957,11 +5991,25 @@
   let wrongProductOriginalName = "";
   let wrongProductIdentityKind = null;
 
+  let appBackGuardActive = false;
+  let appBackHandlingPopstate = false;
+
 
   window.addEventListener(
     "DOMContentLoaded",
     initializePage
   );
+
+  window.addEventListener("popstate", function() {
+    if (!appBackGuardActive) return;
+    appBackHandlingPopstate = true;
+    appBackGuardActive = false;
+    appNavigateBackDirect();
+    setTimeout(function() {
+      appBackHandlingPopstate = false;
+      if (hasVisibleAppSubflow()) armAppBackGuard();
+    }, 0);
+  });
 
 
   function initializePage() {
@@ -6898,10 +6946,20 @@
       storeInput.placeholder = "Search store, branch, neighborhood, city, or address";
       note.textContent = "Remote Shopping does not request or use your device location.";
       note.className = "store-mode-note success";
+
+      // Step 2O: render the mode-specific controls immediately. Previously the
+      // MAP button waited behind two async data/library calls, so the first tap
+      // selected Remote internally while the button did not appear until a
+      // second tap caused another render.
+      remoteMapButton?.classList.remove("hidden");
+      remoteMapButton?.removeAttribute("hidden");
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      storeInput.focus();
+
+      // Directory/Places warm-up can finish in the background without blocking
+      // the first visible Remote Shopping state.
       await refreshStartStoreDirectory();
       await ensureGooglePlacesReady(true);
-      remoteMapButton?.classList.remove("hidden");
-      storeInput.focus();
     } else {
       startLocationSnapshot = null;
       storeInput.placeholder = "Search online merchant or website";
@@ -7866,6 +7924,7 @@
       showButton.disabled = true;
     }
     show("nearby-choice-overlay");
+    armAppBackGuard();
   }
 
   function closeNearbyChoice() {
@@ -7931,6 +7990,7 @@
     closeNearbyChoice();
     setNearbyModalScrollLock(true);
     show("nearby-stores-overlay");
+    armAppBackGuard();
     const browserCard = document.querySelector("#nearby-stores-overlay .nearby-browser-card");
     if (browserCard) browserCard.scrollTop = 0;
     const host = document.getElementById("nearby-card-host");
@@ -8436,6 +8496,7 @@
     const mapEl = document.getElementById("nearby-full-map");
     if (mapEl) mapEl.innerHTML = '<div class="nearby-loading">Loading Google Map…</div>';
     show("nearby-map-overlay");
+    armAppBackGuard();
 
     let lastError = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -8540,6 +8601,7 @@
     websiteRow?.classList.toggle("hidden", !online);
     document.getElementById("start-manual-name").value = String(document.getElementById("start-store-search")?.value || document.getElementById("start-store")?.value || "").trim();
     show("start-manual-store-overlay");
+    armAppBackGuard();
     setTimeout(() => document.getElementById("start-manual-name").focus(), 80);
   }
 
@@ -15297,6 +15359,69 @@
     ).classList.add(
       "hidden"
     );
+  }
+
+
+  function appLayerVisible(id) {
+    const element = document.getElementById(id);
+    return !!element && !element.classList.contains("hidden");
+  }
+
+  function hasVisibleAppSubflow() {
+    return [
+      "nearby-map-overlay",
+      "start-manual-store-overlay",
+      "nearby-stores-overlay",
+      "nearby-choice-overlay"
+    ].some(appLayerVisible);
+  }
+
+  function armAppBackGuard() {
+    if (appBackGuardActive || appBackHandlingPopstate) return;
+    try {
+      history.pushState({obsidianShoppingBackGuard:true}, "", window.location.href);
+      appBackGuardActive = true;
+    } catch (_) {}
+  }
+
+  function appRequestBack() {
+    if (appBackGuardActive) {
+      history.back();
+      return;
+    }
+    appNavigateBackDirect();
+  }
+
+  function appNavigateBackDirect() {
+    if (appLayerVisible("nearby-map-overlay")) {
+      closeNearbyFullMap();
+      return;
+    }
+
+    if (appLayerVisible("start-manual-store-overlay")) {
+      closeStartManualStoreForm();
+      if (startShoppingMode === "NEAR") {
+        openNearbyChoice();
+      } else {
+        void openStartStoreDropdown();
+      }
+      return;
+    }
+
+    if (appLayerVisible("nearby-stores-overlay")) {
+      closeNearbyStores();
+      if (startShoppingMode === "NEAR") {
+        openNearbyChoice();
+      } else {
+        void openStartStoreDropdown();
+        setTimeout(() => document.getElementById("start-store")?.focus(), 60);
+      }
+      return;
+    }
+
+    if (appLayerVisible("nearby-choice-overlay")) {
+      closeNearbyChoice();
+    }
   }
 
 
