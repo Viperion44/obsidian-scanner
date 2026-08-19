@@ -3482,6 +3482,7 @@
         </div>
 
         <div class="store-search-actions">
+          <button id="start-remote-map-button" class="store-secondary-button hidden" type="button" onclick="openRemoteMapSearch()">🗺️ MAP</button>
           <button id="start-manual-store-button" class="store-secondary-button hidden" type="button" onclick="chooseManualStoreEntry()">＋ ADD MANUALLY</button>
           <button id="start-online-shortcut" class="store-secondary-button" type="button" onclick="setStartShoppingMode('ONLINE')">🛒 ONLINE STORE</button>
         </div>
@@ -5277,7 +5278,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2K — diagnostic Nearby pipeline + custom map store panel. The live app is still index.html.
+    V5 Google Places Step 2L — remote map + online merchant directory + swipe/scroll guard. The live app is still index.html.
   </div>
 
 </div>
@@ -5644,15 +5645,15 @@
         <label for="start-manual-name">Store name *</label>
         <input id="start-manual-name" type="text" autocomplete="organization" placeholder="Example: Abarrotes Lupita">
       </div>
-      <div class="wide">
+      <div class="wide start-manual-physical-only">
         <label for="start-manual-branch">Branch / location name</label>
         <input id="start-manual-branch" type="text" autocomplete="off" placeholder="Example: Del Valle">
       </div>
-      <div class="wide">
+      <div class="wide start-manual-physical-only">
         <label for="start-manual-address">Full address</label>
         <textarea id="start-manual-address" rows="3" autocomplete="street-address" placeholder="Street, neighborhood, city, state…"></textarea>
       </div>
-      <div>
+      <div class="start-manual-physical-only">
         <label for="start-manual-business-status">Business status</label>
         <select id="start-manual-business-status">
           <option value="">Unknown / not entered</option>
@@ -5661,19 +5662,23 @@
           <option value="Permanently closed">Permanently closed</option>
         </select>
       </div>
-      <div>
-        <label for="start-manual-maps-url">Google Maps / website URL</label>
+      <div class="start-manual-physical-only">
+        <label for="start-manual-maps-url">Google Maps URL</label>
         <input id="start-manual-maps-url" type="url" inputmode="url" placeholder="Optional">
       </div>
-      <div>
+      <div class="wide" id="start-manual-website-row">
+        <label for="start-manual-website-url">Website URL</label>
+        <input id="start-manual-website-url" type="url" inputmode="url" autocomplete="url" placeholder="Example: https://www.walmart.com.mx/">
+      </div>
+      <div class="start-manual-physical-only">
         <label for="start-manual-latitude">Latitude</label>
         <input id="start-manual-latitude" type="number" inputmode="decimal" step="any" placeholder="Optional">
       </div>
-      <div>
+      <div class="start-manual-physical-only">
         <label for="start-manual-longitude">Longitude</label>
         <input id="start-manual-longitude" type="number" inputmode="decimal" step="any" placeholder="Optional">
       </div>
-      <div class="wide">
+      <div class="wide start-manual-physical-only">
         <label for="start-manual-hours">Opening hours</label>
         <textarea id="start-manual-hours" rows="3" placeholder="Example: Mon–Sat 08:00–22:00; Sun 09:00–20:00"></textarea>
       </div>
@@ -5831,6 +5836,7 @@
 
   let visitedStores = [];
   let savedStoreDirectory = [];
+  let savedOnlineStoreDirectory = [];
   let startShoppingMode = "";
   let startLocationSnapshot = null;
   let managementStoreMode = "";
@@ -5877,6 +5883,8 @@
   let nearbyFullMapInitialising = false;
   let nearbyTouchStartX = null;
   let nearbyPointerStartX = null;
+  let nearbyPointerStartY = null;
+  let nearbyPointerGesture = "";
   let nearbyPointerActive = false;
   let nearbyCardDirection = "next";
   const NEARBY_STORE_RADIUS_METERS = 5000;
@@ -5886,6 +5894,11 @@
     "food_store", "market", "general_store", "shopping_mall", "wholesaler",
     "pharmacy", "drugstore", "clothing_store", "shoe_store", "electronics_store",
     "hardware_store", "home_goods_store", "furniture_store", "book_store", "pet_store"
+  ];
+  const BUILT_IN_ONLINE_MERCHANTS = [
+    {storeId:"ONLINE-WALMART-MX", name:"Walmart México", type:"Online", websiteUrl:"https://www.walmart.com.mx/", source:"online-builtin", active:true},
+    {storeId:"ONLINE-SORIANA-MX", name:"Soriana", type:"Online", websiteUrl:"https://www.soriana.com/", source:"online-builtin", active:true},
+    {storeId:"ONLINE-CHEDRAUI-MX", name:"Chedraui", type:"Online", websiteUrl:"https://www.chedraui.com.mx/", source:"online-builtin", active:true}
   ];
   let managementEditingProductIndex = null;
   let managementEditingPaymentIndex = null;
@@ -6272,6 +6285,9 @@
 
         googlePlaceId:
           selectedStartGoogleStore?.googlePlaceId || "",
+
+        websiteUrl:
+          selectedStartGoogleStore?.websiteUrl || "",
 
         start:
           localIsoWithOffset(now),
@@ -6660,7 +6676,7 @@
           "UNFORMATTED_VALUE"
         ),
         sheetsGetValues(
-          `'${STORES_SHEET}'!A2:M`,
+          `'${STORES_SHEET}'!A2:N`,
           "UNFORMATTED_VALUE"
         )
       ]);
@@ -6695,7 +6711,7 @@
         }
       });
 
-      const savedDirectoryStores = (storesResult.values || [])
+      const allSavedDirectoryStores = (storesResult.values || [])
         .map((row, index) => ({
           sheetRow: index + 2,
           storeId: String(row[0] ?? "").trim(),
@@ -6710,13 +6726,16 @@
           openingHours: String(row[9] ?? "").trim(),
           googleMapsUrl: String(row[10] ?? "").trim(),
           notes: String(row[11] ?? "").trim(),
-          active: row[12] === true || String(row[12] ?? "").toUpperCase() === "TRUE",
+          active: row[12] === true || String(row[12] ?? "").toUpperCase() === "TRUE" || Number(row[12]) === 1,
+          websiteUrl: String(row[13] ?? "").trim(),
           lastUsed: 0,
           source: "saved"
         }))
-        .filter(store => store.active && store.name && String(store.type).toLowerCase() !== "online");
+        .filter(store => store.active && store.name);
 
+      const savedDirectoryStores = allSavedDirectoryStores.filter(store => String(store.type).toLowerCase() !== "online");
       savedStoreDirectory = savedDirectoryStores.map(store => ({...store}));
+      savedOnlineStoreDirectory = allSavedDirectoryStores.filter(store => String(store.type).toLowerCase() === "online").map(store => ({...store}));
 
       const combined = Array.from(ordinaryStores.values());
       const seenSaved = new Set();
@@ -6749,10 +6768,11 @@
   async function loadSavedStoreDirectoryDirect() {
     if (!accessToken) {
       savedStoreDirectory = [];
+      savedOnlineStoreDirectory = [];
       return [];
     }
-    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:M`, "UNFORMATTED_VALUE");
-    savedStoreDirectory = (data.values || []).map((row,index) => ({
+    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:N`, "UNFORMATTED_VALUE");
+    const all = (data.values || []).map((row,index) => ({
       sheetRow:index + 2,
       storeId:String(row[0] ?? "").trim(),
       name:String(row[1] ?? "").trim(),
@@ -6767,10 +6787,13 @@
       googleMapsUrl:String(row[10] ?? "").trim(),
       notes:String(row[11] ?? "").trim(),
       active:row[12] === true || String(row[12] ?? "").toUpperCase() === "TRUE" || Number(row[12]) === 1,
+      websiteUrl:String(row[13] ?? "").trim(),
       lastUsed:0,
       source:"saved"
-    })).filter(store => store.active && store.name && String(store.type).toLowerCase() !== "online");
-    return savedStoreDirectory;
+    })).filter(store => store.active && store.name);
+    savedStoreDirectory = all.filter(store => String(store.type).toLowerCase() !== "online");
+    savedOnlineStoreDirectory = all.filter(store => String(store.type).toLowerCase() === "online");
+    return all;
   }
 
   async function refreshStartStoreDirectory() {
@@ -6807,11 +6830,15 @@
     const note = document.getElementById("start-mode-note");
     const googleNote = document.getElementById("start-google-placeholder");
     const manualButton = document.getElementById("start-manual-store-button");
+    const remoteMapButton = document.getElementById("start-remote-map-button");
 
     storeInput.disabled = false;
     toggle.disabled = false;
     manualButton.classList.remove("hidden");
+    remoteMapButton?.classList.add("hidden");
     googleNote.classList.remove("hidden");
+
+    if (mode !== "ONLINE") manualButton.textContent = "＋ ADD MANUALLY";
 
     if (mode === "NEAR") {
       storeInput.placeholder = "Search store by name, branch, or address";
@@ -6830,13 +6857,19 @@
       note.className = "store-mode-note success";
       await refreshStartStoreDirectory();
       await ensureGooglePlacesReady(true);
+      remoteMapButton?.classList.remove("hidden");
       storeInput.focus();
     } else {
       startLocationSnapshot = null;
-      storeInput.placeholder = "Enter or choose the online merchant";
-      note.textContent = "Online Store does not use geolocation. Receipt/document import will be added in the later OCR stage.";
+      storeInput.placeholder = "Search online merchant or website";
+      manualButton.textContent = "＋ ADD ONLINE STORE";
+      note.textContent = "Online Store uses only e-commerce merchants and website URLs. Physical branches are hidden here.";
       note.className = "store-mode-note success";
       googleNote.classList.add("hidden");
+      await refreshStartStoreDirectory();
+      startGooglePredictions = [];
+      renderVisitedStores();
+      document.getElementById("start-store-dropdown").classList.remove("hidden");
       storeInput.focus();
     }
   }
@@ -7047,10 +7080,39 @@
 
     const query = String(document.getElementById("start-store-search")?.value || "").trim();
 
+    if (startShoppingMode === "ONLINE") {
+      const normalizedQuery = normalizeStoreSearchText(query);
+      const merged = [];
+      const seen = new Set();
+      [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS].forEach(store => {
+        const key = normalizeStore(store.websiteUrl || store.name);
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        const hay = normalizeStoreSearchText([store.name, store.websiteUrl].filter(Boolean).join(" "));
+        if (normalizedQuery && !normalizedQuery.split(/\s+/).every(token => hay.includes(token))) return;
+        merged.push(store);
+      });
+      window.currentVisitedStoreResults = merged;
+      let html = merged.length
+        ? '<div class="start-store-empty" style="padding-bottom:6px;">Online merchants</div>' + merged.map((store,index) => (
+            '<button class="start-store-option" type="button" onclick="selectVisitedStore(' + index + ')">' +
+              '<span class="start-store-option-name">' + escapeHtml(store.name) + '</span>' +
+              '<span class="start-store-option-meta">' + escapeHtml(store.websiteUrl || 'Saved online merchant') + '</span>' +
+            '</button>'
+          )).join("")
+        : '<div class="start-store-empty">No saved online merchant matches that search.</div>';
+      html += '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
+        '<span class="start-store-option-name">＋ Add online store manually</span>' +
+        '<span class="start-store-option-meta">Enter the merchant name and website URL once, then reuse it later.</span>' +
+      '</button>';
+      list.innerHTML = html;
+      return;
+    }
+
     const combinedDirectory = [];
     const seenDirectoryKeys = new Set();
     [...savedStoreDirectory, ...visitedStores].forEach(store => {
-      if (!store?.name) return;
+      if (!store?.name || String(store.type || '').toLowerCase() === 'online') return;
       const key = [normalizeStore(store.name), normalizeStore(store.branchName), normalizeStore(store.address)].join("|");
       if (seenDirectoryKeys.has(key)) return;
       seenDirectoryKeys.add(key);
@@ -7073,9 +7135,6 @@
     window.currentVisitedStoreResults = filtered;
 
     let html = "";
-
-    // Saved/manual entries are intentionally shown before Google predictions
-    // when they match, so stores the user deliberately added remain discoverable.
     if (filtered.length) {
       html += '<div class="start-store-empty" style="padding-bottom:6px;">Saved / previously used stores</div>';
       html += filtered.map((store,index) => (
@@ -7410,7 +7469,8 @@
         openingHours: Array.isArray(place.regularOpeningHours?.weekdayDescriptions)
           ? place.regularOpeningHours.weekdayDescriptions.join(" | ")
           : "",
-        googleMapsUrl: String(place.googleMapsURI || "").trim()
+        googleMapsUrl: String(place.googleMapsURI || "").trim(),
+        websiteUrl: String(place.websiteURI || "").trim()
       };
       selectedStartGoogleStore = record;
       document.getElementById("start-store").value = displayValue;
@@ -7435,7 +7495,7 @@
 
   async function saveGoogleStoreIfNeeded(record) {
     if (!record?.googlePlaceId || !accessToken) return;
-    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:M`, "UNFORMATTED_VALUE");
+    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:N`, "UNFORMATTED_VALUE");
     const rows = data.values || [];
     const existingIndex = rows.findIndex(row => String(row?.[5] || "").trim() === record.googlePlaceId);
     if (existingIndex >= 0) return;
@@ -7447,7 +7507,7 @@
       }
     }
     await sheetsValuesBatchUpdate([{
-      range: `'${STORES_SHEET}'!A${rowNumber}:M${rowNumber}`,
+      range: `'${STORES_SHEET}'!A${rowNumber}:N${rowNumber}`,
       values: [[
         "STORE-G-" + Date.now(),
         record.name,
@@ -7461,7 +7521,8 @@
         record.openingHours || "",
         record.googleMapsUrl || "",
         "",
-        true
+        true,
+        record.websiteUrl || ""
       ]]
     }], "RAW");
   }
@@ -7483,21 +7544,24 @@
       return;
     }
 
-    if (store.source === "saved") {
+    if (store.source === "saved" || store.source === "online-builtin") {
       selectedStartGoogleStore = {
         id: store.storeId || "",
         name: store.name,
         branchName: store.branchName || "",
         address: store.address || "",
-        type: store.type || "Physical",
+        type: store.type || (startShoppingMode === "ONLINE" ? "Online" : "Physical"),
         googlePlaceId: store.googlePlaceId || "",
         latitude: store.latitude ?? "",
         longitude: store.longitude ?? "",
         businessStatus: store.businessStatus || "",
         openingHours: store.openingHours || "",
-        googleMapsUrl: store.googleMapsUrl || ""
+        googleMapsUrl: store.googleMapsUrl || "",
+        websiteUrl: store.websiteUrl || ""
       };
-      document.getElementById("start-store").value = [store.name, store.branchName, store.address].filter(Boolean).join(" — ");
+      document.getElementById("start-store").value = startShoppingMode === "ONLINE"
+        ? [store.name, store.websiteUrl].filter(Boolean).join(" — ")
+        : [store.name, store.branchName, store.address].filter(Boolean).join(" — ");
     } else {
       selectedStartGoogleStore = null;
       document.getElementById("start-store").value = store.name;
@@ -7511,6 +7575,48 @@
     );
   }
 
+
+  async function openRemoteMapSearch() {
+    if (startShoppingMode !== "REMOTE") return;
+    const query = String(document.getElementById("start-store-search")?.value || document.getElementById("start-store")?.value || "").trim();
+    if (query.length < 2) {
+      showErrorToast("Search first", "Type a store, branch, neighborhood, city, or address, then tap MAP.");
+      document.getElementById("start-store")?.focus();
+      return;
+    }
+    try {
+      setStatus("Opening remote store map...", "working");
+      await warmGoogleStoreDiscovery();
+      const { Place } = await google.maps.importLibrary("places");
+      const response = await Place.searchByText({
+        textQuery: query,
+        fields: ["id","displayName","formattedAddress","location","businessStatus","regularOpeningHours","currentOpeningHours","googleMapsURI","primaryTypeDisplayName","rating","userRatingCount","nationalPhoneNumber","internationalPhoneNumber","websiteURI","primaryType"],
+        language: "es-MX",
+        region: "mx",
+        maxResultCount: 20
+      });
+      const places = (response?.places || []).filter(place => place?.location);
+      if (!places.length) {
+        showErrorToast("No mapped results", "Try different keywords, use the dropdown, or add the store manually.");
+        return;
+      }
+      nearbyStorePlaces = places;
+      nearbyStoreIndex = 0;
+      nearbyCardDirection = "next";
+      document.getElementById("nearby-stores-title").textContent = "REMOTE STORE RESULTS";
+      document.getElementById("nearby-stores-subtitle").textContent = `${places.length} mapped result${places.length === 1 ? "" : "s"} for “${query}”. Use the map or swipe the cards.`;
+      document.getElementById("nearby-carousel-nav").classList.remove("hidden");
+      show("nearby-stores-overlay");
+      renderNearbyStoreCard("next");
+      await nextVisibleMapFrame();
+      await openNearbyFullMap();
+      setStatus("Remote map ready.", "success");
+    } catch (error) {
+      console.warn("Remote map search failed", error);
+      showErrorToast("Remote map unavailable", "The dropdown and manual fallback are still available.");
+      setStatus("Remote map search failed.", "error");
+    }
+  }
 
   function openNearbyChoice() {
     const loc = document.getElementById("nearby-choice-location");
@@ -7746,40 +7852,61 @@
     if (nearbyDeckInteractiveTarget(event.target)) return;
     nearbyPointerActive = true;
     nearbyPointerStartX = event.clientX;
+    nearbyPointerStartY = event.clientY;
+    nearbyPointerGesture = "";
     const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
     if (shell) shell.style.transition = "none";
-    try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch (_) {}
   }
 
   function nearbyDeckPointerMove(event) {
-    if (!nearbyPointerActive || nearbyPointerStartX === null) return;
-    const delta = event.clientX - nearbyPointerStartX;
+    if (!nearbyPointerActive || nearbyPointerStartX === null || nearbyPointerStartY === null) return;
+    const dx = event.clientX - nearbyPointerStartX;
+    const dy = event.clientY - nearbyPointerStartY;
+
+    if (!nearbyPointerGesture && (Math.abs(dx) > 9 || Math.abs(dy) > 9)) {
+      // Only claim the gesture when horizontal movement clearly dominates.
+      // Vertical drags are left completely to the modal's native scrolling.
+      nearbyPointerGesture = Math.abs(dx) > Math.abs(dy) * 1.25 ? "horizontal" : "vertical";
+      if (nearbyPointerGesture === "horizontal") {
+        try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch (_) {}
+      }
+    }
+
+    if (nearbyPointerGesture !== "horizontal") return;
+    event.preventDefault();
     const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
     if (!shell) return;
-    const rotation = Math.max(-14, Math.min(14, delta / 11));
-    const lift = Math.min(10, Math.abs(delta) / 18);
-    const opacity = Math.max(.66, 1 - Math.abs(delta) / 430);
-    shell.style.transform = `translateX(${delta}px) translateY(${lift}px) rotate(${rotation}deg)`;
+    const rotation = Math.max(-14, Math.min(14, dx / 11));
+    const lift = Math.min(10, Math.abs(dx) / 18);
+    const opacity = Math.max(.66, 1 - Math.abs(dx) / 430);
+    shell.style.transform = `translateX(${dx}px) translateY(${lift}px) rotate(${rotation}deg)`;
     shell.style.opacity = String(opacity);
   }
 
   function nearbyDeckPointerUp(event) {
     if (!nearbyPointerActive) return;
     nearbyPointerActive = false;
-    const delta = nearbyPointerStartX === null ? 0 : event.clientX - nearbyPointerStartX;
+    const dx = nearbyPointerStartX === null ? 0 : event.clientX - nearbyPointerStartX;
+    const gesture = nearbyPointerGesture;
     nearbyPointerStartX = null;
+    nearbyPointerStartY = null;
+    nearbyPointerGesture = "";
     const host = document.getElementById("nearby-card-host");
     const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
     if (!host || !shell) return;
 
     shell.style.transition = "";
-    if (Math.abs(delta) < 70) {
-      host.classList.add("snap-back");
-      setTimeout(() => host.classList.remove("snap-back"), 220);
+    if (gesture !== "horizontal" || Math.abs(dx) < 70) {
+      shell.style.transform = "";
+      shell.style.opacity = "";
+      if (gesture === "horizontal") {
+        host.classList.add("snap-back");
+        setTimeout(() => host.classList.remove("snap-back"), 220);
+      }
       return;
     }
 
-    const goingNext = delta < 0;
+    const goingNext = dx < 0;
     host.classList.remove("slide-next","slide-prev","throw-next","throw-prev","snap-back");
     host.classList.add(goingNext ? "throw-next" : "throw-prev");
     setTimeout(() => {
@@ -8155,7 +8282,7 @@
   }
 
   function clearStartManualStoreForm() {
-    ["start-manual-name","start-manual-branch","start-manual-address","start-manual-maps-url","start-manual-latitude","start-manual-longitude","start-manual-hours","start-manual-notes"]
+    ["start-manual-name","start-manual-branch","start-manual-address","start-manual-maps-url","start-manual-website-url","start-manual-latitude","start-manual-longitude","start-manual-hours","start-manual-notes"]
       .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
     document.getElementById("start-manual-business-status").value = "";
     const status = document.getElementById("start-manual-store-status");
@@ -8168,6 +8295,15 @@
     closeNearbyChoice();
     closeNearbyStores();
     clearStartManualStoreForm();
+    const online = startShoppingMode === "ONLINE";
+    document.getElementById("start-manual-store-title").textContent = online ? "ADD ONLINE STORE" : "ADD STORE MANUALLY";
+    document.querySelector("#start-manual-store-overlay .change-body").textContent = online
+      ? "Enter the online merchant and its website URL. Physical branch/location fields are hidden because this purchase is online."
+      : "Use this only when Google cannot find the store. Fill what you know; only Store Name is required.";
+    document.querySelectorAll(".start-manual-physical-only").forEach(el => el.classList.toggle("hidden", online));
+    const websiteRow = document.getElementById("start-manual-website-row");
+    websiteRow?.classList.toggle("hidden", !online);
+    document.getElementById("start-manual-name").value = String(document.getElementById("start-store-search")?.value || document.getElementById("start-store")?.value || "").trim();
     show("start-manual-store-overlay");
     setTimeout(() => document.getElementById("start-manual-name").focus(), 80);
   }
@@ -8182,6 +8318,7 @@
     const address = String(document.getElementById("start-manual-address").value || "").trim();
     const businessStatus = String(document.getElementById("start-manual-business-status").value || "").trim();
     const googleMapsUrl = String(document.getElementById("start-manual-maps-url").value || "").trim();
+    const websiteUrl = String(document.getElementById("start-manual-website-url").value || "").trim();
     const latRaw = String(document.getElementById("start-manual-latitude").value || "").trim();
     const lngRaw = String(document.getElementById("start-manual-longitude").value || "").trim();
     const openingHours = String(document.getElementById("start-manual-hours").value || "").trim();
@@ -8191,6 +8328,11 @@
 
     if (!name) {
       status.textContent = "Store Name is required.";
+      status.className = "store-mode-note error";
+      return;
+    }
+    if (startShoppingMode === "ONLINE" && !websiteUrl) {
+      status.textContent = "Website URL is required for an online store.";
       status.className = "store-mode-note error";
       return;
     }
@@ -8206,7 +8348,7 @@
     status.textContent = "Saving manual store…";
     status.className = "store-mode-note";
     try {
-      const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:M`, "UNFORMATTED_VALUE");
+      const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:N`, "UNFORMATTED_VALUE");
       const rows = data.values || [];
       const duplicate = rows.some(row =>
         normalizeStore(row?.[1]) === normalizeStore(name) &&
@@ -8225,34 +8367,43 @@
       const storeId = "STORE-M-" + Date.now();
       const type = startShoppingMode === "ONLINE" ? "Online" : "Physical";
       await sheetsValuesBatchUpdate([{
-        range:`'${STORES_SHEET}'!A${rowNumber}:M${rowNumber}`,
+        range:`'${STORES_SHEET}'!A${rowNumber}:N${rowNumber}`,
         values:[[
           storeId, name, branchName, address, type, "", latitude, longitude,
-          businessStatus, openingHours, googleMapsUrl, notes, true
+          businessStatus, openingHours, googleMapsUrl, notes, true, websiteUrl
         ]]
       }], "RAW");
 
       const record = {
         id:storeId, name, branchName, address, type, googlePlaceId:"",
-        latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes
+        latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes, websiteUrl
       };
       selectedStartGoogleStore = record;
       visitedStoresLoadedFromTrips = false;
       const savedEntry = {
         storeId, name, branchName, address, type, googlePlaceId:"",
-        latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes,
+        latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes, websiteUrl,
         active:true, lastUsed:Date.now(), source:"saved"
       };
       const savedKey = [normalizeStore(name), normalizeStore(branchName), normalizeStore(address)].join("|");
-      visitedStores = visitedStores.filter(existing =>
-        [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
-      );
-      visitedStores.unshift(savedEntry);
-      savedStoreDirectory = savedStoreDirectory.filter(existing =>
-        [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
-      );
-      savedStoreDirectory.unshift({...savedEntry});
-      const displayValue = [name, branchName, address].filter(Boolean).join(" — ");
+      if (type === "Online") {
+        savedOnlineStoreDirectory = savedOnlineStoreDirectory.filter(existing =>
+          normalizeStore(existing.websiteUrl || existing.name) !== normalizeStore(websiteUrl || name)
+        );
+        savedOnlineStoreDirectory.unshift({...savedEntry});
+      } else {
+        visitedStores = visitedStores.filter(existing =>
+          [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
+        );
+        visitedStores.unshift(savedEntry);
+        savedStoreDirectory = savedStoreDirectory.filter(existing =>
+          [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
+        );
+        savedStoreDirectory.unshift({...savedEntry});
+      }
+      const displayValue = type === "Online"
+        ? [name, websiteUrl].filter(Boolean).join(" — ")
+        : [name, branchName, address].filter(Boolean).join(" — ");
       document.getElementById("start-store").value = displayValue;
       document.getElementById("start-store-search").value = displayValue;
       closeStartManualStoreForm();
@@ -21588,7 +21739,7 @@
             "UNFORMATTED_VALUE"
           ),
           sheetsGetValues(
-            `'${STORES_SHEET}'!A2:M`,
+            `'${STORES_SHEET}'!A2:N`,
             "UNFORMATTED_VALUE"
           )
         ]
@@ -21712,6 +21863,7 @@
               openingHours: String(row[9] ?? "").trim(),
               googleMapsUrl: String(row[10] ?? "").trim(),
               notes: String(row[11] ?? "").trim(),
+              websiteUrl: String(row[13] ?? "").trim(),
               active:
                 activeRaw === true ||
                 String(activeRaw ?? "").trim().toUpperCase() === "TRUE"
@@ -22967,7 +23119,7 @@
 
       await sheetsValuesBatchUpdate(
         [{
-          range: `'${STORES_SHEET}'!A${rowNumber}:M${rowNumber}`,
+          range: `'${STORES_SHEET}'!A${rowNumber}:N${rowNumber}`,
           values: [[
             storeId,
             name,
@@ -22981,7 +23133,8 @@
             editing?.openingHours || "",
             editing?.googleMapsUrl || "",
             notes,
-            editing ? editing.active : true
+            editing ? editing.active : true,
+            editing?.websiteUrl || ""
           ]]
         }],
         "RAW"
