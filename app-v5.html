@@ -2905,6 +2905,83 @@
       overflow:hidden!important;
     }
 
+    .nearby-debug-panel {
+      margin:12px 0 6px;
+      border:1px solid #4a5060;
+      border-radius:12px;
+      background:#151821;
+      color:#d6d9e2;
+      overflow:hidden;
+    }
+
+    .nearby-debug-panel summary {
+      cursor:pointer;
+      padding:11px 13px;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.06em;
+      color:#bca1ff;
+      user-select:none;
+    }
+
+    .nearby-debug-log {
+      margin:0;
+      padding:0 13px 13px;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+      font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      color:#cfd4df;
+      max-height:190px;
+      overflow:auto;
+    }
+
+    .nearby-map-place-panel {
+      margin-top:10px;
+      border:1px solid #4a5060;
+      border-radius:14px;
+      background:#20242f;
+      padding:13px;
+      color:#fff;
+      box-sizing:border-box;
+    }
+
+    .nearby-map-place-panel.hidden { display:none!important; }
+
+    .nearby-map-place-name {
+      font-size:18px;
+      font-weight:900;
+      line-height:1.2;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-map-place-address {
+      margin-top:6px;
+      color:#bfc4cf;
+      font-size:13px;
+      line-height:1.4;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-map-place-actions {
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      margin-top:11px;
+    }
+
+    .nearby-map-place-actions button {
+      min-width:0;
+      border:0;
+      border-radius:10px;
+      padding:11px 10px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+    }
+
+    .nearby-map-place-go { background:#7b38bd; color:#fff; }
+    .nearby-map-place-dismiss { background:#3f4553; color:#fff; }
+
     .nearby-mini-map-wrap {
       position:relative;
       min-height:150px;
@@ -5200,7 +5277,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2F — full-card deck motion, fresh saved-store search, and stabilized reusable maps. The live app is still index.html.
+    V5 Google Places Step 2K — diagnostic Nearby pipeline + custom map store panel. The live app is still index.html.
   </div>
 
 </div>
@@ -5515,6 +5592,10 @@
   <div class="change-card nearby-browser-card">
     <div id="nearby-stores-title" class="change-title">STORES NEAR YOU</div>
     <div id="nearby-stores-subtitle" class="change-body">Looking for stores around your current position…</div>
+    <details id="nearby-debug-details" class="nearby-debug-panel">
+      <summary>TECHNICAL DIAGNOSTICS</summary>
+      <pre id="nearby-debug-log" class="nearby-debug-log">Waiting for Nearby Search…</pre>
+    </details>
     <div id="nearby-card-host" class="nearby-card-stage">
       <div class="nearby-loading">Searching Google Maps…</div>
     </div>
@@ -5539,6 +5620,14 @@
     <div id="nearby-map-title" class="change-title">STORE MAP</div>
     <div id="nearby-map-subtitle" class="nearby-full-map-title">Selected Google store</div>
     <div id="nearby-full-map" class="nearby-full-map"></div>
+    <div id="nearby-map-place-panel" class="nearby-map-place-panel hidden">
+      <div id="nearby-map-place-name" class="nearby-map-place-name">Store</div>
+      <div id="nearby-map-place-address" class="nearby-map-place-address"></div>
+      <div class="nearby-map-place-actions">
+        <button class="nearby-map-place-go" type="button" onclick="goToNearbyMapPanelStore()">GO TO THIS STORE</button>
+        <button class="nearby-map-place-dismiss" type="button" onclick="hideNearbyMapPlacePanel()">CLOSE</button>
+      </div>
+    </div>
     <div class="change-actions" style="margin-top:12px;">
       <button class="change-cancel" type="button" onclick="closeNearbyFullMap()">CLOSE</button>
       <button id="nearby-full-map-google" class="change-history" type="button" onclick="openCurrentNearbyStoreInGoogleMaps()">OPEN IN GOOGLE MAPS</button>
@@ -5780,6 +5869,8 @@
   let nearbyFullMapMarker = null;
   let nearbyFullMapMarkers = [];
   let nearbyFullMapInfoWindow = null;
+  let nearbyMapPanelDeckIndex = -1;
+  let nearbyDebugEntries = [];
   let nearbyFullMapIdleTimer = null;
   let nearbyFullMapSearchSerial = 0;
   let nearbyFullMapLastSearchKey = "";
@@ -7114,6 +7205,26 @@
     return true;
   }
 
+  function nearbyDebugReset(label = "Nearby diagnostics") {
+    nearbyDebugEntries = [];
+    nearbyDebugLog(label);
+  }
+
+  function nearbyDebugLog(message, detail = "") {
+    const stamp = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+    const line = `[${stamp}] ${String(message || "")}${detail ? ` — ${String(detail)}` : ""}`;
+    nearbyDebugEntries.push(line);
+    if (nearbyDebugEntries.length > 40) nearbyDebugEntries.shift();
+    const el = document.getElementById("nearby-debug-log");
+    if (el) el.textContent = nearbyDebugEntries.join("\n");
+  }
+
+  function nearbyErrorText(error) {
+    if (!error) return "Unknown error";
+    const parts = [error.name, error.message, error.status, error.code].filter(Boolean);
+    return parts.length ? parts.join(" | ") : String(error);
+  }
+
   async function warmGoogleStoreDiscovery() {
     try {
       const ready = await ensureGooglePlacesReady(false);
@@ -7475,6 +7586,7 @@
 
 
   async function showNearbyStores() {
+    nearbyDebugReset("Near Me request started");
     closeNearbyChoice();
     setNearbyModalScrollLock(true);
     show("nearby-stores-overlay");
@@ -7487,32 +7599,40 @@
     document.getElementById("nearby-dots").innerHTML = "";
 
     if (!startLocationSnapshot) {
+      nearbyDebugLog("Location", "NOT READY");
       subtitle.textContent = "Your location is needed to browse nearby stores.";
       host.innerHTML = '<div class="nearby-empty">Location is unavailable. Use Search by Name, or close this window and select Near Me again to retry.</div>';
       return;
     }
 
     try {
+      nearbyDebugLog("Location", `${Number(startLocationSnapshot.latitude).toFixed(5)}, ${Number(startLocationSnapshot.longitude).toFixed(5)}`);
+      nearbyDebugLog("Places library", "checking");
       let ready = await ensureGooglePlacesReady(true);
-      if (!ready) return;
+      if (!ready) { nearbyDebugLog("Places library", "NOT READY"); return; }
+      nearbyDebugLog("Places library", "READY");
       // A short readiness barrier avoids the first-request race seen on some mobile browsers.
       await new Promise(resolve => setTimeout(resolve, 180));
       ready = await ensureGooglePlacesReady(true);
       if (!ready) return;
       subtitle.textContent = "Finding the nearest Google-listed retail stores within about 5 km (up to 20 results).";
-      await warmGoogleStoreDiscovery();
+      const warmed = await warmGoogleStoreDiscovery();
+      nearbyDebugLog("Google warm-up", warmed ? "READY" : "completed with warning");
       let nearbyResponse = null;
       let lastNearbyError = null;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
+          nearbyDebugLog(`Nearby request #${attempt}`, `radius ${NEARBY_STORE_RADIUS_METERS} m`);
           nearbyResponse = await searchRetailPlaces(
             {lat:startLocationSnapshot.latitude, lng:startLocationSnapshot.longitude},
             NEARBY_STORE_RADIUS_METERS,
             20
           );
+          nearbyDebugLog(`Nearby request #${attempt}`, `${nearbyResponse?.places?.length || 0} places returned`);
           break;
         } catch (error) {
           lastNearbyError = error;
+          nearbyDebugLog(`Nearby request #${attempt} FAILED`, nearbyErrorText(error));
           if (attempt >= 3) throw error;
           subtitle.textContent = `Google Places is still getting ready. Retrying automatically (${attempt + 1}/3)…`;
           await new Promise(resolve => setTimeout(resolve, attempt === 1 ? 650 : 1200));
@@ -7522,6 +7642,7 @@
       if (!nearbyResponse && lastNearbyError) throw lastNearbyError;
       const places = nearbyResponse?.places || [];
       nearbyStorePlaces = Array.isArray(places) ? places.filter(p => p?.location && p?.displayName) : [];
+      nearbyDebugLog("Renderable nearby places", String(nearbyStorePlaces.length));
       nearbyStoreIndex = 0;
       if (!nearbyStorePlaces.length) {
         subtitle.textContent = "Google did not return nearby retail stores in this radius.";
@@ -7533,6 +7654,9 @@
       renderNearbyStoreCard();
     } catch (error) {
       console.error(error);
+      nearbyDebugLog("Nearby Search FINAL FAILURE", nearbyErrorText(error));
+      const details = document.getElementById("nearby-debug-details");
+      if (details) details.open = true;
       subtitle.textContent = "Nearby Google search could not be completed.";
       host.innerHTML = '<div class="nearby-empty">Google Places could not load nearby stores. Search by Name and manual entry are still available.</div>';
     }
@@ -7722,41 +7846,25 @@
     return index;
   }
 
-  function makeNearbyMapInfoContent(place, index) {
+  function showNearbyMapPlacePanel(place, index = -1) {
     const record = nearbyPlaceRecord(place);
-    const content = document.createElement("div");
-    content.className = "nearby-map-info";
-
-    const title = document.createElement("strong");
-    title.textContent = record.name || "Store";
-    content.appendChild(title);
-
-    const address = document.createElement("div");
-    address.className = "nearby-map-info-address";
-    address.textContent = record.address || "Address not provided";
-    content.appendChild(address);
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = "GO TO THIS STORE";
-    button.addEventListener("click", () => {
-      const deckIndex = index >= 0 ? index : ensurePlaceInNearbyDeck(place);
-      if (deckIndex >= 0) focusNearbyStoreFromMap(deckIndex);
-    });
-    content.appendChild(button);
-    return content;
+    nearbyMapPanelDeckIndex = index >= 0 ? index : ensurePlaceInNearbyDeck(place);
+    const panel = document.getElementById("nearby-map-place-panel");
+    const name = document.getElementById("nearby-map-place-name");
+    const address = document.getElementById("nearby-map-place-address");
+    if (name) name.textContent = record.name || "Store";
+    if (address) address.textContent = record.address || "Address not provided by Google";
+    panel?.classList.remove("hidden");
   }
 
-  function openNearbyMapInfoForPlace(map, infoWindow, place, marker = null, position = null, index = -1) {
-    infoWindow.close();
-    infoWindow.setOptions({maxWidth:220});
-    infoWindow.setContent(makeNearbyMapInfoContent(place, index));
-    if (marker) {
-      infoWindow.open({map, anchor:marker});
-    } else if (position) {
-      infoWindow.setPosition(position);
-      infoWindow.open({map});
-    }
+  function hideNearbyMapPlacePanel() {
+    nearbyMapPanelDeckIndex = -1;
+    document.getElementById("nearby-map-place-panel")?.classList.add("hidden");
+  }
+
+  function goToNearbyMapPanelStore() {
+    if (nearbyMapPanelDeckIndex < 0) return;
+    focusNearbyStoreFromMap(nearbyMapPanelDeckIndex);
   }
 
   function clearNearbyFullMapMarkers() {
@@ -7769,7 +7877,7 @@
     nearbyFullMapMarker = null;
   }
 
-  async function renderRetailMarkersForMap(map, infoWindow, places) {
+  async function renderRetailMarkersForMap(map, places) {
     const { Marker } = await google.maps.importLibrary("marker");
     clearNearbyFullMapMarkers();
     const markers = [];
@@ -7793,14 +7901,14 @@
           strokeWeight:2
         }
       });
-      marker.addListener("click", () => openNearbyMapInfoForPlace(map, infoWindow, place, marker, null, deckIndex));
+      marker.addListener("click", () => showNearbyMapPlacePanel(place, deckIndex));
       markers.push(marker);
       if (deckIndex === nearbyStoreIndex) nearbyFullMapMarker = marker;
     }
     nearbyFullMapMarkers = markers;
   }
 
-  async function refreshNearbyRetailMarkersForViewport(map, infoWindow, force = false) {
+  async function refreshNearbyRetailMarkersForViewport(map, force = false) {
     if (!map || nearbyFullMapInitialising) return;
     const circle = mapVisibleSearchCircle(map);
     if (!circle) return;
@@ -7815,7 +7923,8 @@
       const response = await searchRetailPlaces(circle.center, circle.radius, 20);
       if (serial !== nearbyFullMapSearchSerial || map !== nearbyFullMap) return;
       const places = Array.isArray(response?.places) ? response.places.filter(p => p?.location && p?.displayName) : [];
-      await renderRetailMarkersForMap(map, infoWindow, places);
+      await renderRetailMarkersForMap(map, places);
+      nearbyDebugLog("Map viewport search", `${places.length || 0} retail markers rendered`);
       if (subtitle) subtitle.textContent = `Showing ${places.length || 0} nearby retail result${places.length === 1 ? "" : "s"} for this map area. Pan or zoom to refresh.`;
     } catch (error) {
       console.warn("Viewport retail refresh failed", error);
@@ -7823,10 +7932,10 @@
     }
   }
 
-  function scheduleNearbyViewportRefresh(map, infoWindow) {
+  function scheduleNearbyViewportRefresh(map) {
     clearTimeout(nearbyFullMapIdleTimer);
     nearbyFullMapIdleTimer = setTimeout(() => {
-      void refreshNearbyRetailMarkersForViewport(map, infoWindow, false);
+      void refreshNearbyRetailMarkersForViewport(map, false);
     }, 550);
   }
 
@@ -7857,11 +7966,12 @@
     await new Promise(resolve => setTimeout(resolve, attemptNumber === 1 ? 420 : 800));
 
     const rect = mapEl.getBoundingClientRect();
+    nearbyDebugLog(`Map attempt #${attemptNumber} container`, `${Math.round(rect.width)}x${Math.round(rect.height)} px`);
     if (rect.width < 120 || rect.height < 180) {
       throw new Error(`Map container is not ready (${Math.round(rect.width)}x${Math.round(rect.height)}).`);
     }
 
-    const { Map, InfoWindow } = await google.maps.importLibrary("maps");
+    const { Map } = await google.maps.importLibrary("maps");
     mapEl.innerHTML = "";
     const center = {lat:Number(selectedCoords.latitude), lng:Number(selectedCoords.longitude)};
     const mapOptions = {
@@ -7877,9 +7987,10 @@
 
     nearbyFullMapInitialising = true;
     const candidateMap = new Map(mapEl, mapOptions);
-    const infoWindow = new InfoWindow({maxWidth:220});
+    nearbyDebugLog(`Map attempt #${attemptNumber}`, "Map object created");
     nearbyFullMap = candidateMap;
-    nearbyFullMapInfoWindow = infoWindow;
+    nearbyFullMapInfoWindow = null;
+    hideNearbyMapPlacePanel();
     nearbyFullMapLastSearchKey = "";
 
     // Let ordinary Google basemap POIs be selectable too. The click event carries
@@ -7887,7 +7998,7 @@
     // our own consistent "GO TO THIS STORE" card can be used instead.
     candidateMap.addListener("click", event => {
       if (!event?.placeId) {
-        infoWindow.close();
+        hideNearbyMapPlacePanel();
         return;
       }
       try { event.stop?.(); } catch (_) {}
@@ -7895,7 +8006,8 @@
         try {
           const place = await fetchPlaceFromMapPoi(event.placeId);
           const deckIndex = ensurePlaceInNearbyDeck(place);
-          openNearbyMapInfoForPlace(candidateMap, infoWindow, place, null, event.latLng, deckIndex);
+          nearbyDebugLog("Google basemap POI tapped", String(event.placeId));
+          showNearbyMapPlacePanel(place, deckIndex);
         } catch (error) {
           console.warn("POI detail lookup failed", error);
         }
@@ -7909,12 +8021,14 @@
       const timer = setTimeout(() => {
         if (settled) return;
         settled = true;
+        nearbyDebugLog(`Map attempt #${attemptNumber} tiles`, "TIMEOUT");
         reject(new Error("Google map tiles did not load in time."));
       }, 8500);
       google.maps.event.addListenerOnce(candidateMap,"tilesloaded",() => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        nearbyDebugLog(`Map attempt #${attemptNumber} tiles`, "LOADED");
         resolve();
       });
       setTimeout(() => {
@@ -7926,11 +8040,12 @@
     });
 
     nearbyFullMapInitialising = false;
-    await refreshNearbyRetailMarkersForViewport(candidateMap, infoWindow, true);
+    await refreshNearbyRetailMarkersForViewport(candidateMap, true);
 
     candidateMap.addListener("idle", () => {
       if (nearbyFullMapInitialising) return;
-      scheduleNearbyViewportRefresh(candidateMap, infoWindow);
+      nearbyDebugLog("Map idle event", "viewport refresh scheduled");
+      scheduleNearbyViewportRefresh(candidateMap);
     });
   }
 
@@ -7971,6 +8086,7 @@
       } catch (error) {
         lastError = error;
         console.warn(`Full store map attempt ${attempt} failed`, error);
+        nearbyDebugLog(`Map attempt #${attempt} FAILED`, nearbyErrorText(error));
         nearbyFullMapInitialising = false;
         clearTimeout(nearbyFullMapIdleTimer);
         nearbyFullMapInfoWindow?.close?.();
@@ -7982,6 +8098,7 @@
     }
 
     console.warn("Full store map could not render after automatic retry", lastError);
+    nearbyDebugLog("Map FINAL FAILURE", nearbyErrorText(lastError));
     if (mapEl) {
       mapEl.innerHTML = '<div class="nearby-empty">The in-app Google map could not render after an automatic retry.<br><br>Store search and selection still work normally.</div>';
     }
@@ -7996,6 +8113,7 @@
     nearbyFullMapLastSearchKey = "";
     nearbyFullMapInitialising = false;
     nearbyFullMapInfoWindow?.close?.();
+    hideNearbyMapPlacePanel();
     clearNearbyFullMapMarkers();
     nearbyFullMap = null;
     const mapEl = document.getElementById("nearby-full-map");
