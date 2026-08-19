@@ -2146,6 +2146,9 @@
 
     .start-store-row input {
       margin: 0;
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
     }
 
     .start-store-toggle {
@@ -2161,10 +2164,11 @@
     }
 
     .start-store-map-inline {
-      flex: 0 0 auto;
+      flex: 0 0 64px;
+      width: 64px;
+      min-width: 64px;
       margin: 0;
-      min-width: 78px;
-      padding: 11px 10px;
+      padding: 11px 6px;
       border: 0;
       border-radius: 10px;
       background: #7136bf;
@@ -5315,7 +5319,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2L — remote map + online merchant directory + swipe/scroll guard. The live app is still index.html.
+    V5 Google Places Step 2N — Remote MAP visibility + cleaner online retail discovery. The live app is still index.html.
   </div>
 
 </div>
@@ -7150,7 +7154,7 @@
             '<span class="start-store-option-meta">' + escapeHtml(store.websiteUrl) + '</span>' +
           '</button>'
         )).join("");
-        html += '<div class="online-discovery-note">Internet discovery currently uses Google business data and only shows results that provide a website. Smaller online shops can still be added manually and will be reusable here.</div>';
+        html += '<div class="online-discovery-note">Internet discovery uses Google business data, filters for retail/shop-type businesses, and stores a clean merchant home-domain URL. Smaller online shops can still be added manually and will be reusable here.</div>';
       } else if (normalizedQuery.length >= 2) {
         html += '<div class="online-discovery-note">Searching Google business data for merchant websites…</div>';
       }
@@ -7499,6 +7503,48 @@
     }
   }
 
+  // Store online merchants as a clean home-domain URL rather than a tracking
+  // or deep landing-page URL returned by a business listing.
+  function canonicalOnlineWebsiteUrl(url) {
+    try {
+      const parsed = new URL(String(url || "").trim());
+      if (!/^https?:$/.test(parsed.protocol)) return "";
+      return parsed.protocol + "//" + parsed.hostname.toLowerCase() + "/";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  const ONLINE_RETAIL_PRIMARY_TYPES = new Set([
+    "store", "supermarket", "grocery_store", "convenience_store",
+    "department_store", "shopping_mall", "clothing_store", "shoe_store",
+    "electronics_store", "home_goods_store", "hardware_store",
+    "furniture_store", "book_store", "pet_store", "pharmacy",
+    "drugstore", "liquor_store", "jewelry_store",
+    "sporting_goods_store", "gift_shop", "market", "wholesaler",
+    "food_store"
+  ]);
+
+  function onlineMerchantDomainLooksUsable(url) {
+    const domain = normalizedWebsiteKey(url);
+    if (!domain) return false;
+    const blocked = [
+      "gob.mx", "gov.mx", ".gov", ".gob.", ".edu",
+      "facebook.com", "instagram.com", "x.com", "twitter.com",
+      "tiktok.com", "youtube.com", "linkedin.com",
+      "google.com", "google.com.mx", "maps.google.com",
+      "linktr.ee", "wa.me", "whatsapp.com"
+    ];
+    return !blocked.some(token => domain === token || domain.endsWith(token) || domain.includes(token));
+  }
+
+  function onlineMerchantPlaceLooksRetail(place) {
+    const type = String(place?.primaryType || "").trim().toLowerCase();
+    if (type && ONLINE_RETAIL_PRIMARY_TYPES.has(type)) return true;
+    const label = normalizeStore(String(place?.primaryTypeDisplayName || ""));
+    return /(store|shop|tienda|supermerc|market|mercado|grocery|abarrot|farmacia|pharmacy|boutique|retail|comercio)/.test(label);
+  }
+
   async function searchOnlineMerchantWebCandidates(query) {
     const requestId = ++newestOnlineInternetRequestId;
     try {
@@ -7507,8 +7553,8 @@
       const { Place } = await google.maps.importLibrary("places");
       let response;
       const request = {
-        textQuery: query,
-        fields: ["id","displayName","websiteURI","googleMapsURI","businessStatus","formattedAddress","primaryTypeDisplayName"],
+        textQuery: query + " tienda compras",
+        fields: ["id","displayName","websiteURI","googleMapsURI","businessStatus","formattedAddress","primaryTypeDisplayName","primaryType"],
         language: "es-MX",
         region: "mx",
         maxResultCount: 20
@@ -7527,16 +7573,18 @@
           .filter(Boolean)
       );
       startOnlineInternetResults = (response?.places || [])
+        .filter(place => onlineMerchantPlaceLooksRetail(place))
         .map(place => ({
           id: String(place.id || ""),
           name: String(place.displayName || "").trim() || "Online merchant",
-          websiteUrl: String(place.websiteURI || "").trim(),
+          websiteUrl: canonicalOnlineWebsiteUrl(place.websiteURI),
           googleMapsUrl: String(place.googleMapsURI || "").trim(),
           businessStatus: readableBusinessStatus(place.businessStatus),
+          primaryType: String(place.primaryType || "").trim(),
           source: "online-google-web"
         }))
         .filter(item => {
-          if (!item.websiteUrl) return false;
+          if (!item.websiteUrl || !onlineMerchantDomainLooksUsable(item.websiteUrl)) return false;
           const domain = normalizedWebsiteKey(item.websiteUrl);
           if (!domain || alreadyKnown.has(domain) || seenDomains.has(domain)) return false;
           seenDomains.add(domain);
@@ -7567,7 +7615,7 @@
       businessStatus: store.businessStatus || "",
       openingHours: "",
       googleMapsUrl: store.googleMapsUrl || "",
-      websiteUrl: store.websiteUrl || ""
+      websiteUrl: canonicalOnlineWebsiteUrl(store.websiteUrl) || store.websiteUrl || ""
     };
     selectedStartGoogleStore = record;
     document.getElementById("start-store").value = [record.name, record.websiteUrl].filter(Boolean).join(" — ");
