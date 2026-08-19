@@ -5381,7 +5381,7 @@
   </div>
 
   <div class="help">
-    V5 Google Places Step 2N — Remote MAP visibility + cleaner online retail discovery. The live app is still index.html.
+    V5 Step 2R — polished back button + reliable Android exit guard. The live app is still index.html.
   </div>
 
 </div>
@@ -6059,6 +6059,20 @@
       appBackHandlingPopstate = false;
       if (!appLayerVisible("app-exit-overlay")) armAppBackGuard();
     }, 0);
+  });
+
+
+  // Step 2R: Google authentication and Android/PWA resume can restore the page
+  // with a fresh history entry. Re-check the root Back guard whenever the app
+  // becomes active again instead of relying only on the previous JS flag.
+  window.addEventListener("pageshow", function() {
+    refreshAppBackGuard();
+  });
+
+  document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState === "visible") {
+      refreshAppBackGuard();
+    }
   });
 
 
@@ -15432,11 +15446,28 @@
   }
 
   function armAppBackGuard() {
-    if (appBackGuardActive || appBackHandlingPopstate) return;
+    if (appBackHandlingPopstate) return;
+
+    // Step 2R: authentication, browser/PWA restoration, and primary-section
+    // changes can replace the current history entry even though our in-memory
+    // flag still says the guard is armed. Trust the actual history state first.
     try {
+      if (history.state && history.state.obsidianShoppingBackGuard === true) {
+        appBackGuardActive = true;
+        return;
+      }
+
+      appBackGuardActive = false;
       history.pushState({obsidianShoppingBackGuard:true}, "", window.location.href);
       appBackGuardActive = true;
-    } catch (_) {}
+    } catch (_) {
+      appBackGuardActive = false;
+    }
+  }
+
+  function refreshAppBackGuard() {
+    if (appBackHandlingPopstate || appLayerVisible("app-exit-overlay")) return;
+    setTimeout(armAppBackGuard, 0);
   }
 
   function appRequestBack() {
@@ -19954,6 +19985,10 @@
   function setActivePrimaryNav(
     section
   ) {
+
+    // Step 2R: every primary-screen transition is a safe point to make sure
+    // Android/browser Back is still guarded after auth or PWA navigation.
+    refreshAppBackGuard();
 
     const ids = {
       history:
