@@ -6034,6 +6034,12 @@
   let wrongProductOriginalName = "";
   let wrongProductIdentityKind = null;
 
+  // Step 2S — robust Android/PWA Back sentinel.
+  // A fresh token is created for each full document load. If Android/PWA reloads
+  // a history entry that *looks* like an old guard, the different token tells us
+  // to rebuild a real BASE -> GUARD pair instead of trusting a stale marker.
+  const APP_BACK_HISTORY_SESSION =
+    `obsidian-shopping-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   let appBackGuardActive = false;
   let appBackHandlingPopstate = false;
 
@@ -6043,8 +6049,28 @@
     initializePage
   );
 
-  window.addEventListener("popstate", function() {
-    if (!appBackGuardActive) return;
+  window.addEventListener("popstate", function(event) {
+    if (appBackHandlingPopstate) return;
+
+    const state = event.state || {};
+    const isOurBase =
+      state.obsidianShoppingBackBase === true &&
+      state.obsidianShoppingBackSession === APP_BACK_HISTORY_SESSION;
+    const isOurGuard =
+      state.obsidianShoppingBackGuard === true &&
+      state.obsidianShoppingBackSession === APP_BACK_HISTORY_SESSION;
+
+    // Forward navigation can land on our guard again. In that case there is
+    // nothing to intercept; simply mark the guard as active.
+    if (isOurGuard) {
+      appBackGuardActive = true;
+      return;
+    }
+
+    // The Back interception we care about is GUARD -> BASE. The explicit BASE
+    // marker makes this reliable even when the in-memory flag was reset by auth,
+    // a PWA resume, or a document reload.
+    if (!isOurBase && !appBackGuardActive) return;
 
     appBackHandlingPopstate = true;
     appBackGuardActive = false;
@@ -6062,9 +6088,10 @@
   });
 
 
-  // Step 2R: Google authentication and Android/PWA resume can restore the page
-  // with a fresh history entry. Re-check the root Back guard whenever the app
-  // becomes active again instead of relying only on the previous JS flag.
+  // Authentication, PWA restore, and returning from another app can alter the
+  // current browser history entry. Re-validate the sentinel whenever this page
+  // becomes active again. armAppBackGuard() is idempotent while the valid guard
+  // for this document session is already on top.
   window.addEventListener("pageshow", function() {
     refreshAppBackGuard();
   });
@@ -15446,21 +15473,64 @@
   }
 
   function armAppBackGuard() {
-    if (appBackHandlingPopstate) return;
+    if (appBackHandlingPopstate || appLayerVisible("app-exit-overlay")) return;
 
-    // Step 2R: authentication, browser/PWA restoration, and primary-section
-    // changes can replace the current history entry even though our in-memory
-    // flag still says the guard is armed. Trust the actual history state first.
     try {
-      if (history.state && history.state.obsidianShoppingBackGuard === true) {
-        appBackGuardActive = true;
-        return;
-      }
+      const state = history.state || {};
+      const guardForThisLoad =
+        state.obsidianShoppingBackGuard === true &&
+        state.obsidianShoppingBackSession === APP_BACK_HISTORY_SESSION;
+      const baseForThisLoad =
+        state.obsidianShoppingBackBase === true &&
+        state.obsidianShoppingBackSession === APP_BACK_HISTORY_SESSION;
+
+      // Normal steady state: BASE already exists immediately behind this GUARD.
+      // Do not stack extra entries every time the app refreshes its UI.
+      if (guardForThisLoad && appBackGuardActive) return;
 
       appBackGuardActive = false;
-      history.pushState({obsidianShoppingBackGuard:true}, "", window.location.href);
+
+      if (baseForThisLoad) {
+        // We are sitting on BASE (for example after a cancelled/intercepted Back).
+        // Restore the GUARD on top.
+        history.pushState(
+          {
+            obsidianShoppingBackGuard: true,
+            obsidianShoppingBackSession: APP_BACK_HISTORY_SESSION
+          },
+          "",
+          window.location.href
+        );
+      } else {
+        // This is either a brand-new page entry or a stale guard restored from a
+        // previous document load. Convert the CURRENT entry into our BASE first,
+        // then push a separate GUARD. This guarantees a real two-entry sentinel:
+        //
+        //     BASE -> GUARD (current)
+        //
+        // Android Back therefore stays inside this document long enough to fire
+        // popstate, where we can show the exit confirmation.
+        history.replaceState(
+          {
+            obsidianShoppingBackBase: true,
+            obsidianShoppingBackSession: APP_BACK_HISTORY_SESSION
+          },
+          "",
+          window.location.href
+        );
+        history.pushState(
+          {
+            obsidianShoppingBackGuard: true,
+            obsidianShoppingBackSession: APP_BACK_HISTORY_SESSION
+          },
+          "",
+          window.location.href
+        );
+      }
+
       appBackGuardActive = true;
-    } catch (_) {
+    } catch (error) {
+      console.warn("Could not arm Android/PWA Back sentinel", error);
       appBackGuardActive = false;
     }
   }
@@ -19986,7 +20056,7 @@
     section
   ) {
 
-    // Step 2R: every primary-screen transition is a safe point to make sure
+    // Step 2S: every primary-screen transition is a safe point to make sure
     // Android/browser Back is still guarded after auth or PWA navigation.
     refreshAppBackGuard();
 
