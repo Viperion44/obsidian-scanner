@@ -2160,6 +2160,21 @@
       line-height: 1;
     }
 
+    .start-store-map-inline {
+      flex: 0 0 auto;
+      margin: 0;
+      min-width: 78px;
+      padding: 11px 10px;
+      border: 0;
+      border-radius: 10px;
+      background: #7136bf;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+
     .start-store-dropdown {
       margin-top: 8px;
       overflow: hidden;
@@ -2666,6 +2681,19 @@
       grid-template-columns:1fr 1fr;
       gap:9px;
       margin-top:10px;
+    }
+
+    .store-search-actions.single-action {
+      grid-template-columns:1fr;
+    }
+
+    .online-discovery-note {
+      padding: 9px 12px;
+      color: #b8bfcc;
+      font-size: 12px;
+      line-height: 1.4;
+      border-top: 1px solid #343a46;
+      background: #181c23;
     }
 
     .store-secondary-button {
@@ -3448,6 +3476,17 @@
               ▾
             </button>
 
+            <button
+              id="start-remote-map-button"
+              class="start-store-map-inline hidden"
+              type="button"
+              onclick="openRemoteMapSearch()"
+              aria-label="Open map search"
+              title="Open map search"
+            >
+              🗺️ MAP
+            </button>
+
           </div>
 
           <div
@@ -3481,10 +3520,8 @@
           <button type="button" class="store-secondary-button" style="margin-top:10px;width:100%;" onclick="openMapsDemoKeySetup()">⚙️ GOOGLE PLACES KEY</button>
         </div>
 
-        <div class="store-search-actions">
-          <button id="start-remote-map-button" class="store-secondary-button hidden" type="button" onclick="openRemoteMapSearch()">🗺️ MAP</button>
+        <div class="store-search-actions single-action">
           <button id="start-manual-store-button" class="store-secondary-button hidden" type="button" onclick="chooseManualStoreEntry()">＋ ADD MANUALLY</button>
-          <button id="start-online-shortcut" class="store-secondary-button" type="button" onclick="setStartShoppingMode('ONLINE')">🛒 ONLINE STORE</button>
         </div>
 
       </div>
@@ -5864,6 +5901,8 @@
   let googleMapsLoadPromise = null;
   let googlePlacesReady = false;
   let startGooglePredictions = [];
+  let startOnlineInternetResults = [];
+  let newestOnlineInternetRequestId = 0;
   let startAutocompleteSessionToken = null;
   let startGoogleSearchTimer = null;
   let selectedStartGoogleStore = null;
@@ -6868,6 +6907,7 @@
       googleNote.classList.add("hidden");
       await refreshStartStoreDirectory();
       startGooglePredictions = [];
+      startOnlineInternetResults = [];
       renderVisitedStores();
       document.getElementById("start-store-dropdown").classList.remove("hidden");
       storeInput.focus();
@@ -7094,13 +7134,27 @@
       });
       window.currentVisitedStoreResults = merged;
       let html = merged.length
-        ? '<div class="start-store-empty" style="padding-bottom:6px;">Online merchants</div>' + merged.map((store,index) => (
+        ? '<div class="start-store-empty" style="padding-bottom:6px;">Saved / built-in online merchants</div>' + merged.map((store,index) => (
             '<button class="start-store-option" type="button" onclick="selectVisitedStore(' + index + ')">' +
               '<span class="start-store-option-name">' + escapeHtml(store.name) + '</span>' +
               '<span class="start-store-option-meta">' + escapeHtml(store.websiteUrl || 'Saved online merchant') + '</span>' +
             '</button>'
           )).join("")
         : '<div class="start-store-empty">No saved online merchant matches that search.</div>';
+
+      if (startOnlineInternetResults.length) {
+        html += '<div class="start-store-empty" style="padding-top:10px;padding-bottom:6px;">Discovered merchant websites</div>';
+        html += startOnlineInternetResults.map((store,index) => (
+          '<button class="start-store-option" type="button" onclick="selectOnlineInternetMerchant(' + index + ')">' +
+            '<span class="start-store-option-name">' + escapeHtml(store.name) + '</span>' +
+            '<span class="start-store-option-meta">' + escapeHtml(store.websiteUrl) + '</span>' +
+          '</button>'
+        )).join("");
+        html += '<div class="online-discovery-note">Internet discovery currently uses Google business data and only shows results that provide a website. Smaller online shops can still be added manually and will be reusable here.</div>';
+      } else if (normalizedQuery.length >= 2) {
+        html += '<div class="online-discovery-note">Searching Google business data for merchant websites…</div>';
+      }
+
       html += '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
         '<span class="start-store-option-name">＋ Add online store manually</span>' +
         '<span class="start-store-option-meta">Enter the merchant name and website URL once, then reuse it later.</span>' +
@@ -7359,9 +7413,15 @@
   function scheduleStartGoogleAutocomplete(value, delay = 280) {
     clearTimeout(startGoogleSearchTimer);
     const query = String(value || "").trim();
-    if (startShoppingMode === "ONLINE" || query.length < 2) {
+    if (query.length < 2) {
       startGooglePredictions = [];
+      startOnlineInternetResults = [];
       renderVisitedStores();
+      return;
+    }
+    if (startShoppingMode === "ONLINE") {
+      startGooglePredictions = [];
+      startGoogleSearchTimer = setTimeout(() => searchOnlineMerchantWebCandidates(query), Math.max(420, delay));
       return;
     }
     startGoogleSearchTimer = setTimeout(() => searchStartGooglePlaces(query), delay);
@@ -7428,6 +7488,133 @@
         note.className = "store-mode-note error";
       }
     }
+  }
+
+  function normalizedWebsiteKey(url) {
+    try {
+      const parsed = new URL(String(url || "").trim());
+      return parsed.hostname.toLowerCase().replace(/^www\./, "");
+    } catch (_) {
+      return normalizeStore(String(url || ""));
+    }
+  }
+
+  async function searchOnlineMerchantWebCandidates(query) {
+    const requestId = ++newestOnlineInternetRequestId;
+    try {
+      const ready = await ensureGooglePlacesReady(true);
+      if (!ready || startShoppingMode !== "ONLINE") return;
+      const { Place } = await google.maps.importLibrary("places");
+      let response;
+      const request = {
+        textQuery: query,
+        fields: ["id","displayName","websiteURI","googleMapsURI","businessStatus","formattedAddress","primaryTypeDisplayName"],
+        language: "es-MX",
+        region: "mx",
+        maxResultCount: 20
+      };
+      try {
+        response = await Place.searchByText(request);
+      } catch (firstError) {
+        await new Promise(resolve => setTimeout(resolve, 650));
+        response = await Place.searchByText(request);
+      }
+      if (requestId !== newestOnlineInternetRequestId || startShoppingMode !== "ONLINE") return;
+      const seenDomains = new Set();
+      const alreadyKnown = new Set(
+        [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS]
+          .map(item => normalizedWebsiteKey(item.websiteUrl))
+          .filter(Boolean)
+      );
+      startOnlineInternetResults = (response?.places || [])
+        .map(place => ({
+          id: String(place.id || ""),
+          name: String(place.displayName || "").trim() || "Online merchant",
+          websiteUrl: String(place.websiteURI || "").trim(),
+          googleMapsUrl: String(place.googleMapsURI || "").trim(),
+          businessStatus: readableBusinessStatus(place.businessStatus),
+          source: "online-google-web"
+        }))
+        .filter(item => {
+          if (!item.websiteUrl) return false;
+          const domain = normalizedWebsiteKey(item.websiteUrl);
+          if (!domain || alreadyKnown.has(domain) || seenDomains.has(domain)) return false;
+          seenDomains.add(domain);
+          return true;
+        })
+        .slice(0, 10);
+      renderVisitedStores();
+    } catch (error) {
+      if (requestId !== newestOnlineInternetRequestId) return;
+      console.warn("Online merchant discovery failed", error);
+      startOnlineInternetResults = [];
+      renderVisitedStores();
+    }
+  }
+
+  async function selectOnlineInternetMerchant(index) {
+    const store = startOnlineInternetResults[index];
+    if (!store) return;
+    const record = {
+      id: store.id || "",
+      name: store.name || "Online merchant",
+      branchName: "",
+      address: "",
+      type: "Online",
+      googlePlaceId: store.id || "",
+      latitude: "",
+      longitude: "",
+      businessStatus: store.businessStatus || "",
+      openingHours: "",
+      googleMapsUrl: store.googleMapsUrl || "",
+      websiteUrl: store.websiteUrl || ""
+    };
+    selectedStartGoogleStore = record;
+    document.getElementById("start-store").value = [record.name, record.websiteUrl].filter(Boolean).join(" — ");
+    document.getElementById("start-store-search").value = record.name;
+    closeStartStoreDropdown();
+    try {
+      await saveOnlineMerchantIfNeeded(record);
+      await refreshStartStoreDirectory();
+    } catch (error) {
+      console.warn("Online merchant save failed", error);
+    }
+    showSuccessToast("Online merchant selected", record.websiteUrl || record.name);
+  }
+
+  async function saveOnlineMerchantIfNeeded(record) {
+    if (!record?.websiteUrl || !accessToken) return;
+    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:N`, "UNFORMATTED_VALUE");
+    const rows = data.values || [];
+    const domain = normalizedWebsiteKey(record.websiteUrl);
+    const existingIndex = rows.findIndex(row =>
+      String(row?.[4] || "").trim().toLowerCase() === "online" &&
+      normalizedWebsiteKey(row?.[13] || "") === domain
+    );
+    if (existingIndex >= 0) return;
+    let rowNumber = rows.length + 2;
+    for (let i = 0; i < rows.length; i++) {
+      if (blank(rows[i]?.[0])) { rowNumber = i + 2; break; }
+    }
+    await sheetsValuesBatchUpdate([{
+      range: `'${STORES_SHEET}'!A${rowNumber}:N${rowNumber}`,
+      values: [[
+        "STORE-O-" + Date.now(),
+        record.name,
+        "",
+        "",
+        "Online",
+        record.googlePlaceId || "",
+        "",
+        "",
+        record.businessStatus || "",
+        "",
+        record.googleMapsUrl || "",
+        "Discovered from Google business website data",
+        true,
+        record.websiteUrl
+      ]]
+    }], "RAW");
   }
 
   function readableBusinessStatus(value) {
