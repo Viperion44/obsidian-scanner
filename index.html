@@ -2146,6 +2146,9 @@
 
     .start-store-row input {
       margin: 0;
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
     }
 
     .start-store-toggle {
@@ -2158,6 +2161,22 @@
       background: #4a3a61;
       font-size: 18px;
       line-height: 1;
+    }
+
+    .start-store-map-inline {
+      flex: 0 0 64px;
+      width: 64px;
+      min-width: 64px;
+      margin: 0;
+      padding: 11px 6px;
+      border: 0;
+      border-radius: 10px;
+      background: #7136bf;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .02em;
+      white-space: nowrap;
     }
 
     .start-store-dropdown {
@@ -2609,7 +2628,752 @@
         margin-top: 9px;
       }
     }
-  </style>
+  
+
+    /* V5 Store discovery modes: Near Me / Remote / Online */
+    .shopping-mode-grid,
+    .management-store-mode-grid {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin:10px 0 14px;
+    }
+
+    .shopping-mode-button,
+    .management-store-mode-button {
+      min-height:58px;
+      padding:10px 8px;
+      border:1px solid #4a5161;
+      border-radius:14px;
+      background:#20242e;
+      color:#f4f4f7;
+      font-size:13px;
+      font-weight:800;
+      line-height:1.15;
+    }
+
+    .shopping-mode-button.selected,
+    .management-store-mode-button.selected {
+      border-color:#9c55e8;
+      background:#4b286b;
+      box-shadow:0 0 0 1px rgba(156,85,232,.25) inset;
+    }
+
+    .store-mode-note {
+      margin:8px 0 12px;
+      padding:11px 12px;
+      border-radius:12px;
+      background:#191d26;
+      border:1px solid #343a48;
+      color:#b9bfcc;
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .store-mode-note.success {
+      border-color:#2f714b;
+      color:#9ee1b6;
+    }
+
+    .store-mode-note.error {
+      border-color:#7c343d;
+      color:#ffafb7;
+    }
+
+    .store-search-actions {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:9px;
+      margin-top:10px;
+    }
+
+    .store-search-actions.single-action {
+      grid-template-columns:1fr;
+    }
+
+    .online-discovery-note {
+      padding: 9px 12px;
+      color: #b8bfcc;
+      font-size: 12px;
+      line-height: 1.4;
+      border-top: 1px solid #343a46;
+      background: #181c23;
+    }
+
+    .store-secondary-button {
+      background:#3a4050;
+      color:#fff;
+      border:0;
+      border-radius:13px;
+      min-height:52px;
+      font-weight:800;
+    }
+
+    .store-google-placeholder {
+      margin-top:10px;
+      padding:12px;
+      border-radius:12px;
+      background:#302744;
+      border:1px dashed #7b55a5;
+      color:#d7c5ec;
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    @media (max-width:460px) {
+      .shopping-mode-grid,
+      .management-store-mode-grid {
+        grid-template-columns:1fr;
+      }
+    }
+
+
+    /* V5 Step 2P — polished back navigation + exit confirmation */
+    .nearby-choice-card,
+    .nearby-browser-card,
+    .nearby-map-card,
+    .start-manual-store-card {
+      position: relative;
+    }
+
+    .app-modal-back {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      margin: 0 0 12px;
+      padding: 0;
+      border: 1px solid #555d70;
+      border-radius: 14px;
+      background: #262b36;
+      color: transparent;
+      font-size: 0;
+      line-height: 1;
+      box-shadow: 0 7px 20px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);
+      flex: 0 0 48px;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .app-modal-back::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 28px 28px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.8' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H6'/><path d='M11 7L6 12L11 17'/></svg>");
+    }
+
+    .app-modal-back:active {
+      transform: scale(.95);
+      background:#303644;
+    }
+
+    .app-modal-back:focus-visible {
+      outline: 2px solid #8e59d1;
+      outline-offset: 2px;
+    }
+
+    .app-exit-card {
+      width:min(90vw,420px);
+      border:1px solid #555d70;
+    }
+
+    .app-exit-title {
+      color:#ffffff;
+    }
+
+    /* V5 Step 2C — Nearby-store discovery cards */
+    .nearby-choice-card,
+    .nearby-browser-card,
+    .start-manual-store-card {
+      width:min(94vw,560px);
+      max-height:90vh;
+      overflow:auto;
+    }
+
+    /* Step 2G: the modal controls stay fixed, but the store card itself is the
+       only strong visual rectangle. This makes the Tinder-style motion read as
+       the whole store card moving rather than content sliding inside a frame. */
+    /* Step 2H: the nearby modal itself scrolls. The store card remains the only
+       Tinder-style draggable area; the fixed controls below it become reachable
+       by ordinary vertical scrolling on mobile. */
+    html.nearby-modal-open,
+    body.nearby-modal-open {
+      overflow:hidden !important;
+      overscroll-behavior:none;
+    }
+
+    #nearby-stores-overlay {
+      align-items:center;
+      overflow:hidden;
+      overscroll-behavior:none;
+      padding-top:max(18px, env(safe-area-inset-top));
+      padding-bottom:max(18px, env(safe-area-inset-bottom));
+    }
+
+    .nearby-browser-card {
+      background:transparent;
+      border:0;
+      box-shadow:none;
+      overflow-y:auto;
+      overflow-x:visible;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      padding:0 4px 22px;
+      max-height:calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      margin:0;
+      scrollbar-gutter:stable;
+    }
+
+    /* Vertical gestures belong to the modal scroll; horizontal gestures belong
+       to the store card deck. */
+    .nearby-card-stage,
+    .nearby-card-shell {
+      touch-action:pan-y;
+    }
+
+    .nearby-browser-card > .change-title,
+    .nearby-browser-card > .change-body {
+      padding-left:10px;
+      padding-right:10px;
+    }
+
+    .nearby-choice-actions {
+      display:grid;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .nearby-choice-actions button {
+      min-height:58px;
+      border:0;
+      border-radius:14px;
+      font-weight:900;
+    }
+
+    .nearby-choice-primary {
+      background:#6d36a6;
+      color:#fff;
+    }
+
+    .nearby-choice-secondary {
+      background:#343a49;
+      color:#fff;
+    }
+
+    .nearby-card-stage {
+      position:relative;
+      margin-top:12px;
+      overflow:visible;
+      background:transparent;
+      touch-action:pan-y;
+      min-height:420px;
+      perspective:900px;
+      padding:3px;
+    }
+
+    /* The shell itself is the full visible store card. This is intentional: the
+       border, map, details and buttons all tilt/throw together like a dating-app deck. */
+    .nearby-card-shell {
+      border:1px solid #5b4a71;
+      border-radius:22px;
+      overflow:hidden;
+      background:#181b23;
+      box-shadow:0 18px 42px rgba(0,0,0,.44), 0 0 0 1px rgba(143,82,207,.10);
+      transform-origin:50% 94%;
+      will-change:transform,opacity;
+      min-height:414px;
+      backface-visibility:hidden;
+      touch-action:pan-y;
+    }
+
+    .nearby-card-stage.slide-next .nearby-card-shell {
+      animation: nearbyDeckInNext .34s cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .nearby-card-stage.slide-prev .nearby-card-shell {
+      animation: nearbyDeckInPrev .34s cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .nearby-card-stage.throw-next .nearby-card-shell {
+      animation: nearbyDeckThrowNext .22s ease-in both;
+    }
+
+    .nearby-card-stage.throw-prev .nearby-card-shell {
+      animation: nearbyDeckThrowPrev .22s ease-in both;
+    }
+
+    .nearby-card-stage.snap-back .nearby-card-shell {
+      transition:transform .2s ease, opacity .2s ease;
+      transform:translateX(0) rotate(0deg)!important;
+      opacity:1!important;
+    }
+
+    @keyframes nearbyDeckInNext {
+      from { opacity:.2; transform:translateX(54px) rotate(5deg) scale(.96); }
+      to { opacity:1; transform:translateX(0) rotate(0deg) scale(1); }
+    }
+
+    @keyframes nearbyDeckInPrev {
+      from { opacity:.2; transform:translateX(-54px) rotate(-5deg) scale(.96); }
+      to { opacity:1; transform:translateX(0) rotate(0deg) scale(1); }
+    }
+
+    @keyframes nearbyDeckThrowNext {
+      to { opacity:.08; transform:translateX(-122%) translateY(10px) rotate(-18deg) scale(.93); }
+    }
+
+    @keyframes nearbyDeckThrowPrev {
+      to { opacity:.08; transform:translateX(122%) translateY(10px) rotate(18deg) scale(.93); }
+    }
+
+    .nearby-map-info {
+      width:190px;
+      max-width:190px;
+      min-width:0;
+      box-sizing:border-box;
+      overflow:hidden;
+      padding:10px 10px 8px;
+      color:#16181d;
+      font-family:Arial,sans-serif;
+      line-height:1.35;
+      white-space:normal;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-map-info strong {
+      display:block;
+      margin-bottom:5px;
+      font-size:14px;
+      line-height:1.25;
+      white-space:normal;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-map-info-address {
+      font-size:12px;
+      line-height:1.35;
+      color:#4f5661;
+      margin-bottom:9px;
+      white-space:normal;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-map-info button {
+      display:block;
+      width:100%;
+      max-width:100%;
+      box-sizing:border-box;
+      border:0;
+      border-radius:8px;
+      padding:9px 5px;
+      background:#6d36a6;
+      color:#fff;
+      font-size:11px;
+      line-height:1.15;
+      white-space:normal;
+      overflow-wrap:anywhere;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    /* Keep Google's native InfoWindow chrome from creating a tiny horizontal
+       scroller around our mobile-sized content. */
+    #nearby-full-map .gm-style .gm-style-iw-c {
+      max-width:220px!important;
+      padding:0!important;
+      border-radius:12px!important;
+    }
+
+    #nearby-full-map .gm-style .gm-style-iw-d {
+      max-width:220px!important;
+      max-height:none!important;
+      overflow:hidden!important;
+    }
+
+    .nearby-debug-panel {
+      margin:12px 0 6px;
+      border:1px solid #4a5060;
+      border-radius:12px;
+      background:#151821;
+      color:#d6d9e2;
+      overflow:hidden;
+    }
+
+    .nearby-debug-panel summary {
+      cursor:pointer;
+      padding:11px 13px;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.06em;
+      color:#bca1ff;
+      user-select:none;
+    }
+
+    .nearby-debug-log {
+      margin:0;
+      padding:0 13px 13px;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+      font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      color:#cfd4df;
+      max-height:190px;
+      overflow:auto;
+    }
+
+    .nearby-map-place-panel {
+      margin-top:10px;
+      border:1px solid #4a5060;
+      border-radius:14px;
+      background:#20242f;
+      padding:13px;
+      color:#fff;
+      box-sizing:border-box;
+    }
+
+    .nearby-map-place-panel.hidden { display:none!important; }
+
+    .nearby-map-place-name {
+      font-size:18px;
+      font-weight:900;
+      line-height:1.2;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-map-place-address {
+      margin-top:6px;
+      color:#bfc4cf;
+      font-size:13px;
+      line-height:1.4;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-map-place-actions {
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      margin-top:11px;
+    }
+
+    .nearby-map-place-actions button {
+      min-width:0;
+      border:0;
+      border-radius:10px;
+      padding:11px 10px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+    }
+
+    .nearby-map-place-go { background:#7b38bd; color:#fff; }
+    .nearby-map-place-dismiss { background:#3f4553; color:#fff; }
+
+    .nearby-mini-map-wrap {
+      position:relative;
+      min-height:150px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(143,82,207,.23), transparent 34%),
+        linear-gradient(145deg,#252a36,#151820);
+      border-bottom:1px solid #373c4b;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .nearby-mini-map-wrap:active {
+      background:linear-gradient(145deg,#2b3040,#181b24);
+    }
+
+    .nearby-map-launch-inner {
+      text-align:center;
+      padding:22px 18px;
+    }
+
+    .nearby-map-launch-pin {
+      display:block;
+      font-size:38px;
+      line-height:1;
+      margin-bottom:8px;
+      filter:drop-shadow(0 6px 12px rgba(0,0,0,.35));
+    }
+
+    .nearby-map-launch-title {
+      color:#f2eaff;
+      font-weight:900;
+      letter-spacing:.02em;
+    }
+
+    .nearby-map-launch-sub {
+      color:#aeb5c6;
+      font-size:12px;
+      margin-top:4px;
+    }
+
+    .nearby-card-body {
+      padding:16px;
+    }
+
+    .nearby-card-name {
+      font-size:21px;
+      font-weight:900;
+      line-height:1.18;
+      color:#fff;
+      overflow-wrap:anywhere;
+    }
+
+    .nearby-card-type {
+      margin-top:5px;
+      color:#b990e6;
+      font-size:12px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+
+    .nearby-card-address {
+      margin-top:10px;
+      color:#d2d5dc;
+      font-size:14px;
+      line-height:1.4;
+    }
+
+    .nearby-rating-row {
+      display:flex;
+      align-items:center;
+      gap:7px;
+      flex-wrap:wrap;
+      margin-top:9px;
+      color:#f1d67a;
+      font-size:13px;
+      font-weight:900;
+    }
+
+    .nearby-rating-count {
+      color:#aeb4c0;
+      font-weight:700;
+    }
+
+    .nearby-contact-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      margin-top:12px;
+    }
+
+    .nearby-contact-link {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:42px;
+      border:1px solid #454b59;
+      border-radius:11px;
+      background:#292e39;
+      color:#eadcff;
+      text-decoration:none;
+      font-size:12px;
+      font-weight:850;
+      text-align:center;
+      padding:6px 8px;
+      box-sizing:border-box;
+    }
+
+    .nearby-contact-link.wide {
+      grid-column:1 / -1;
+    }
+
+    .nearby-saved-badge {
+      display:inline-flex;
+      margin-top:6px;
+      padding:4px 7px;
+      border-radius:999px;
+      background:#2d3749;
+      color:#a9c4f5;
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+
+    .nearby-card-status {
+      display:inline-block;
+      margin-top:11px;
+      padding:6px 9px;
+      border-radius:999px;
+      background:#253b2e;
+      color:#9ee3b6;
+      font-size:12px;
+      font-weight:900;
+    }
+
+
+
+    .nearby-card-status.closed {
+      background:#48252a;
+      color:#ffadb5;
+    }
+
+    .nearby-maps-link {
+      display:inline-block;
+      margin-top:10px;
+      color:#c696ff;
+      font-size:12px;
+      font-weight:800;
+      text-decoration:none;
+    }
+
+    .nearby-card-hours {
+      margin-top:12px;
+      border-top:1px solid #343946;
+      padding-top:10px;
+      color:#bfc4cf;
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .nearby-card-hours summary {
+      cursor:pointer;
+      color:#d9c5ef;
+      font-weight:800;
+    }
+
+    .nearby-card-hours-list {
+      margin-top:8px;
+      display:grid;
+      gap:4px;
+    }
+
+    .nearby-card-select {
+      width:100%;
+      margin-top:14px;
+      min-height:52px;
+      border:0;
+      border-radius:13px;
+      background:#6d36a6;
+      color:#fff;
+      font-weight:900;
+    }
+
+    .nearby-carousel-nav {
+      display:grid;
+      grid-template-columns:48px 1fr 48px;
+      align-items:center;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .nearby-carousel-arrow {
+      height:42px;
+      border:1px solid #4b5160;
+      border-radius:12px;
+      background:#2c313d;
+      color:#fff;
+      font-size:22px;
+      font-weight:900;
+    }
+
+    .nearby-carousel-count {
+      text-align:center;
+      color:#c9ced8;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .nearby-dots {
+      display:flex;
+      justify-content:center;
+      flex-wrap:wrap;
+      gap:5px;
+      margin-top:8px;
+    }
+
+    .nearby-dot {
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:#555c6b;
+    }
+
+    .nearby-dot.active {
+      background:#b46cff;
+      transform:scale(1.25);
+    }
+
+    .nearby-browser-footer {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:9px;
+      margin-top:14px;
+    }
+
+    .nearby-loading,
+    .nearby-empty {
+      padding:26px 14px;
+      text-align:center;
+      color:#c8ccd5;
+      line-height:1.45;
+    }
+
+    .nearby-map-card {
+      width:min(96vw,680px);
+      max-height:92vh;
+      overflow:auto;
+    }
+
+    .nearby-full-map {
+      height:min(62vh,520px);
+      min-height:330px;
+      border-radius:16px;
+      overflow:hidden;
+      background:#242936;
+      margin-top:12px;
+      border:1px solid #484e5d;
+    }
+
+    .nearby-full-map-title {
+      margin-top:8px;
+      color:#d2d5dc;
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .start-manual-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .start-manual-grid .wide {
+      grid-column:1 / -1;
+    }
+
+    .start-manual-store-card input,
+    .start-manual-store-card textarea,
+    .start-manual-store-card select {
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    @media(max-width:520px) {
+      .nearby-browser-footer,
+      .start-manual-grid {
+        grid-template-columns:1fr;
+      }
+      .start-manual-grid .wide {
+        grid-column:auto;
+      }
+    }
+
+</style>
 </head>
 
 <body>
@@ -2619,7 +3383,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V4 payment + PDF privacy test
+    V5 store discovery — nearby cards + manual fallback
   </div>
 
   <button
@@ -2739,9 +3503,19 @@
 
       <div class="field">
 
-        <label for="start-store">
-          Store
-        </label>
+        <label>How are you shopping?</label>
+
+        <div class="shopping-mode-grid">
+          <button id="start-mode-near" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('NEAR')">📍 NEAR ME</button>
+          <button id="start-mode-remote" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('REMOTE')">🔎 REMOTE SHOPPING</button>
+          <button id="start-mode-online" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('ONLINE')">🛒 ONLINE STORE</button>
+        </div>
+
+        <div id="start-mode-note" class="store-mode-note">
+          Choose a shopping mode. Location permission is requested only if you choose NEAR ME.
+        </div>
+
+        <label for="start-store">Store</label>
 
         <div class="start-store-picker">
 
@@ -2751,18 +3525,32 @@
               id="start-store"
               type="text"
               autocomplete="off"
-              placeholder="Choose a visited store or type a new one"
+              placeholder="Choose a shopping mode first"
               oninput="startStoreInputChanged()"
+              disabled
             >
 
             <button
+              id="start-store-toggle"
               class="start-store-toggle"
               type="button"
               onclick="toggleStartStoreDropdown()"
-              aria-label="Show visited stores"
-              title="Show visited stores"
+              aria-label="Show store suggestions"
+              title="Show store suggestions"
+              disabled
             >
               ▾
+            </button>
+
+            <button
+              id="start-remote-map-button"
+              class="start-store-map-inline hidden"
+              type="button"
+              onclick="openRemoteMapSearch()"
+              aria-label="Open map search"
+              title="Open map search"
+            >
+              🗺️ MAP
             </button>
 
           </div>
@@ -2779,8 +3567,8 @@
                 id="start-store-search"
                 type="search"
                 autocomplete="off"
-                placeholder="Search visited stores..."
-                oninput="renderVisitedStores()"
+                placeholder="Search stores..."
+                oninput="startStoreSearchChanged()"
               >
             </div>
 
@@ -2791,6 +3579,15 @@
 
           </div>
 
+        </div>
+
+        <div id="start-google-placeholder" class="store-google-placeholder hidden">
+          Google Places search is available in this V5 test build. Enter the demo key once on this device; it is stored locally in this browser and is not committed to GitHub.
+          <button type="button" class="store-secondary-button" style="margin-top:10px;width:100%;" onclick="openMapsDemoKeySetup()">⚙️ GOOGLE PLACES KEY</button>
+        </div>
+
+        <div class="store-search-actions single-action">
+          <button id="start-manual-store-button" class="store-secondary-button hidden" type="button" onclick="chooseManualStoreEntry()">＋ ADD MANUALLY</button>
         </div>
 
       </div>
@@ -4348,7 +5145,7 @@
       >
         <span class="management-action-icon">🏪</span>
         <span class="management-action-title">Stores</span>
-        <span class="management-action-desc">Review stores found in your data.</span>
+        <span class="management-action-desc">Add, edit, activate, or deactivate saved stores.</span>
       </button>
 
       <button
@@ -4519,10 +5316,72 @@
 
     </div>
 
+    <div
+      id="management-store-editor"
+      class="management-editor-card hidden"
+    >
+
+      <div id="management-store-editor-title" class="management-editor-title">
+        Find or Add Store
+      </div>
+
+      <div id="management-store-discovery" class="">
+        <label>Store kind / search mode</label>
+        <div class="management-store-mode-grid">
+          <button id="management-store-mode-near" class="management-store-mode-button" type="button" onclick="setManagementStoreMode('NEAR')">📍 NEAR ME</button>
+          <button id="management-store-mode-remote" class="management-store-mode-button" type="button" onclick="setManagementStoreMode('REMOTE')">🔎 REMOTE SHOPPING</button>
+          <button id="management-store-mode-online" class="management-store-mode-button" type="button" onclick="setManagementStoreMode('ONLINE')">🛒 ONLINE</button>
+        </div>
+
+        <div id="management-store-mode-note" class="store-mode-note">
+          NEAR ME is the only mode that requests device location. REMOTE SHOPPING never uses your location.
+        </div>
+
+        <label for="management-store-google-search">Search Google stores</label>
+        <input id="management-store-google-search" type="search" autocomplete="off" placeholder="Choose a mode first" disabled>
+
+        <div id="management-google-placeholder" class="store-google-placeholder hidden">
+          This is the Google-backed search slot. The next connection step will wire Places Autocomplete here; the manual form remains the permanent fallback.
+        </div>
+
+        <button id="management-open-manual-store" class="management-save-button hidden" type="button" style="margin-top:12px;width:100%;" onclick="openManagementManualStoreFields()">＋ CAN'T FIND IT? ADD MANUALLY</button>
+      </div>
+
+      <div id="management-store-manual-fields" class="hidden">
+        <label for="management-store-name">Store Name</label>
+        <input id="management-store-name" type="text" autocomplete="off" placeholder="Example: Walmart">
+
+        <label for="management-store-branch">Branch Name (optional)</label>
+        <input id="management-store-branch" type="text" autocomplete="off" placeholder="Example: Universidad">
+
+        <label for="management-store-address">Address (optional)</label>
+        <textarea id="management-store-address" rows="3" autocomplete="street-address" placeholder="Street, neighborhood, city, etc."></textarea>
+
+        <input id="management-store-type" type="hidden" value="Physical">
+
+        <label for="management-store-notes">Notes (optional)</label>
+        <textarea id="management-store-notes" rows="3" autocomplete="off"></textarea>
+
+        <div class="management-editor-note">
+          Manual is a data source, not a store type. Stores saved here are Physical or Online; Google-specific fields stay blank when manual fallback is used.
+        </div>
+
+        <div class="management-editor-actions">
+          <button class="management-cancel-button" type="button" onclick="cancelManagementStoreEdit()">
+            CANCEL
+          </button>
+          <button id="management-save-store-button" class="management-save-button" type="button" onclick="saveManagementStoreEdit()">
+            SAVE STORE
+          </button>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
   <div class="help">
-    V4 development copy. The live app is still index.html.
+    V5 Step 2R — polished back button + reliable Android exit guard. The live app is still index.html.
   </div>
 
 </div>
@@ -4817,6 +5676,157 @@
   </div>
 </div>
 
+
+<div id="app-exit-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="app-exit-title">
+  <div class="change-card app-exit-card">
+    <div id="app-exit-title" class="change-title app-exit-title">EXIT OBSIDIAN SHOPPING?</div>
+    <div class="change-body">Are you sure you want to leave the app?</div>
+    <div class="change-actions">
+      <button class="change-cancel" type="button" onclick="cancelAppExit()">STAY IN APP</button>
+      <button class="change-history" type="button" onclick="confirmAppExit()">EXIT APP</button>
+    </div>
+  </div>
+</div>
+
+<div id="nearby-choice-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-choice-title">
+  <div class="change-card nearby-choice-card">
+    <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
+    <div id="nearby-choice-title" class="change-title">NEAR ME</div>
+    <div class="change-body">How would you like to choose the store?</div>
+    <div id="nearby-choice-location" class="store-mode-note">Your current location will only be used for nearby results.</div>
+    <div class="nearby-choice-actions">
+      <button id="nearby-show-button" class="nearby-choice-primary" type="button" onclick="showNearbyStores()">📍 SHOW NEARBY STORES</button>
+      <button class="nearby-choice-secondary" type="button" onclick="useNearMeSearchByName()">🔎 SEARCH BY NAME</button>
+    </div>
+    <div class="change-actions" style="margin-top:12px;">
+      <button class="change-cancel" type="button" onclick="closeNearbyChoice()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<div id="nearby-stores-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-stores-title">
+  <div class="change-card nearby-browser-card">
+    <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
+    <div id="nearby-stores-title" class="change-title">STORES NEAR YOU</div>
+    <div id="nearby-stores-subtitle" class="change-body">Looking for stores around your current position…</div>
+    <details id="nearby-debug-details" class="nearby-debug-panel">
+      <summary>TECHNICAL DIAGNOSTICS</summary>
+      <pre id="nearby-debug-log" class="nearby-debug-log">Waiting for Nearby Search…</pre>
+    </details>
+    <div id="nearby-card-host" class="nearby-card-stage">
+      <div class="nearby-loading">Searching Google Maps…</div>
+    </div>
+    <div id="nearby-carousel-nav" class="nearby-carousel-nav hidden">
+      <button class="nearby-carousel-arrow" type="button" onclick="nearbyCardPrevious()">‹</button>
+      <div id="nearby-carousel-count" class="nearby-carousel-count">—</div>
+      <button class="nearby-carousel-arrow" type="button" onclick="nearbyCardNext()">›</button>
+    </div>
+    <div id="nearby-dots" class="nearby-dots"></div>
+    <div class="nearby-browser-footer">
+      <button class="store-secondary-button" type="button" onclick="useNearMeSearchByName()">🔎 SEARCH BY NAME</button>
+      <button class="store-secondary-button" type="button" onclick="chooseManualStoreEntry()">＋ ADD STORE MANUALLY</button>
+    </div>
+    <div class="change-actions" style="margin-top:10px;">
+      <button class="change-cancel" type="button" onclick="closeNearbyStores()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<div id="nearby-map-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="nearby-map-title">
+  <div class="change-card nearby-map-card">
+    <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
+    <div id="nearby-map-title" class="change-title">STORE MAP</div>
+    <div id="nearby-map-subtitle" class="nearby-full-map-title">Selected Google store</div>
+    <div id="nearby-full-map" class="nearby-full-map"></div>
+    <div id="nearby-map-place-panel" class="nearby-map-place-panel hidden">
+      <div id="nearby-map-place-name" class="nearby-map-place-name">Store</div>
+      <div id="nearby-map-place-address" class="nearby-map-place-address"></div>
+      <div class="nearby-map-place-actions">
+        <button class="nearby-map-place-go" type="button" onclick="goToNearbyMapPanelStore()">GO TO THIS STORE</button>
+        <button class="nearby-map-place-dismiss" type="button" onclick="hideNearbyMapPlacePanel()">CLOSE</button>
+      </div>
+    </div>
+    <div class="change-actions" style="margin-top:12px;">
+      <button class="change-cancel" type="button" onclick="closeNearbyFullMap()">CLOSE</button>
+      <button id="nearby-full-map-google" class="change-history" type="button" onclick="openCurrentNearbyStoreInGoogleMaps()">OPEN IN GOOGLE MAPS</button>
+    </div>
+  </div>
+</div>
+
+<div id="start-manual-store-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="start-manual-store-title">
+  <div class="change-card start-manual-store-card">
+    <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
+    <div id="start-manual-store-title" class="change-title">ADD STORE MANUALLY</div>
+    <div class="change-body">Use this only when Google cannot find the store. Fill what you know; only Store Name is required.</div>
+    <div class="start-manual-grid">
+      <div class="wide">
+        <label for="start-manual-name">Store name *</label>
+        <input id="start-manual-name" type="text" autocomplete="organization" placeholder="Example: Abarrotes Lupita">
+      </div>
+      <div class="wide start-manual-physical-only">
+        <label for="start-manual-branch">Branch / location name</label>
+        <input id="start-manual-branch" type="text" autocomplete="off" placeholder="Example: Del Valle">
+      </div>
+      <div class="wide start-manual-physical-only">
+        <label for="start-manual-address">Full address</label>
+        <textarea id="start-manual-address" rows="3" autocomplete="street-address" placeholder="Street, neighborhood, city, state…"></textarea>
+      </div>
+      <div class="start-manual-physical-only">
+        <label for="start-manual-business-status">Business status</label>
+        <select id="start-manual-business-status">
+          <option value="">Unknown / not entered</option>
+          <option value="Operational">Operational</option>
+          <option value="Temporarily closed">Temporarily closed</option>
+          <option value="Permanently closed">Permanently closed</option>
+        </select>
+      </div>
+      <div class="start-manual-physical-only">
+        <label for="start-manual-maps-url">Google Maps URL</label>
+        <input id="start-manual-maps-url" type="url" inputmode="url" placeholder="Optional">
+      </div>
+      <div class="wide" id="start-manual-website-row">
+        <label for="start-manual-website-url">Website URL</label>
+        <input id="start-manual-website-url" type="url" inputmode="url" autocomplete="url" placeholder="Example: https://www.walmart.com.mx/">
+      </div>
+      <div class="start-manual-physical-only">
+        <label for="start-manual-latitude">Latitude</label>
+        <input id="start-manual-latitude" type="number" inputmode="decimal" step="any" placeholder="Optional">
+      </div>
+      <div class="start-manual-physical-only">
+        <label for="start-manual-longitude">Longitude</label>
+        <input id="start-manual-longitude" type="number" inputmode="decimal" step="any" placeholder="Optional">
+      </div>
+      <div class="wide start-manual-physical-only">
+        <label for="start-manual-hours">Opening hours</label>
+        <textarea id="start-manual-hours" rows="3" placeholder="Example: Mon–Sat 08:00–22:00; Sun 09:00–20:00"></textarea>
+      </div>
+      <div class="wide">
+        <label for="start-manual-notes">Notes</label>
+        <textarea id="start-manual-notes" rows="3" placeholder="Anything useful about this branch"></textarea>
+      </div>
+    </div>
+    <div id="start-manual-store-status" class="store-mode-note" style="margin-top:12px;">Manual entries are saved in the Stores sheet for later trips.</div>
+    <div class="change-actions">
+      <button class="change-cancel" type="button" onclick="closeStartManualStoreForm()">CANCEL</button>
+      <button id="start-manual-save-button" class="change-history" type="button" onclick="saveStartManualStore()">SAVE &amp; USE STORE</button>
+    </div>
+  </div>
+</div>
+
+<div id="maps-key-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="maps-key-title">
+  <div class="change-card">
+    <div id="maps-key-title" class="change-title">GOOGLE PLACES DEMO KEY</div>
+    <div class="change-body">Paste the Maps Demo Key you created. It is saved only in this browser/device local storage and is not written to Google Sheets or GitHub.</div>
+    <label for="maps-demo-key-input">Demo key</label>
+    <input id="maps-demo-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste demo key here">
+    <div id="maps-key-status" class="store-mode-note" style="margin-top:12px;">The demo key is for V5 prototyping only.</div>
+    <div class="change-actions">
+      <button class="change-cancel" type="button" onclick="closeMapsDemoKeySetup()">CANCEL</button>
+      <button class="change-history" type="button" onclick="saveMapsDemoKeySetup()">SAVE &amp; CONNECT</button>
+    </div>
+  </div>
+</div>
+
 <div id="pdf-export-stage"></div>
 
 <nav
@@ -4885,6 +5895,9 @@
   const TRIP_PAYMENTS_SHEET =
     "Trip Payments";
 
+  const STORES_SHEET =
+    "Stores";
+
   const CURRENT_STORE_CELL =
     "U21";
 
@@ -4940,6 +5953,11 @@
   let cashEditingAllocationId = "";
 
   let visitedStores = [];
+  let savedStoreDirectory = [];
+  let savedOnlineStoreDirectory = [];
+  let startShoppingMode = "";
+  let startLocationSnapshot = null;
+  let managementStoreMode = "";
   let visitedStoresLoadedFromTrips = false;
 
   let historyTrips = [];
@@ -4958,8 +5976,53 @@
   let managementTrips = [];
   let managementHistoryRows = [];
   let managementPaymentMethods = [];
+  let managementStores = [];
+
+  const MAPS_DEMO_KEY_STORAGE = "obsidianShoppingMapsDemoKey";
+  let googleMapsLoadPromise = null;
+  let googlePlacesReady = false;
+  let startGooglePredictions = [];
+  let startOnlineInternetResults = [];
+  let newestOnlineInternetRequestId = 0;
+  let startAutocompleteSessionToken = null;
+  let startGoogleSearchTimer = null;
+  let selectedStartGoogleStore = null;
+  let newestStartGoogleRequestId = 0;
+  let nearbyStorePlaces = [];
+  let nearbyStoreIndex = 0;
+  let nearbyStoreMap = null;
+  let nearbyFullMap = null;
+  let nearbyFullMapMarker = null;
+  let nearbyFullMapMarkers = [];
+  let nearbyFullMapInfoWindow = null;
+  let nearbyMapPanelDeckIndex = -1;
+  let nearbyDebugEntries = [];
+  let nearbyFullMapIdleTimer = null;
+  let nearbyFullMapSearchSerial = 0;
+  let nearbyFullMapLastSearchKey = "";
+  let nearbyFullMapInitialising = false;
+  let nearbyTouchStartX = null;
+  let nearbyPointerStartX = null;
+  let nearbyPointerStartY = null;
+  let nearbyPointerGesture = "";
+  let nearbyPointerActive = false;
+  let nearbyCardDirection = "next";
+  const NEARBY_STORE_RADIUS_METERS = 5000;
+  const RETAIL_PLACE_TYPES = [
+    "store", "supermarket", "grocery_store", "discount_supermarket", "hypermarket",
+    "convenience_store", "department_store", "warehouse_store", "discount_store",
+    "food_store", "market", "general_store", "shopping_mall", "wholesaler",
+    "pharmacy", "drugstore", "clothing_store", "shoe_store", "electronics_store",
+    "hardware_store", "home_goods_store", "furniture_store", "book_store", "pet_store"
+  ];
+  const BUILT_IN_ONLINE_MERCHANTS = [
+    {storeId:"ONLINE-WALMART-MX", name:"Walmart México", type:"Online", websiteUrl:"https://www.walmart.com.mx/", source:"online-builtin", active:true},
+    {storeId:"ONLINE-SORIANA-MX", name:"Soriana", type:"Online", websiteUrl:"https://www.soriana.com/", source:"online-builtin", active:true},
+    {storeId:"ONLINE-CHEDRAUI-MX", name:"Chedraui", type:"Online", websiteUrl:"https://www.chedraui.com.mx/", source:"online-builtin", active:true}
+  ];
   let managementEditingProductIndex = null;
   let managementEditingPaymentIndex = null;
+  let managementEditingStoreIndex = null;
 
   let budgetWarningAcknowledged = false;
 
@@ -4971,11 +6034,73 @@
   let wrongProductOriginalName = "";
   let wrongProductIdentityKind = null;
 
+  // Step 2S — robust Android/PWA Back sentinel.
+  // A fresh token is created for each full document load. If Android/PWA reloads
+  // a history entry that *looks* like an old guard, the different token tells us
+  // to rebuild a real BASE -> GUARD pair instead of trusting a stale marker.
+  const APP_BACK_HISTORY_SESSION =
+    `obsidian-shopping-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  let appBackGuardActive = false;
+  let appBackHandlingPopstate = false;
+
 
   window.addEventListener(
     "DOMContentLoaded",
     initializePage
   );
+
+  window.addEventListener("popstate", function(event) {
+    if (appBackHandlingPopstate) return;
+
+    const state = event.state || {};
+    const isOurBase =
+      state.obsidianShoppingBackBase === true &&
+      state.obsidianShoppingBackSession === APP_BACK_HISTORY_SESSION;
+    const isOurGuard =
+      state.obsidianShoppingBackGuard === true &&
+      state.obsidianShoppingBackSession === APP_BACK_HISTORY_SESSION;
+
+    // Forward navigation can land on our guard again. In that case there is
+    // nothing to intercept; simply mark the guard as active.
+    if (isOurGuard) {
+      appBackGuardActive = true;
+      return;
+    }
+
+    // The Back interception we care about is GUARD -> BASE. The explicit BASE
+    // marker makes this reliable even when the in-memory flag was reset by auth,
+    // a PWA resume, or a document reload.
+    if (!isOurBase && !appBackGuardActive) return;
+
+    appBackHandlingPopstate = true;
+    appBackGuardActive = false;
+
+    if (hasVisibleAppSubflow()) {
+      appNavigateBackDirect();
+    } else {
+      showAppExitPrompt();
+    }
+
+    setTimeout(function() {
+      appBackHandlingPopstate = false;
+      if (!appLayerVisible("app-exit-overlay")) armAppBackGuard();
+    }, 0);
+  });
+
+
+  // Authentication, PWA restore, and returning from another app can alter the
+  // current browser history entry. Re-validate the sentinel whenever this page
+  // becomes active again. armAppBackGuard() is idempotent while the valid guard
+  // for this document session is already on top.
+  window.addEventListener("pageshow", function() {
+    refreshAppBackGuard();
+  });
+
+  document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState === "visible") {
+      refreshAppBackGuard();
+    }
+  });
 
 
   function initializePage() {
@@ -5244,10 +6369,20 @@
         "hidden"
       );
     }
+
+    // Keep one browser-history guard at the root of the authenticated app so
+    // Android's Back button asks before leaving Obsidian Shopping. Subflows
+    // temporarily consume/re-arm the same guard as the user navigates inward.
+    setTimeout(armAppBackGuard, 0);
   }
 
 
   async function startNewTrip() {
+
+    if (!startShoppingMode) {
+      fail("Choose Near Me, Remote Shopping, or Online Store first.");
+      return;
+    }
 
     const store =
       document.getElementById(
@@ -5331,6 +6466,15 @@
 
         store:
           store,
+
+        address:
+          selectedStartGoogleStore?.address || "",
+
+        googlePlaceId:
+          selectedStartGoogleStore?.googlePlaceId || "",
+
+        websiteUrl:
+          selectedStartGoogleStore?.websiteUrl || "",
 
         start:
           localIsoWithOffset(now),
@@ -5713,128 +6857,275 @@
     }
 
     try {
-
-      const result =
-        await sheetsGetValues(
+      const [tripsResult, storesResult] = await Promise.all([
+        sheetsGetValues(
           `'${TRIPS_SHEET}'!A2:H`,
           "UNFORMATTED_VALUE"
-        );
-
-      const stores =
-        new Map();
-
-      visitedStores.forEach(
-        store => {
-          stores.set(
-            normalizeStore(
-              store.name
-            ),
-            {
-              ...store
-            }
-          );
-        }
-      );
-
-      (result.values || [])
-        .forEach(
-          row => {
-
-            const store =
-              String(
-                row[1] ?? ""
-              ).trim();
-
-            if (!store) {
-              return;
-            }
-
-            const key =
-              normalizeStore(
-                store
-              );
-
-            const rawDate =
-              String(
-                row[3] ??
-                row[2] ??
-                ""
-              ).trim();
-
-            const parsed =
-              new Date(
-                rawDate
-              ).getTime();
-
-            const lastUsed =
-              Number.isFinite(
-                parsed
-              )
-                ? parsed
-                : 0;
-
-            const previous =
-              stores.get(
-                key
-              );
-
-            if (
-              !previous ||
-              lastUsed >
-                (
-                  previous.lastUsed ||
-                  0
-                )
-            ) {
-              stores.set(
-                key,
-                {
-                  name:
-                    store,
-                  lastUsed:
-                    lastUsed,
-                  source:
-                    "trip"
-                }
-              );
-            }
-          }
-        );
-
-      visitedStores =
-        Array.from(
-          stores.values()
+        ),
+        sheetsGetValues(
+          `'${STORES_SHEET}'!A2:N`,
+          "UNFORMATTED_VALUE"
         )
-          .sort(
-            (a, b) => {
+      ]);
 
-              if (
-                (b.lastUsed || 0) !==
-                (a.lastUsed || 0)
-              ) {
-                return (
-                  (b.lastUsed || 0) -
-                  (a.lastUsed || 0)
-                );
-              }
+      const ordinaryStores = new Map();
 
-              return a.name.localeCompare(
-                b.name
-              );
-            }
-          );
+      visitedStores.forEach(store => {
+        ordinaryStores.set(
+          normalizeStore(store.name),
+          { ...store }
+        );
+      });
 
-      visitedStoresLoadedFromTrips =
-        true;
+      (tripsResult.values || []).forEach(row => {
+        const store = String(row[1] ?? "").trim();
+        if (!store) return;
 
+        const key = normalizeStore(store);
+        const rawDate = String(row[3] ?? row[2] ?? "").trim();
+        const parsed = new Date(rawDate).getTime();
+        const lastUsed = Number.isFinite(parsed) ? parsed : 0;
+        const previous = ordinaryStores.get(key);
+
+        if (!previous || lastUsed > (previous.lastUsed || 0)) {
+          ordinaryStores.set(key, {
+            name: store,
+            branchName: "",
+            address: "",
+            lastUsed,
+            source: "trip"
+          });
+        }
+      });
+
+      const allSavedDirectoryStores = (storesResult.values || [])
+        .map((row, index) => ({
+          sheetRow: index + 2,
+          storeId: String(row[0] ?? "").trim(),
+          name: String(row[1] ?? "").trim(),
+          branchName: String(row[2] ?? "").trim(),
+          address: String(row[3] ?? "").trim(),
+          type: String(row[4] ?? "Physical").trim() || "Physical",
+          googlePlaceId: String(row[5] ?? "").trim(),
+          latitude: row[6] ?? "",
+          longitude: row[7] ?? "",
+          businessStatus: String(row[8] ?? "").trim(),
+          openingHours: String(row[9] ?? "").trim(),
+          googleMapsUrl: String(row[10] ?? "").trim(),
+          notes: String(row[11] ?? "").trim(),
+          active: row[12] === true || String(row[12] ?? "").toUpperCase() === "TRUE" || Number(row[12]) === 1,
+          websiteUrl: String(row[13] ?? "").trim(),
+          lastUsed: 0,
+          source: "saved"
+        }))
+        .filter(store => store.active && store.name);
+
+      const savedDirectoryStores = allSavedDirectoryStores.filter(store => String(store.type).toLowerCase() !== "online");
+      savedStoreDirectory = savedDirectoryStores.map(store => ({...store}));
+      savedOnlineStoreDirectory = allSavedDirectoryStores.filter(store => String(store.type).toLowerCase() === "online").map(store => ({...store}));
+
+      const combined = Array.from(ordinaryStores.values());
+      const seenSaved = new Set();
+      savedDirectoryStores.forEach(store => {
+        const key = [normalizeStore(store.name), normalizeStore(store.branchName), normalizeStore(store.address)].join("|");
+        if (!seenSaved.has(key)) {
+          seenSaved.add(key);
+          combined.push(store);
+        }
+      });
+
+      visitedStores = combined.sort((a, b) => {
+        if ((b.lastUsed || 0) !== (a.lastUsed || 0)) {
+          return (b.lastUsed || 0) - (a.lastUsed || 0);
+        }
+        if (a.source === "saved" && b.source !== "saved") return -1;
+        if (b.source === "saved" && a.source !== "saved") return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      visitedStoresLoadedFromTrips = true;
       renderVisitedStores();
 
     } catch (error) {
-
-      // The Product database still gives us a useful fallback list.
-      visitedStoresLoadedFromTrips =
-        false;
+      visitedStoresLoadedFromTrips = false;
     }
+  }
+
+
+  async function loadSavedStoreDirectoryDirect() {
+    if (!accessToken) {
+      savedStoreDirectory = [];
+      savedOnlineStoreDirectory = [];
+      return [];
+    }
+    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:N`, "UNFORMATTED_VALUE");
+    const all = (data.values || []).map((row,index) => ({
+      sheetRow:index + 2,
+      storeId:String(row[0] ?? "").trim(),
+      name:String(row[1] ?? "").trim(),
+      branchName:String(row[2] ?? "").trim(),
+      address:String(row[3] ?? "").trim(),
+      type:String(row[4] ?? "Physical").trim() || "Physical",
+      googlePlaceId:String(row[5] ?? "").trim(),
+      latitude:row[6] ?? "",
+      longitude:row[7] ?? "",
+      businessStatus:String(row[8] ?? "").trim(),
+      openingHours:String(row[9] ?? "").trim(),
+      googleMapsUrl:String(row[10] ?? "").trim(),
+      notes:String(row[11] ?? "").trim(),
+      active:row[12] === true || String(row[12] ?? "").toUpperCase() === "TRUE" || Number(row[12]) === 1,
+      websiteUrl:String(row[13] ?? "").trim(),
+      lastUsed:0,
+      source:"saved"
+    })).filter(store => store.active && store.name);
+    savedStoreDirectory = all.filter(store => String(store.type).toLowerCase() !== "online");
+    savedOnlineStoreDirectory = all.filter(store => String(store.type).toLowerCase() === "online");
+    return all;
+  }
+
+  async function refreshStartStoreDirectory() {
+    // Saved Stores are loaded independently of Products/Trips so a manual branch can
+    // never vanish just because another source is stale or Google Places is failing.
+    visitedStoresLoadedFromTrips = false;
+    const results = await Promise.allSettled([
+      loadSavedStoreDirectoryDirect(),
+      loadVisitedStoresFromTrips()
+    ]);
+    const savedFailure = results[0].status === "rejected";
+    if (savedFailure) console.warn("Saved Stores directory could not refresh", results[0].reason);
+    renderVisitedStores();
+  }
+
+
+  function updateStartModeButtons() {
+    ["NEAR", "REMOTE", "ONLINE"].forEach(mode => {
+      const id = "start-mode-" + mode.toLowerCase();
+      const button = document.getElementById(id);
+      if (button) {
+        button.classList.toggle("selected", startShoppingMode === mode);
+      }
+    });
+  }
+
+  async function setStartShoppingMode(mode) {
+    startShoppingMode = mode;
+    updateStartModeButtons();
+    closeStartStoreDropdown();
+
+    const storeInput = document.getElementById("start-store");
+    const toggle = document.getElementById("start-store-toggle");
+    const note = document.getElementById("start-mode-note");
+    const googleNote = document.getElementById("start-google-placeholder");
+    const manualButton = document.getElementById("start-manual-store-button");
+    const remoteMapButton = document.getElementById("start-remote-map-button");
+
+    storeInput.disabled = false;
+    toggle.disabled = false;
+    manualButton.classList.remove("hidden");
+    remoteMapButton?.classList.add("hidden");
+    googleNote.classList.remove("hidden");
+
+    if (mode !== "ONLINE") manualButton.textContent = "＋ ADD MANUALLY";
+
+    if (mode === "NEAR") {
+      storeInput.placeholder = "Search store by name, branch, or address";
+      note.textContent = "Near Me uses your device location only after you choose it. You can browse nearby stores or search by name.";
+      note.className = "store-mode-note";
+      await requestNearMeLocation();
+      // Warm the client libraries while the user is deciding between Nearby and
+      // Search by Name. This removes the cold-start that previously made the
+      // first Nearby attempt fail while the second one worked.
+      void warmGoogleStoreDiscovery();
+      openNearbyChoice();
+    } else if (mode === "REMOTE") {
+      startLocationSnapshot = null;
+      storeInput.placeholder = "Search store, branch, neighborhood, city, or address";
+      note.textContent = "Remote Shopping does not request or use your device location.";
+      note.className = "store-mode-note success";
+
+      // Step 2O: render the mode-specific controls immediately. Previously the
+      // MAP button waited behind two async data/library calls, so the first tap
+      // selected Remote internally while the button did not appear until a
+      // second tap caused another render.
+      remoteMapButton?.classList.remove("hidden");
+      remoteMapButton?.removeAttribute("hidden");
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      storeInput.focus();
+
+      // Directory/Places warm-up can finish in the background without blocking
+      // the first visible Remote Shopping state.
+      await refreshStartStoreDirectory();
+      await ensureGooglePlacesReady(true);
+    } else {
+      startLocationSnapshot = null;
+      storeInput.placeholder = "Search online merchant or website";
+      manualButton.textContent = "＋ ADD ONLINE STORE";
+      note.textContent = "Online Store uses only e-commerce merchants and website URLs. Physical branches are hidden here.";
+      note.className = "store-mode-note success";
+      googleNote.classList.add("hidden");
+      await refreshStartStoreDirectory();
+      startGooglePredictions = [];
+      startOnlineInternetResults = [];
+      renderVisitedStores();
+      document.getElementById("start-store-dropdown").classList.remove("hidden");
+      storeInput.focus();
+    }
+  }
+
+  function requestNearMeLocation() {
+    const note = document.getElementById("start-mode-note");
+
+    if (!navigator.geolocation) {
+      note.textContent = "This browser does not provide geolocation. You can still search or add the store manually.";
+      note.className = "store-mode-note error";
+      return Promise.resolve(null);
+    }
+
+    note.textContent = "Requesting your location for Near Me…";
+    note.className = "store-mode-note";
+
+    const attempt = (options) => new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+    });
+
+    return (async () => {
+      try {
+        let position;
+        try {
+          position = await attempt({
+            enableHighAccuracy: false,
+            timeout: 12000,
+            maximumAge: 300000
+          });
+        } catch (firstError) {
+          if (firstError?.code === 1) throw firstError;
+          note.textContent = "Location is taking a moment. Retrying once automatically…";
+          note.className = "store-mode-note";
+          await new Promise(resolve => setTimeout(resolve, 700));
+          position = await attempt({
+            enableHighAccuracy: true,
+            timeout: 18000,
+            maximumAge: 0
+          });
+        }
+
+        startLocationSnapshot = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        };
+        note.textContent = "Location ready. Google store results will be biased around your current position.";
+        note.className = "store-mode-note success";
+        return startLocationSnapshot;
+      } catch (error) {
+        startLocationSnapshot = null;
+        note.textContent = error?.code === 1
+          ? "Location permission was not granted. Near Me can still be used as a normal store search, or you can choose Remote Shopping."
+          : "Your location could not be read right now. Store search and manual fallback remain available.";
+        note.className = "store-mode-note error";
+        return null;
+      }
+    })();
   }
 
 
@@ -5853,7 +7144,7 @@
 
     renderVisitedStores();
 
-    await loadVisitedStoresFromTrips();
+    await refreshStartStoreDirectory();
 
     setTimeout(
       function() {
@@ -5902,6 +7193,8 @@
         "start-store"
       ).value;
 
+    selectedStartGoogleStore = null;
+
     document.getElementById(
       "start-store-search"
     ).value =
@@ -5914,107 +7207,713 @@
     );
 
     renderVisitedStores();
+    scheduleStartGoogleAutocomplete(value);
   }
 
 
+  function startStoreSearchChanged() {
+    const value = String(document.getElementById("start-store-search")?.value || "");
+    renderVisitedStores();
+    scheduleStartGoogleAutocomplete(value);
+  }
+
+
+  function normalizeStoreSearchText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  function savedStoreSearchScore(store, query) {
+    const normalizedQuery = normalizeStoreSearchText(query);
+    if (!normalizedQuery) return 1;
+
+    const fields = [store.name, store.branchName, store.address]
+      .map(normalizeStoreSearchText)
+      .filter(Boolean);
+    const haystack = fields.join(" ");
+    if (!haystack) return 0;
+
+    // Exact phrase first, then token-wise matches. This lets a saved store called
+    // "Test Walmart Local" surface for searches such as "Walmart Local" or
+    // "Walmart Test", rather than requiring the exact original phrase order.
+    let score = haystack.includes(normalizedQuery) ? 100 : 0;
+    const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+    let matched = 0;
+    for (const token of tokens) {
+      if (haystack.includes(token)) {
+        matched += 1;
+        score += 18;
+        if (fields[0]?.includes(token)) score += 8;
+        if (fields[1]?.includes(token)) score += 5;
+        if (fields[2]?.includes(token)) score += 3;
+      }
+    }
+
+    // Require every reasonably meaningful token to match so unrelated saved
+    // stores do not swamp the Google results.
+    if (tokens.length && matched < tokens.length) return 0;
+    if (store.source === "saved") score += 12;
+    if (store.lastUsed) score += 2;
+    return score;
+  }
+
+  function googlePredictionLabel(entry) {
+    const prediction = entry?.prediction || entry;
+    const explicit = String(entry?.label || "").trim();
+    if (explicit && explicit !== "undefined" && explicit !== "null") return explicit;
+    try {
+      const value = prediction?.text?.toString?.();
+      if (value && value !== "undefined" && value !== "null") return String(value).trim();
+    } catch (_) {}
+    return "Google place";
+  }
+
   function renderVisitedStores() {
+    const list = document.getElementById("start-store-list");
+    if (!list) return;
 
-    const list =
-      document.getElementById(
-        "start-store-list"
-      );
+    const query = String(document.getElementById("start-store-search")?.value || "").trim();
 
-    if (!list) {
+    if (startShoppingMode === "ONLINE") {
+      const normalizedQuery = normalizeStoreSearchText(query);
+      const merged = [];
+      const seen = new Set();
+      [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS].forEach(store => {
+        const key = normalizeStore(store.websiteUrl || store.name);
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        const hay = normalizeStoreSearchText([store.name, store.websiteUrl].filter(Boolean).join(" "));
+        if (normalizedQuery && !normalizedQuery.split(/\s+/).every(token => hay.includes(token))) return;
+        merged.push(store);
+      });
+      window.currentVisitedStoreResults = merged;
+      let html = merged.length
+        ? '<div class="start-store-empty" style="padding-bottom:6px;">Saved / built-in online merchants</div>' + merged.map((store,index) => (
+            '<button class="start-store-option" type="button" onclick="selectVisitedStore(' + index + ')">' +
+              '<span class="start-store-option-name">' + escapeHtml(store.name) + '</span>' +
+              '<span class="start-store-option-meta">' + escapeHtml(store.websiteUrl || 'Saved online merchant') + '</span>' +
+            '</button>'
+          )).join("")
+        : '<div class="start-store-empty">No saved online merchant matches that search.</div>';
+
+      if (startOnlineInternetResults.length) {
+        html += '<div class="start-store-empty" style="padding-top:10px;padding-bottom:6px;">Discovered merchant websites</div>';
+        html += startOnlineInternetResults.map((store,index) => (
+          '<button class="start-store-option" type="button" onclick="selectOnlineInternetMerchant(' + index + ')">' +
+            '<span class="start-store-option-name">' + escapeHtml(store.name) + '</span>' +
+            '<span class="start-store-option-meta">' + escapeHtml(store.websiteUrl) + '</span>' +
+          '</button>'
+        )).join("");
+        html += '<div class="online-discovery-note">Internet discovery uses Google business data, filters for retail/shop-type businesses, and stores a clean merchant home-domain URL. Smaller online shops can still be added manually and will be reusable here.</div>';
+      } else if (normalizedQuery.length >= 2) {
+        html += '<div class="online-discovery-note">Searching Google business data for merchant websites…</div>';
+      }
+
+      html += '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
+        '<span class="start-store-option-name">＋ Add online store manually</span>' +
+        '<span class="start-store-option-meta">Enter the merchant name and website URL once, then reuse it later.</span>' +
+      '</button>';
+      list.innerHTML = html;
       return;
     }
 
-    const query =
-      String(
-        document.getElementById(
-          "start-store-search"
-        )?.value || ""
-      )
-        .trim()
-        .toLowerCase();
+    const combinedDirectory = [];
+    const seenDirectoryKeys = new Set();
+    [...savedStoreDirectory, ...visitedStores].forEach(store => {
+      if (!store?.name || String(store.type || '').toLowerCase() === 'online') return;
+      const key = [normalizeStore(store.name), normalizeStore(store.branchName), normalizeStore(store.address)].join("|");
+      if (seenDirectoryKeys.has(key)) return;
+      seenDirectoryKeys.add(key);
+      combinedDirectory.push(store);
+    });
 
-    const filtered =
-      visitedStores
-        .filter(
-          store =>
-            !query ||
-            store.name
-              .toLowerCase()
-              .includes(
-                query
-              )
-        )
-        .slice(
-          0,
-          40
-        );
+    const filtered = combinedDirectory
+      .map(store => ({store, score:savedStoreSearchScore(store, query)}))
+      .filter(item => item.score > 0)
+      .sort((a,b) => {
+        if (query && b.score !== a.score) return b.score - a.score;
+        if (a.store.source === "saved" && b.store.source !== "saved") return -1;
+        if (b.store.source === "saved" && a.store.source !== "saved") return 1;
+        if ((b.store.lastUsed || 0) !== (a.store.lastUsed || 0)) return (b.store.lastUsed || 0) - (a.store.lastUsed || 0);
+        return String(a.store.name || "").localeCompare(String(b.store.name || ""));
+      })
+      .slice(0,40)
+      .map(item => item.store);
 
-    window.currentVisitedStoreResults =
-      filtered;
+    window.currentVisitedStoreResults = filtered;
 
-    let html =
-      "";
-
-    if (
-      filtered.length
-    ) {
-
-      html +=
-        filtered
-          .map(
-            (store, index) => (
-
-              '<button class="start-store-option" type="button" onclick="selectVisitedStore(' +
-              index +
-              ')">' +
-
-                '<span class="start-store-option-name">' +
-                  escapeHtml(
-                    store.name
-                  ) +
-                "</span>" +
-
-                '<span class="start-store-option-meta">' +
-                  (
-                    store.lastUsed
-                      ? "Previously visited"
-                      : "Saved in product history"
-                  ) +
-                "</span>" +
-
-              "</button>"
-            )
-          )
-          .join(
-            ""
-          );
-
+    let html = "";
+    if (filtered.length) {
+      html += '<div class="start-store-empty" style="padding-bottom:6px;">Saved / previously used stores</div>';
+      html += filtered.map((store,index) => (
+        '<button class="start-store-option" type="button" onclick="selectVisitedStore(' + index + ')">' +
+          '<span class="start-store-option-name">' + escapeHtml(store.name) + '</span>' +
+          '<span class="start-store-option-meta">' + escapeHtml(
+            store.source === "saved"
+              ? ([store.branchName, store.address].filter(Boolean).join(" • ") || "Saved store")
+              : (store.lastUsed ? "Previously visited" : "Saved in product history")
+          ) + '</span>' +
+        '</button>'
+      )).join("");
     } else {
-
-      html +=
-        '<div class="start-store-empty">' +
-          (
-            query
-              ? "No visited store matches that search."
-              : "No previously visited stores are stored yet."
-          ) +
-        "</div>";
+      html += '<div class="start-store-empty">' + (query ? "No saved/visited store matches that search yet." : "No saved/visited stores are stored yet.") + '</div>';
     }
 
+    if (startGooglePredictions.length) {
+      html += '<div class="start-store-empty" style="padding-top:10px;padding-bottom:6px;">Google Maps results</div>';
+      html += startGooglePredictions.map((entry,index) => {
+        const text = googlePredictionLabel(entry);
+        return '<button class="start-store-option" type="button" onclick="selectStartGooglePlace(' + index + ')">' +
+          '<span class="start-store-option-name">' + escapeHtml(text) + '</span>' +
+          '<span class="start-store-option-meta">Google Maps</span>' +
+        '</button>';
+      }).join("");
+    }
 
-    html +=
-      '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
-        '<span class="start-store-option-name">＋ Enter a new store manually</span>' +
-        '<span class="start-store-option-meta">For a store not already listed here.</span>' +
-      "</button>";
+    html += '<button class="start-store-option start-store-manual" type="button" onclick="chooseManualStoreEntry()">' +
+      '<span class="start-store-option-name">＋ Add store manually</span>' +
+      '<span class="start-store-option-meta">Permanent fallback when the desired store cannot be found.</span>' +
+    '</button>';
+
+    list.innerHTML = html;
+  }
 
 
-    list.innerHTML =
-      html;
+  function getMapsDemoKey() {
+    try {
+      return String(localStorage.getItem(MAPS_DEMO_KEY_STORAGE) || "").trim();
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function openMapsDemoKeySetup() {
+    const input = document.getElementById("maps-demo-key-input");
+    input.value = getMapsDemoKey();
+    const status = document.getElementById("maps-key-status");
+    status.textContent = getMapsDemoKey()
+      ? "A demo key is already stored on this device. Saving a new one will replace it."
+      : "Paste the demo key you created on Google Maps Platform.";
+    status.className = "store-mode-note";
+    show("maps-key-overlay");
+    setTimeout(() => input.focus(), 80);
+  }
+
+  function closeMapsDemoKeySetup() {
+    hide("maps-key-overlay");
+  }
+
+  async function saveMapsDemoKeySetup() {
+    const input = document.getElementById("maps-demo-key-input");
+    const key = String(input.value || "").trim();
+    const status = document.getElementById("maps-key-status");
+    if (!key) {
+      status.textContent = "Paste the demo key first.";
+      status.className = "store-mode-note error";
+      return;
+    }
+    try {
+      localStorage.setItem(MAPS_DEMO_KEY_STORAGE, key);
+      googleMapsLoadPromise = null;
+      googlePlacesReady = false;
+      status.textContent = "Connecting to Google Places…";
+      status.className = "store-mode-note";
+      await ensureGooglePlacesReady(false);
+      status.textContent = "Google Places connected on this device.";
+      status.className = "store-mode-note success";
+      setTimeout(() => {
+        closeMapsDemoKeySetup();
+        showSuccessToast("Google Places connected", "The demo key stays only on this browser/device.");
+        const query = String(document.getElementById("start-store-search")?.value || document.getElementById("start-store")?.value || "").trim();
+        if (query) scheduleStartGoogleAutocomplete(query, 0);
+      }, 450);
+    } catch (error) {
+      status.textContent = "Google Places could not connect with this key. Check the key and try again.";
+      status.className = "store-mode-note error";
+    }
+  }
+
+  async function ensureGooglePlacesReady(promptIfMissing = false) {
+    if (googlePlacesReady && window.google?.maps?.importLibrary) return true;
+    const key = getMapsDemoKey();
+    if (!key) {
+      if (promptIfMissing) openMapsDemoKeySetup();
+      return false;
+    }
+    if (!googleMapsLoadPromise) {
+      googleMapsLoadPromise = new Promise((resolve, reject) => {
+        if (window.google?.maps?.importLibrary) {
+          resolve();
+          return;
+        }
+        const existing = document.getElementById("obsidian-google-maps-loader");
+        if (existing) {
+          existing.addEventListener("load", resolve, {once:true});
+          existing.addEventListener("error", reject, {once:true});
+          return;
+        }
+        const script = document.createElement("script");
+        script.id = "obsidian-google-maps-loader";
+        script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(key) + "&v=weekly&loading=async";
+        script.async = true;
+        script.defer = true;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Google Maps script failed to load."));
+        document.head.appendChild(script);
+      });
+    }
+    await googleMapsLoadPromise;
+    await google.maps.importLibrary("places");
+    googlePlacesReady = true;
+    if (!startAutocompleteSessionToken) {
+      const { AutocompleteSessionToken } = await google.maps.importLibrary("places");
+      startAutocompleteSessionToken = new AutocompleteSessionToken();
+    }
+    return true;
+  }
+
+  function nearbyDebugReset(label = "Nearby diagnostics") {
+    nearbyDebugEntries = [];
+    nearbyDebugLog(label);
+  }
+
+  function nearbyDebugLog(message, detail = "") {
+    const stamp = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+    const line = `[${stamp}] ${String(message || "")}${detail ? ` — ${String(detail)}` : ""}`;
+    nearbyDebugEntries.push(line);
+    if (nearbyDebugEntries.length > 40) nearbyDebugEntries.shift();
+    const el = document.getElementById("nearby-debug-log");
+    if (el) el.textContent = nearbyDebugEntries.join("\n");
+  }
+
+  function nearbyErrorText(error) {
+    if (!error) return "Unknown error";
+    const parts = [error.name, error.message, error.status, error.code].filter(Boolean);
+    return parts.length ? parts.join(" | ") : String(error);
+  }
+
+  async function warmGoogleStoreDiscovery() {
+    try {
+      const ready = await ensureGooglePlacesReady(false);
+      if (!ready) return false;
+      await Promise.all([
+        google.maps.importLibrary("places"),
+        google.maps.importLibrary("maps"),
+        google.maps.importLibrary("marker")
+      ]);
+      // Give Android Chrome one paint after the async Google loader settles.
+      await new Promise(resolve => setTimeout(resolve, 120));
+      return true;
+    } catch (error) {
+      console.warn("Google store discovery warm-up failed", error);
+      return false;
+    }
+  }
+
+  async function searchRetailPlaces(center, radiusMeters, maxResultCount = 20) {
+    const { Place, SearchNearbyRankPreference } = await google.maps.importLibrary("places");
+    const request = {
+      fields: [
+        "id", "displayName", "formattedAddress", "location", "businessStatus",
+        "regularOpeningHours", "currentOpeningHours", "googleMapsURI", "primaryTypeDisplayName",
+        "rating", "userRatingCount", "nationalPhoneNumber", "internationalPhoneNumber", "websiteURI"
+      ],
+      locationRestriction: {
+        center: {lat:Number(center.lat), lng:Number(center.lng)},
+        radius: Math.max(150, Math.min(50000, Number(radiusMeters) || NEARBY_STORE_RADIUS_METERS))
+      },
+      // Primary-type filtering keeps restaurants, hospitals and other services
+      // from consuming the 20-result Nearby Search cap.
+      includedPrimaryTypes: RETAIL_PLACE_TYPES,
+      maxResultCount: Math.max(1, Math.min(20, Number(maxResultCount) || 20)),
+      rankPreference: SearchNearbyRankPreference.DISTANCE,
+      language: "es-MX",
+      region: "mx"
+    };
+    return Place.searchNearby(request);
+  }
+
+  function latLngLiteral(value) {
+    if (!value) return null;
+    const lat = typeof value.lat === "function" ? value.lat() : value.lat;
+    const lng = typeof value.lng === "function" ? value.lng() : value.lng;
+    if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+    return {lat:Number(lat), lng:Number(lng)};
+  }
+
+  function haversineMeters(a, b) {
+    if (!a || !b) return 0;
+    const R = 6371000;
+    const toRad = deg => deg * Math.PI / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const h = Math.sin(dLat/2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng/2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+
+  function mapVisibleSearchCircle(map) {
+    const center = latLngLiteral(map?.getCenter?.());
+    const bounds = map?.getBounds?.();
+    if (!center || !bounds) return center ? {center, radius:NEARBY_STORE_RADIUS_METERS} : null;
+    const ne = latLngLiteral(bounds.getNorthEast?.());
+    const sw = latLngLiteral(bounds.getSouthWest?.());
+    if (!ne || !sw) return {center, radius:NEARBY_STORE_RADIUS_METERS};
+    const radius = Math.max(250, Math.min(12000, Math.max(haversineMeters(center, ne), haversineMeters(center, sw))));
+    return {center, radius};
+  }
+
+  function scheduleStartGoogleAutocomplete(value, delay = 280) {
+    clearTimeout(startGoogleSearchTimer);
+    const query = String(value || "").trim();
+    if (query.length < 2) {
+      startGooglePredictions = [];
+      startOnlineInternetResults = [];
+      renderVisitedStores();
+      return;
+    }
+    if (startShoppingMode === "ONLINE") {
+      startGooglePredictions = [];
+      startGoogleSearchTimer = setTimeout(() => searchOnlineMerchantWebCandidates(query), Math.max(420, delay));
+      return;
+    }
+    startGoogleSearchTimer = setTimeout(() => searchStartGooglePlaces(query), delay);
+  }
+
+  async function searchStartGooglePlaces(query) {
+    const requestId = ++newestStartGoogleRequestId;
+    try {
+      const ready = await ensureGooglePlacesReady(true);
+      if (!ready) return;
+      const { AutocompleteSuggestion, AutocompleteSessionToken } = await google.maps.importLibrary("places");
+      if (!startAutocompleteSessionToken) startAutocompleteSessionToken = new AutocompleteSessionToken();
+      const request = {
+        input: query,
+        sessionToken: startAutocompleteSessionToken,
+        language: "es-MX",
+        region: "mx"
+      };
+      if (startShoppingMode === "NEAR" && startLocationSnapshot) {
+        request.locationBias = {
+          center: {
+            lat: startLocationSnapshot.latitude,
+            lng: startLocationSnapshot.longitude
+          },
+          radius: 25000
+        };
+        request.origin = {
+          lat: startLocationSnapshot.latitude,
+          lng: startLocationSnapshot.longitude
+        };
+      }
+      let response;
+      try {
+        response = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      } catch (firstError) {
+        // The demo build occasionally loses the very first Places request while the
+        // library is warming up. Retry once internally instead of making the user back out.
+        await new Promise(resolve => setTimeout(resolve, 650));
+        await ensureGooglePlacesReady(false);
+        response = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      }
+      const suggestions = response?.suggestions || [];
+      if (requestId !== newestStartGoogleRequestId) return;
+      startGooglePredictions = suggestions
+        .map(item => item?.placePrediction)
+        .filter(Boolean)
+        .map(prediction => {
+          let label = "Google place";
+          try {
+            const candidate = prediction?.text?.toString?.();
+            if (candidate && candidate !== "undefined" && candidate !== "null") label = String(candidate).trim();
+          } catch (_) {}
+          return {prediction, label};
+        })
+        .slice(0, 8);
+      renderVisitedStores();
+    } catch (error) {
+      if (requestId !== newestStartGoogleRequestId) return;
+      startGooglePredictions = [];
+      renderVisitedStores();
+      const note = document.getElementById("start-mode-note");
+      if (note) {
+        note.textContent = "Google Places search failed. Saved stores and manual fallback are still available.";
+        note.className = "store-mode-note error";
+      }
+    }
+  }
+
+  function normalizedWebsiteKey(url) {
+    try {
+      const parsed = new URL(String(url || "").trim());
+      return parsed.hostname.toLowerCase().replace(/^www\./, "");
+    } catch (_) {
+      return normalizeStore(String(url || ""));
+    }
+  }
+
+  // Store online merchants as a clean home-domain URL rather than a tracking
+  // or deep landing-page URL returned by a business listing.
+  function canonicalOnlineWebsiteUrl(url) {
+    try {
+      const parsed = new URL(String(url || "").trim());
+      if (!/^https?:$/.test(parsed.protocol)) return "";
+      return parsed.protocol + "//" + parsed.hostname.toLowerCase() + "/";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  const ONLINE_RETAIL_PRIMARY_TYPES = new Set([
+    "store", "supermarket", "grocery_store", "convenience_store",
+    "department_store", "shopping_mall", "clothing_store", "shoe_store",
+    "electronics_store", "home_goods_store", "hardware_store",
+    "furniture_store", "book_store", "pet_store", "pharmacy",
+    "drugstore", "liquor_store", "jewelry_store",
+    "sporting_goods_store", "gift_shop", "market", "wholesaler",
+    "food_store"
+  ]);
+
+  function onlineMerchantDomainLooksUsable(url) {
+    const domain = normalizedWebsiteKey(url);
+    if (!domain) return false;
+    const blocked = [
+      "gob.mx", "gov.mx", ".gov", ".gob.", ".edu",
+      "facebook.com", "instagram.com", "x.com", "twitter.com",
+      "tiktok.com", "youtube.com", "linkedin.com",
+      "google.com", "google.com.mx", "maps.google.com",
+      "linktr.ee", "wa.me", "whatsapp.com"
+    ];
+    return !blocked.some(token => domain === token || domain.endsWith(token) || domain.includes(token));
+  }
+
+  function onlineMerchantPlaceLooksRetail(place) {
+    const type = String(place?.primaryType || "").trim().toLowerCase();
+    if (type && ONLINE_RETAIL_PRIMARY_TYPES.has(type)) return true;
+    const label = normalizeStore(String(place?.primaryTypeDisplayName || ""));
+    return /(store|shop|tienda|supermerc|market|mercado|grocery|abarrot|farmacia|pharmacy|boutique|retail|comercio)/.test(label);
+  }
+
+  async function searchOnlineMerchantWebCandidates(query) {
+    const requestId = ++newestOnlineInternetRequestId;
+    try {
+      const ready = await ensureGooglePlacesReady(true);
+      if (!ready || startShoppingMode !== "ONLINE") return;
+      const { Place } = await google.maps.importLibrary("places");
+      let response;
+      const request = {
+        textQuery: query + " tienda compras",
+        fields: ["id","displayName","websiteURI","googleMapsURI","businessStatus","formattedAddress","primaryTypeDisplayName","primaryType"],
+        language: "es-MX",
+        region: "mx",
+        maxResultCount: 20
+      };
+      try {
+        response = await Place.searchByText(request);
+      } catch (firstError) {
+        await new Promise(resolve => setTimeout(resolve, 650));
+        response = await Place.searchByText(request);
+      }
+      if (requestId !== newestOnlineInternetRequestId || startShoppingMode !== "ONLINE") return;
+      const seenDomains = new Set();
+      const alreadyKnown = new Set(
+        [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS]
+          .map(item => normalizedWebsiteKey(item.websiteUrl))
+          .filter(Boolean)
+      );
+      startOnlineInternetResults = (response?.places || [])
+        .filter(place => onlineMerchantPlaceLooksRetail(place))
+        .map(place => ({
+          id: String(place.id || ""),
+          name: String(place.displayName || "").trim() || "Online merchant",
+          websiteUrl: canonicalOnlineWebsiteUrl(place.websiteURI),
+          googleMapsUrl: String(place.googleMapsURI || "").trim(),
+          businessStatus: readableBusinessStatus(place.businessStatus),
+          primaryType: String(place.primaryType || "").trim(),
+          source: "online-google-web"
+        }))
+        .filter(item => {
+          if (!item.websiteUrl || !onlineMerchantDomainLooksUsable(item.websiteUrl)) return false;
+          const domain = normalizedWebsiteKey(item.websiteUrl);
+          if (!domain || alreadyKnown.has(domain) || seenDomains.has(domain)) return false;
+          seenDomains.add(domain);
+          return true;
+        })
+        .slice(0, 10);
+      renderVisitedStores();
+    } catch (error) {
+      if (requestId !== newestOnlineInternetRequestId) return;
+      console.warn("Online merchant discovery failed", error);
+      startOnlineInternetResults = [];
+      renderVisitedStores();
+    }
+  }
+
+  async function selectOnlineInternetMerchant(index) {
+    const store = startOnlineInternetResults[index];
+    if (!store) return;
+    const record = {
+      id: store.id || "",
+      name: store.name || "Online merchant",
+      branchName: "",
+      address: "",
+      type: "Online",
+      googlePlaceId: store.id || "",
+      latitude: "",
+      longitude: "",
+      businessStatus: store.businessStatus || "",
+      openingHours: "",
+      googleMapsUrl: store.googleMapsUrl || "",
+      websiteUrl: canonicalOnlineWebsiteUrl(store.websiteUrl) || store.websiteUrl || ""
+    };
+    selectedStartGoogleStore = record;
+    document.getElementById("start-store").value = [record.name, record.websiteUrl].filter(Boolean).join(" — ");
+    document.getElementById("start-store-search").value = record.name;
+    closeStartStoreDropdown();
+    try {
+      await saveOnlineMerchantIfNeeded(record);
+      await refreshStartStoreDirectory();
+    } catch (error) {
+      console.warn("Online merchant save failed", error);
+    }
+    showSuccessToast("Online merchant selected", record.websiteUrl || record.name);
+  }
+
+  async function saveOnlineMerchantIfNeeded(record) {
+    if (!record?.websiteUrl || !accessToken) return;
+    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:N`, "UNFORMATTED_VALUE");
+    const rows = data.values || [];
+    const domain = normalizedWebsiteKey(record.websiteUrl);
+    const existingIndex = rows.findIndex(row =>
+      String(row?.[4] || "").trim().toLowerCase() === "online" &&
+      normalizedWebsiteKey(row?.[13] || "") === domain
+    );
+    if (existingIndex >= 0) return;
+    let rowNumber = rows.length + 2;
+    for (let i = 0; i < rows.length; i++) {
+      if (blank(rows[i]?.[0])) { rowNumber = i + 2; break; }
+    }
+    await sheetsValuesBatchUpdate([{
+      range: `'${STORES_SHEET}'!A${rowNumber}:N${rowNumber}`,
+      values: [[
+        "STORE-O-" + Date.now(),
+        record.name,
+        "",
+        "",
+        "Online",
+        record.googlePlaceId || "",
+        "",
+        "",
+        record.businessStatus || "",
+        "",
+        record.googleMapsUrl || "",
+        "Discovered from Google business website data",
+        true,
+        record.websiteUrl
+      ]]
+    }], "RAW");
+  }
+
+  function readableBusinessStatus(value) {
+    const text = String(value || "").replaceAll("_", " ").trim();
+    return text ? text.charAt(0) + text.slice(1).toLowerCase() : "";
+  }
+
+  async function selectStartGooglePlace(index) {
+    const entry = startGooglePredictions[index];
+    const prediction = entry?.prediction || entry;
+    if (!prediction) return;
+    try {
+      setStatus("Loading Google store details...", "working");
+      const place = prediction.toPlace();
+      try {
+        await place.fetchFields({
+          fields: ["displayName", "formattedAddress", "location", "businessStatus", "regularOpeningHours", "currentOpeningHours", "googleMapsURI", "rating", "userRatingCount", "nationalPhoneNumber", "internationalPhoneNumber", "websiteURI"]
+        });
+      } catch (error) {
+        await place.fetchFields({
+          fields: ["displayName", "formattedAddress", "location", "googleMapsURI"]
+        });
+      }
+      const fallbackLabel = googlePredictionLabel(entry);
+      const name = String(place.displayName || fallbackLabel || "Google store").trim();
+      const address = String(place.formattedAddress || "").trim();
+      const displayValue = [name, address].filter(Boolean).join(" — ");
+      const location = place.location;
+      const record = {
+        id: place.id || "",
+        name,
+        branchName: "",
+        address,
+        type: "Physical",
+        googlePlaceId: place.id || "",
+        latitude: location?.lat?.() ?? "",
+        longitude: location?.lng?.() ?? "",
+        businessStatus: readableBusinessStatus(place.businessStatus),
+        openingHours: Array.isArray(place.regularOpeningHours?.weekdayDescriptions)
+          ? place.regularOpeningHours.weekdayDescriptions.join(" | ")
+          : "",
+        googleMapsUrl: String(place.googleMapsURI || "").trim(),
+        websiteUrl: String(place.websiteURI || "").trim()
+      };
+      selectedStartGoogleStore = record;
+      document.getElementById("start-store").value = displayValue;
+      document.getElementById("start-store-search").value = displayValue;
+      closeStartStoreDropdown();
+      await saveGoogleStoreIfNeeded(record);
+      const note = document.getElementById("start-mode-note");
+      if (note) {
+        note.textContent = address ? "Google store selected: " + name + " — " + address : "Google store selected: " + name;
+        note.className = "store-mode-note success";
+      }
+      showSuccessToast("Google store selected", address || name);
+      setStatus("Store ready.", "success");
+      const { AutocompleteSessionToken } = await google.maps.importLibrary("places");
+      startAutocompleteSessionToken = new AutocompleteSessionToken();
+      startGooglePredictions = [];
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast("Google store selection failed", "You can retry the search or use Add store manually.");
+    }
+  }
+
+  async function saveGoogleStoreIfNeeded(record) {
+    if (!record?.googlePlaceId || !accessToken) return;
+    const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:N`, "UNFORMATTED_VALUE");
+    const rows = data.values || [];
+    const existingIndex = rows.findIndex(row => String(row?.[5] || "").trim() === record.googlePlaceId);
+    if (existingIndex >= 0) return;
+    let rowNumber = rows.length + 2;
+    for (let i = 0; i < rows.length; i++) {
+      if (blank(rows[i]?.[0])) {
+        rowNumber = i + 2;
+        break;
+      }
+    }
+    await sheetsValuesBatchUpdate([{
+      range: `'${STORES_SHEET}'!A${rowNumber}:N${rowNumber}`,
+      values: [[
+        "STORE-G-" + Date.now(),
+        record.name,
+        record.branchName || "",
+        record.address || "",
+        "Physical",
+        record.googlePlaceId,
+        record.latitude ?? "",
+        record.longitude ?? "",
+        record.businessStatus || "",
+        record.openingHours || "",
+        record.googleMapsUrl || "",
+        "",
+        true,
+        record.websiteUrl || ""
+      ]]
+    }], "RAW");
   }
 
 
@@ -6034,39 +7933,886 @@
       return;
     }
 
-    document.getElementById(
-      "start-store"
-    ).value =
-      store.name;
+    if (store.source === "saved" || store.source === "online-builtin") {
+      selectedStartGoogleStore = {
+        id: store.storeId || "",
+        name: store.name,
+        branchName: store.branchName || "",
+        address: store.address || "",
+        type: store.type || (startShoppingMode === "ONLINE" ? "Online" : "Physical"),
+        googlePlaceId: store.googlePlaceId || "",
+        latitude: store.latitude ?? "",
+        longitude: store.longitude ?? "",
+        businessStatus: store.businessStatus || "",
+        openingHours: store.openingHours || "",
+        googleMapsUrl: store.googleMapsUrl || "",
+        websiteUrl: store.websiteUrl || ""
+      };
+      document.getElementById("start-store").value = startShoppingMode === "ONLINE"
+        ? [store.name, store.websiteUrl].filter(Boolean).join(" — ")
+        : [store.name, store.branchName, store.address].filter(Boolean).join(" — ");
+    } else {
+      selectedStartGoogleStore = null;
+      document.getElementById("start-store").value = store.name;
+    }
 
     closeStartStoreDropdown();
 
     showSuccessToast(
       "Store selected",
-      store.name
+      store.source === "saved" && store.address ? `${store.name} — ${store.address}` : store.name
     );
   }
 
+
+  async function openRemoteMapSearch() {
+    if (startShoppingMode !== "REMOTE") return;
+    const query = String(document.getElementById("start-store-search")?.value || document.getElementById("start-store")?.value || "").trim();
+    if (query.length < 2) {
+      showErrorToast("Search first", "Type a store, branch, neighborhood, city, or address, then tap MAP.");
+      document.getElementById("start-store")?.focus();
+      return;
+    }
+    try {
+      setStatus("Opening remote store map...", "working");
+      await warmGoogleStoreDiscovery();
+      const { Place } = await google.maps.importLibrary("places");
+      const response = await Place.searchByText({
+        textQuery: query,
+        fields: ["id","displayName","formattedAddress","location","businessStatus","regularOpeningHours","currentOpeningHours","googleMapsURI","primaryTypeDisplayName","rating","userRatingCount","nationalPhoneNumber","internationalPhoneNumber","websiteURI","primaryType"],
+        language: "es-MX",
+        region: "mx",
+        maxResultCount: 20
+      });
+      const places = (response?.places || []).filter(place => place?.location);
+      if (!places.length) {
+        showErrorToast("No mapped results", "Try different keywords, use the dropdown, or add the store manually.");
+        return;
+      }
+      nearbyStorePlaces = places;
+      nearbyStoreIndex = 0;
+      nearbyCardDirection = "next";
+      document.getElementById("nearby-stores-title").textContent = "REMOTE STORE RESULTS";
+      document.getElementById("nearby-stores-subtitle").textContent = `${places.length} mapped result${places.length === 1 ? "" : "s"} for “${query}”. Use the map or swipe the cards.`;
+      document.getElementById("nearby-carousel-nav").classList.remove("hidden");
+      show("nearby-stores-overlay");
+      renderNearbyStoreCard("next");
+      await nextVisibleMapFrame();
+      await openNearbyFullMap();
+      setStatus("Remote map ready.", "success");
+    } catch (error) {
+      console.warn("Remote map search failed", error);
+      showErrorToast("Remote map unavailable", "The dropdown and manual fallback are still available.");
+      setStatus("Remote map search failed.", "error");
+    }
+  }
+
+  function openNearbyChoice() {
+    const loc = document.getElementById("nearby-choice-location");
+    const showButton = document.getElementById("nearby-show-button");
+    if (startLocationSnapshot) {
+      loc.textContent = "Location ready. Nearby stores will be searched within about 5 km and ranked by distance.";
+      loc.className = "store-mode-note success";
+      showButton.disabled = false;
+    } else {
+      loc.textContent = "Location is not available yet. Search by name is still available, or retry Near Me to request location again.";
+      loc.className = "store-mode-note error";
+      showButton.disabled = true;
+    }
+    show("nearby-choice-overlay");
+    armAppBackGuard();
+  }
+
+  function closeNearbyChoice() {
+    hide("nearby-choice-overlay");
+  }
+
+  function setNearbyModalScrollLock(locked) {
+    document.documentElement.classList.toggle("nearby-modal-open", !!locked);
+    document.body.classList.toggle("nearby-modal-open", !!locked);
+  }
+
+  function closeNearbyStores() {
+    hide("nearby-stores-overlay");
+    setNearbyModalScrollLock(false);
+  }
+
+  async function useNearMeSearchByName() {
+    closeNearbyChoice();
+    closeNearbyStores();
+    const ready = await ensureGooglePlacesReady(true);
+    if (!ready) return;
+    const input = document.getElementById("start-store");
+    input.placeholder = "Search store by name, branch, neighborhood, or address";
+    input.focus();
+    await openStartStoreDropdown();
+  }
+
+  function placeLocationNumbers(place) {
+    const location = place?.location;
+    if (!location) return {latitude:"", longitude:""};
+    const latitude = typeof location.lat === "function" ? location.lat() : location.lat;
+    const longitude = typeof location.lng === "function" ? location.lng() : location.lng;
+    return {latitude, longitude};
+  }
+
+  function nearbyPlaceRecord(place) {
+    const coords = placeLocationNumbers(place);
+    const hours = place.currentOpeningHours?.weekdayDescriptions || place.regularOpeningHours?.weekdayDescriptions || [];
+    return {
+      id: place.id || "",
+      name: String(place.displayName || "Google store").trim(),
+      branchName: "",
+      address: String(place.formattedAddress || "").trim(),
+      type: "Physical",
+      googlePlaceId: place.id || "",
+      latitude: coords.latitude ?? "",
+      longitude: coords.longitude ?? "",
+      businessStatus: readableBusinessStatus(place.businessStatus),
+      openingHours: Array.isArray(hours) ? hours.join(" | ") : "",
+      openingHoursLines: Array.isArray(hours) ? hours : [],
+      googleMapsUrl: String(place.googleMapsURI || "").trim(),
+      primaryTypeDisplayName: String(place.primaryTypeDisplayName || "Store").trim(),
+      rating: Number.isFinite(Number(place.rating)) ? Number(place.rating) : null,
+      userRatingCount: Number.isFinite(Number(place.userRatingCount)) ? Number(place.userRatingCount) : null,
+      phone: String(place.nationalPhoneNumber || place.internationalPhoneNumber || "").trim(),
+      websiteUrl: String(place.websiteURI || "").trim()
+    };
+  }
+
+
+  async function showNearbyStores() {
+    nearbyDebugReset("Near Me request started");
+    closeNearbyChoice();
+    setNearbyModalScrollLock(true);
+    show("nearby-stores-overlay");
+    armAppBackGuard();
+    const browserCard = document.querySelector("#nearby-stores-overlay .nearby-browser-card");
+    if (browserCard) browserCard.scrollTop = 0;
+    const host = document.getElementById("nearby-card-host");
+    const subtitle = document.getElementById("nearby-stores-subtitle");
+    host.innerHTML = '<div class="nearby-loading">Searching Google Maps for nearby stores…</div>';
+    document.getElementById("nearby-carousel-nav").classList.add("hidden");
+    document.getElementById("nearby-dots").innerHTML = "";
+
+    if (!startLocationSnapshot) {
+      nearbyDebugLog("Location", "NOT READY");
+      subtitle.textContent = "Your location is needed to browse nearby stores.";
+      host.innerHTML = '<div class="nearby-empty">Location is unavailable. Use Search by Name, or close this window and select Near Me again to retry.</div>';
+      return;
+    }
+
+    try {
+      nearbyDebugLog("Location", `${Number(startLocationSnapshot.latitude).toFixed(5)}, ${Number(startLocationSnapshot.longitude).toFixed(5)}`);
+      nearbyDebugLog("Places library", "checking");
+      let ready = await ensureGooglePlacesReady(true);
+      if (!ready) { nearbyDebugLog("Places library", "NOT READY"); return; }
+      nearbyDebugLog("Places library", "READY");
+      // A short readiness barrier avoids the first-request race seen on some mobile browsers.
+      await new Promise(resolve => setTimeout(resolve, 180));
+      ready = await ensureGooglePlacesReady(true);
+      if (!ready) return;
+      subtitle.textContent = "Finding the nearest Google-listed retail stores within about 5 km (up to 20 results).";
+      const warmed = await warmGoogleStoreDiscovery();
+      nearbyDebugLog("Google warm-up", warmed ? "READY" : "completed with warning");
+      let nearbyResponse = null;
+      let lastNearbyError = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          nearbyDebugLog(`Nearby request #${attempt}`, `radius ${NEARBY_STORE_RADIUS_METERS} m`);
+          nearbyResponse = await searchRetailPlaces(
+            {lat:startLocationSnapshot.latitude, lng:startLocationSnapshot.longitude},
+            NEARBY_STORE_RADIUS_METERS,
+            20
+          );
+          nearbyDebugLog(`Nearby request #${attempt}`, `${nearbyResponse?.places?.length || 0} places returned`);
+          break;
+        } catch (error) {
+          lastNearbyError = error;
+          nearbyDebugLog(`Nearby request #${attempt} FAILED`, nearbyErrorText(error));
+          if (attempt >= 3) throw error;
+          subtitle.textContent = `Google Places is still getting ready. Retrying automatically (${attempt + 1}/3)…`;
+          await new Promise(resolve => setTimeout(resolve, attempt === 1 ? 650 : 1200));
+          await warmGoogleStoreDiscovery();
+        }
+      }
+      if (!nearbyResponse && lastNearbyError) throw lastNearbyError;
+      const places = nearbyResponse?.places || [];
+      nearbyStorePlaces = Array.isArray(places) ? places.filter(p => p?.location && p?.displayName) : [];
+      nearbyDebugLog("Renderable nearby places", String(nearbyStorePlaces.length));
+      nearbyStoreIndex = 0;
+      if (!nearbyStorePlaces.length) {
+        subtitle.textContent = "Google did not return nearby retail stores in this radius.";
+        host.innerHTML = '<div class="nearby-empty">No nearby store cards were found. Try Search by Name or add the store manually.</div>';
+        return;
+      }
+      subtitle.textContent = `${nearbyStorePlaces.length} nearest retail result${nearbyStorePlaces.length === 1 ? "" : "s"} within about 5 km. Swipe the card or use the arrows. The map can refresh markers as you move around.`;
+      document.getElementById("nearby-carousel-nav").classList.remove("hidden");
+      renderNearbyStoreCard();
+    } catch (error) {
+      console.error(error);
+      nearbyDebugLog("Nearby Search FINAL FAILURE", nearbyErrorText(error));
+      const details = document.getElementById("nearby-debug-details");
+      if (details) details.open = true;
+      subtitle.textContent = "Nearby Google search could not be completed.";
+      host.innerHTML = '<div class="nearby-empty">Google Places could not load nearby stores. Search by Name and manual entry are still available.</div>';
+    }
+  }
+
+  function nearbyStars(rating) {
+    if (!Number.isFinite(Number(rating))) return "";
+    const rounded = Math.max(0, Math.min(5, Math.round(Number(rating))));
+    return "★".repeat(rounded) + "☆".repeat(5 - rounded);
+  }
+
+  async function renderNearbyStoreCard(direction = nearbyCardDirection) {
+    const place = nearbyStorePlaces[nearbyStoreIndex];
+    const host = document.getElementById("nearby-card-host");
+    if (!place || !host) return;
+    const record = nearbyPlaceRecord(place);
+    const status = record.businessStatus || "Status not provided";
+    const statusClass = /closed/i.test(status) ? "nearby-card-status closed" : "nearby-card-status";
+    const mapsLinkHtml = record.googleMapsUrl
+      ? '<a class="nearby-contact-link" href="' + escapeHtml(record.googleMapsUrl) + '" target="_blank" rel="noopener">📍 Google Maps</a>'
+      : '';
+    const phoneHtml = record.phone
+      ? '<a class="nearby-contact-link" href="tel:' + escapeHtml(record.phone.replace(/[^+\d]/g, "")) + '">☎ Call</a>'
+      : '';
+    const websiteHtml = record.websiteUrl
+      ? '<a class="nearby-contact-link wide" href="' + escapeHtml(record.websiteUrl) + '" target="_blank" rel="noopener">🌐 Website / store page</a>'
+      : '';
+    const hoursLines = record.openingHoursLines || [];
+    const hoursHtml = hoursLines.length
+      ? '<details class="nearby-card-hours"><summary>Opening hours</summary><div class="nearby-card-hours-list">' + hoursLines.map(line => '<div>' + escapeHtml(line) + '</div>').join('') + '</div></details>'
+      : '<div class="nearby-card-hours">Opening hours are not listed for this place.</div>';
+    const ratingHtml = record.rating !== null
+      ? '<div class="nearby-rating-row"><span>' + escapeHtml(nearbyStars(record.rating)) + '</span><span>' + escapeHtml(record.rating.toFixed(1)) + '</span>' +
+        (record.userRatingCount !== null ? '<span class="nearby-rating-count">(' + escapeHtml(record.userRatingCount.toLocaleString()) + ' ratings)</span>' : '') + '</div>'
+      : '<div class="nearby-rating-row"><span class="nearby-rating-count">No Google rating available</span></div>';
+    const contactParts = [phoneHtml, mapsLinkHtml, websiteHtml].filter(Boolean).join('');
+    const contactHtml = contactParts ? '<div class="nearby-contact-grid">' + contactParts + '</div>' : '';
+
+    host.classList.remove("slide-next", "slide-prev");
+    void host.offsetWidth;
+    host.classList.add(direction === "prev" ? "slide-prev" : "slide-next");
+
+    host.innerHTML =
+      '<div class="nearby-card-shell" data-nearby-index="' + nearbyStoreIndex + '">' +
+        '<div class="nearby-mini-map-wrap" role="button" tabindex="0" aria-label="Open interactive map" onclick="openNearbyFullMap()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openNearbyFullMap();}">' +
+          '<div class="nearby-map-launch-inner"><span class="nearby-map-launch-pin">📍</span><div class="nearby-map-launch-title">VIEW INTERACTIVE MAP</div><div class="nearby-map-launch-sub">Tap to see nearby Google stores and choose a pin</div></div>' +
+        '</div>' +
+        '<div class="nearby-card-body">' +
+          '<div class="nearby-card-name">' + escapeHtml(record.name) + '</div>' +
+          '<div class="nearby-card-type">' + escapeHtml(record.primaryTypeDisplayName || 'Store') + '</div>' +
+          ratingHtml +
+          '<div class="nearby-card-address">' + escapeHtml(record.address || 'Address not provided by Google') + '</div>' +
+          '<div class="' + statusClass + '">' + escapeHtml(status) + '</div>' +
+          contactHtml +
+          hoursHtml +
+          '<button class="nearby-card-select" type="button" onclick="selectNearbyStoreCurrent()">SELECT THIS STORE</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById("nearby-carousel-count").textContent = `${nearbyStoreIndex + 1} of ${nearbyStorePlaces.length}`;
+    document.getElementById("nearby-dots").innerHTML = nearbyStorePlaces.map((_,i) => '<span class="nearby-dot' + (i === nearbyStoreIndex ? ' active' : '') + '"></span>').join('');
+
+    host.classList.remove("slide-next","slide-prev","throw-next","throw-prev","snap-back");
+    // Force the arrival animation to restart after innerHTML replacement.
+    void host.offsetWidth;
+    host.classList.add(direction === "prev" ? "slide-prev" : "slide-next");
+    setTimeout(() => host.classList.remove("slide-next","slide-prev"), 360);
+
+    const activeCardShell = host.querySelector(".nearby-card-shell");
+    if (activeCardShell) {
+      activeCardShell.onpointerdown = nearbyDeckPointerDown;
+      activeCardShell.onpointermove = nearbyDeckPointerMove;
+      activeCardShell.onpointerup = nearbyDeckPointerUp;
+      activeCardShell.onpointercancel = nearbyDeckPointerUp;
+    }
+
+    // Step 2G intentionally does not instantiate a Google Map inside every card.
+    // One interactive full map is created only when the user asks for it, which
+    // greatly reduces Maps JS churn on the demo key and on slower phones.
+  }
+
+  function nearbyDeckInteractiveTarget(target) {
+    return !!target?.closest?.("button,a,details,summary,.nearby-mini-map-wrap,input,textarea,select");
+  }
+
+  function nearbyDeckPointerDown(event) {
+    if (nearbyDeckInteractiveTarget(event.target)) return;
+    nearbyPointerActive = true;
+    nearbyPointerStartX = event.clientX;
+    nearbyPointerStartY = event.clientY;
+    nearbyPointerGesture = "";
+    const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
+    if (shell) shell.style.transition = "none";
+  }
+
+  function nearbyDeckPointerMove(event) {
+    if (!nearbyPointerActive || nearbyPointerStartX === null || nearbyPointerStartY === null) return;
+    const dx = event.clientX - nearbyPointerStartX;
+    const dy = event.clientY - nearbyPointerStartY;
+
+    if (!nearbyPointerGesture && (Math.abs(dx) > 9 || Math.abs(dy) > 9)) {
+      // Only claim the gesture when horizontal movement clearly dominates.
+      // Vertical drags are left completely to the modal's native scrolling.
+      nearbyPointerGesture = Math.abs(dx) > Math.abs(dy) * 1.25 ? "horizontal" : "vertical";
+      if (nearbyPointerGesture === "horizontal") {
+        try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch (_) {}
+      }
+    }
+
+    if (nearbyPointerGesture !== "horizontal") return;
+    event.preventDefault();
+    const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
+    if (!shell) return;
+    const rotation = Math.max(-14, Math.min(14, dx / 11));
+    const lift = Math.min(10, Math.abs(dx) / 18);
+    const opacity = Math.max(.66, 1 - Math.abs(dx) / 430);
+    shell.style.transform = `translateX(${dx}px) translateY(${lift}px) rotate(${rotation}deg)`;
+    shell.style.opacity = String(opacity);
+  }
+
+  function nearbyDeckPointerUp(event) {
+    if (!nearbyPointerActive) return;
+    nearbyPointerActive = false;
+    const dx = nearbyPointerStartX === null ? 0 : event.clientX - nearbyPointerStartX;
+    const gesture = nearbyPointerGesture;
+    nearbyPointerStartX = null;
+    nearbyPointerStartY = null;
+    nearbyPointerGesture = "";
+    const host = document.getElementById("nearby-card-host");
+    const shell = document.querySelector("#nearby-card-host .nearby-card-shell");
+    if (!host || !shell) return;
+
+    shell.style.transition = "";
+    if (gesture !== "horizontal" || Math.abs(dx) < 70) {
+      shell.style.transform = "";
+      shell.style.opacity = "";
+      if (gesture === "horizontal") {
+        host.classList.add("snap-back");
+        setTimeout(() => host.classList.remove("snap-back"), 220);
+      }
+      return;
+    }
+
+    const goingNext = dx < 0;
+    host.classList.remove("slide-next","slide-prev","throw-next","throw-prev","snap-back");
+    host.classList.add(goingNext ? "throw-next" : "throw-prev");
+    setTimeout(() => {
+      host.classList.remove("throw-next","throw-prev");
+      nearbyCardDirection = goingNext ? "next" : "prev";
+      nearbyStoreIndex = goingNext
+        ? (nearbyStoreIndex + 1) % nearbyStorePlaces.length
+        : (nearbyStoreIndex - 1 + nearbyStorePlaces.length) % nearbyStorePlaces.length;
+      renderNearbyStoreCard(nearbyCardDirection);
+    }, 205);
+  }
+
+  function focusNearbyStoreFromMap(index) {
+    if (!Number.isInteger(Number(index))) return;
+    const numericIndex = Number(index);
+    if (numericIndex < 0 || numericIndex >= nearbyStorePlaces.length) return;
+    nearbyStoreIndex = numericIndex;
+    closeNearbyFullMap();
+    renderNearbyStoreCard("next");
+    setTimeout(() => {
+      document.getElementById("nearby-card-host")?.scrollIntoView({behavior:"smooth", block:"center"});
+    }, 80);
+  }
+
+  function animateNearbyDeckChange(direction) {
+    if (!nearbyStorePlaces.length) return;
+    const host = document.getElementById("nearby-card-host");
+    if (!host) return;
+    host.classList.remove("slide-next","slide-prev","throw-next","throw-prev","snap-back");
+    host.classList.add(direction === "next" ? "throw-next" : "throw-prev");
+    setTimeout(() => {
+      host.classList.remove("throw-next","throw-prev");
+      nearbyCardDirection = direction;
+      nearbyStoreIndex = direction === "next"
+        ? (nearbyStoreIndex + 1) % nearbyStorePlaces.length
+        : (nearbyStoreIndex - 1 + nearbyStorePlaces.length) % nearbyStorePlaces.length;
+      renderNearbyStoreCard(direction);
+    }, 205);
+  }
+
+  function nearbyCardNext() {
+    animateNearbyDeckChange("next");
+  }
+
+  function nearbyCardPrevious() {
+    animateNearbyDeckChange("prev");
+  }
+
+  function nextVisibleMapFrame() {
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  function ensurePlaceInNearbyDeck(place) {
+    if (!place) return -1;
+    const placeId = String(place.id || "").trim();
+    let index = placeId ? nearbyStorePlaces.findIndex(candidate => String(candidate?.id || "").trim() === placeId) : -1;
+    if (index < 0) {
+      nearbyStorePlaces.push(place);
+      index = nearbyStorePlaces.length - 1;
+    } else {
+      // Keep the richer object if a later map search/fetch supplied more fields.
+      nearbyStorePlaces[index] = place;
+    }
+    return index;
+  }
+
+  function showNearbyMapPlacePanel(place, index = -1) {
+    const record = nearbyPlaceRecord(place);
+    nearbyMapPanelDeckIndex = index >= 0 ? index : ensurePlaceInNearbyDeck(place);
+    const panel = document.getElementById("nearby-map-place-panel");
+    const name = document.getElementById("nearby-map-place-name");
+    const address = document.getElementById("nearby-map-place-address");
+    if (name) name.textContent = record.name || "Store";
+    if (address) address.textContent = record.address || "Address not provided by Google";
+    panel?.classList.remove("hidden");
+  }
+
+  function hideNearbyMapPlacePanel() {
+    nearbyMapPanelDeckIndex = -1;
+    document.getElementById("nearby-map-place-panel")?.classList.add("hidden");
+  }
+
+  function goToNearbyMapPanelStore() {
+    if (nearbyMapPanelDeckIndex < 0) return;
+    focusNearbyStoreFromMap(nearbyMapPanelDeckIndex);
+  }
+
+  function clearNearbyFullMapMarkers() {
+    nearbyFullMapMarkers.forEach(marker => {
+      try { marker.setMap?.(null); } catch (_) {
+        try { marker.map = null; } catch (_) {}
+      }
+    });
+    nearbyFullMapMarkers = [];
+    nearbyFullMapMarker = null;
+  }
+
+  async function renderRetailMarkersForMap(map, places) {
+    const { Marker } = await google.maps.importLibrary("marker");
+    clearNearbyFullMapMarkers();
+    const markers = [];
+    for (const place of places || []) {
+      const record = nearbyPlaceRecord(place);
+      const coords = placeLocationNumbers(place);
+      if (!Number.isFinite(Number(coords.latitude)) || !Number.isFinite(Number(coords.longitude))) continue;
+      const position = {lat:Number(coords.latitude), lng:Number(coords.longitude)};
+      const deckIndex = ensurePlaceInNearbyDeck(place);
+      const marker = new Marker({
+        map,
+        position,
+        title:record.name || "Store",
+        clickable:true,
+        icon:{
+          path:google.maps.SymbolPath.CIRCLE,
+          scale:9,
+          fillColor:"#7c38bd",
+          fillOpacity:1,
+          strokeColor:"#ffffff",
+          strokeWeight:2
+        }
+      });
+      marker.addListener("click", () => showNearbyMapPlacePanel(place, deckIndex));
+      markers.push(marker);
+      if (deckIndex === nearbyStoreIndex) nearbyFullMapMarker = marker;
+    }
+    nearbyFullMapMarkers = markers;
+  }
+
+  async function refreshNearbyRetailMarkersForViewport(map, force = false) {
+    if (!map || nearbyFullMapInitialising) return;
+    const circle = mapVisibleSearchCircle(map);
+    if (!circle) return;
+    const zoom = Number(map.getZoom?.() || 0);
+    const searchKey = `${circle.center.lat.toFixed(4)},${circle.center.lng.toFixed(4)}:${Math.round(circle.radius/250)}:${zoom}`;
+    if (!force && searchKey === nearbyFullMapLastSearchKey) return;
+    nearbyFullMapLastSearchKey = searchKey;
+    const serial = ++nearbyFullMapSearchSerial;
+    const subtitle = document.getElementById("nearby-map-subtitle");
+    if (subtitle) subtitle.textContent = "Updating retail stores for the visible map area…";
+    try {
+      const response = await searchRetailPlaces(circle.center, circle.radius, 20);
+      if (serial !== nearbyFullMapSearchSerial || map !== nearbyFullMap) return;
+      const places = Array.isArray(response?.places) ? response.places.filter(p => p?.location && p?.displayName) : [];
+      await renderRetailMarkersForMap(map, places);
+      nearbyDebugLog("Map viewport search", `${places.length || 0} retail markers rendered`);
+      if (subtitle) subtitle.textContent = `Showing ${places.length || 0} nearby retail result${places.length === 1 ? "" : "s"} for this map area. Pan or zoom to refresh.`;
+    } catch (error) {
+      console.warn("Viewport retail refresh failed", error);
+      if (subtitle) subtitle.textContent = "The map is usable. Google could not refresh retail markers for this viewport yet; pan or zoom to try again.";
+    }
+  }
+
+  function scheduleNearbyViewportRefresh(map) {
+    clearTimeout(nearbyFullMapIdleTimer);
+    nearbyFullMapIdleTimer = setTimeout(() => {
+      void refreshNearbyRetailMarkersForViewport(map, false);
+    }, 550);
+  }
+
+  async function fetchPlaceFromMapPoi(placeId) {
+    const { Place } = await google.maps.importLibrary("places");
+    const place = new Place({id:String(placeId), requestedLanguage:"es-MX", requestedRegion:"mx"});
+    try {
+      await place.fetchFields({
+        fields:[
+          "displayName", "formattedAddress", "location", "businessStatus",
+          "regularOpeningHours", "currentOpeningHours", "googleMapsURI", "primaryTypeDisplayName",
+          "rating", "userRatingCount", "nationalPhoneNumber", "internationalPhoneNumber", "websiteURI"
+        ]
+      });
+    } catch (_) {
+      await place.fetchFields({fields:["displayName", "formattedAddress", "location", "googleMapsURI"]});
+    }
+    return place;
+  }
+
+  async function buildNearbyFullMapAttempt(selectedPlace, attemptNumber = 1) {
+    const selectedCoords = placeLocationNumbers(selectedPlace);
+    const mapEl = document.getElementById("nearby-full-map");
+    if (!mapEl) throw new Error("Map container is missing.");
+
+    await warmGoogleStoreDiscovery();
+    await nextVisibleMapFrame();
+    await new Promise(resolve => setTimeout(resolve, attemptNumber === 1 ? 420 : 800));
+
+    const rect = mapEl.getBoundingClientRect();
+    nearbyDebugLog(`Map attempt #${attemptNumber} container`, `${Math.round(rect.width)}x${Math.round(rect.height)} px`);
+    if (rect.width < 120 || rect.height < 180) {
+      throw new Error(`Map container is not ready (${Math.round(rect.width)}x${Math.round(rect.height)}).`);
+    }
+
+    const { Map } = await google.maps.importLibrary("maps");
+    mapEl.innerHTML = "";
+    const center = {lat:Number(selectedCoords.latitude), lng:Number(selectedCoords.longitude)};
+    const mapOptions = {
+      center,
+      zoom:15,
+      gestureHandling:"greedy",
+      fullscreenControl:true,
+      streetViewControl:false,
+      mapTypeControl:false,
+      clickableIcons:true
+    };
+    if (google.maps.RenderingType?.RASTER) mapOptions.renderingType = google.maps.RenderingType.RASTER;
+
+    nearbyFullMapInitialising = true;
+    const candidateMap = new Map(mapEl, mapOptions);
+    nearbyDebugLog(`Map attempt #${attemptNumber}`, "Map object created");
+    nearbyFullMap = candidateMap;
+    nearbyFullMapInfoWindow = null;
+    hideNearbyMapPlacePanel();
+    nearbyFullMapLastSearchKey = "";
+
+    // Let ordinary Google basemap POIs be selectable too. The click event carries
+    // a placeId for a labeled POI; stop() suppresses Google's default bubble so
+    // our own consistent "GO TO THIS STORE" card can be used instead.
+    candidateMap.addListener("click", event => {
+      if (!event?.placeId) {
+        hideNearbyMapPlacePanel();
+        return;
+      }
+      try { event.stop?.(); } catch (_) {}
+      void (async () => {
+        try {
+          const place = await fetchPlaceFromMapPoi(event.placeId);
+          const deckIndex = ensurePlaceInNearbyDeck(place);
+          nearbyDebugLog("Google basemap POI tapped", String(event.placeId));
+          showNearbyMapPlacePanel(place, deckIndex);
+        } catch (error) {
+          console.warn("POI detail lookup failed", error);
+        }
+      })();
+    });
+
+    // Wait for the initial tiles. Longer than earlier builds, because the demo key
+    // can be slow on the first map request. One caller-level retry remains.
+    await new Promise((resolve,reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        nearbyDebugLog(`Map attempt #${attemptNumber} tiles`, "TIMEOUT");
+        reject(new Error("Google map tiles did not load in time."));
+      }, 8500);
+      google.maps.event.addListenerOnce(candidateMap,"tilesloaded",() => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        nearbyDebugLog(`Map attempt #${attemptNumber} tiles`, "LOADED");
+        resolve();
+      });
+      setTimeout(() => {
+        try {
+          google.maps.event.trigger(candidateMap,"resize");
+          candidateMap.setCenter(center);
+        } catch (_) {}
+      }, 220);
+    });
+
+    nearbyFullMapInitialising = false;
+    await refreshNearbyRetailMarkersForViewport(candidateMap, true);
+
+    candidateMap.addListener("idle", () => {
+      if (nearbyFullMapInitialising) return;
+      nearbyDebugLog("Map idle event", "viewport refresh scheduled");
+      scheduleNearbyViewportRefresh(candidateMap);
+    });
+  }
+
+  async function openNearbyFullMap() {
+    window.gm_authFailure = function() {
+      const subtitle = document.getElementById("nearby-map-subtitle");
+      if (subtitle) subtitle.textContent = "Google could not authorize the in-app map right now. Store selection still works; use OPEN IN GOOGLE MAPS as the fallback.";
+    };
+
+    const selectedPlace = nearbyStorePlaces[nearbyStoreIndex];
+    if (!selectedPlace) return;
+    const selectedRecord = nearbyPlaceRecord(selectedPlace);
+    const selectedCoords = placeLocationNumbers(selectedPlace);
+    if (!Number.isFinite(Number(selectedCoords.latitude)) || !Number.isFinite(Number(selectedCoords.longitude))) return;
+
+    // Preload the actual map libraries before opening the modal. This is the main
+    // first-open fix: the visible map container is no longer also responsible for
+    // waiting on Google's cold script/library startup.
+    document.getElementById("nearby-map-title").textContent = "NEARBY STORE MAP";
+    document.getElementById("nearby-map-subtitle").textContent = "Preparing Google Maps…";
+    document.getElementById("nearby-full-map-google").disabled = !selectedRecord.googleMapsUrl;
+    try {
+      await warmGoogleStoreDiscovery();
+    } catch (_) {}
+
+    const mapEl = document.getElementById("nearby-full-map");
+    if (mapEl) mapEl.innerHTML = '<div class="nearby-loading">Loading Google Map…</div>';
+    show("nearby-map-overlay");
+    armAppBackGuard();
+
+    let lastError = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        document.getElementById("nearby-map-subtitle").textContent = attempt === 1
+          ? "Loading the interactive map…"
+          : "The first render did not paint. Retrying automatically…";
+        await buildNearbyFullMapAttempt(selectedPlace, attempt);
+        return;
+      } catch (error) {
+        lastError = error;
+        console.warn(`Full store map attempt ${attempt} failed`, error);
+        nearbyDebugLog(`Map attempt #${attempt} FAILED`, nearbyErrorText(error));
+        nearbyFullMapInitialising = false;
+        clearTimeout(nearbyFullMapIdleTimer);
+        nearbyFullMapInfoWindow?.close?.();
+        clearNearbyFullMapMarkers();
+        nearbyFullMap = null;
+        if (mapEl) mapEl.innerHTML = '<div class="nearby-loading">Retrying Google Map…</div>';
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 700));
+      }
+    }
+
+    console.warn("Full store map could not render after automatic retry", lastError);
+    nearbyDebugLog("Map FINAL FAILURE", nearbyErrorText(lastError));
+    if (mapEl) {
+      mapEl.innerHTML = '<div class="nearby-empty">The in-app Google map could not render after an automatic retry.<br><br>Store search and selection still work normally.</div>';
+    }
+    document.getElementById("nearby-map-subtitle").textContent = "The in-app map is temporarily unavailable. Use OPEN IN GOOGLE MAPS as the fallback.";
+  }
+
+  function closeNearbyFullMap() {
+    hide("nearby-map-overlay");
+    clearTimeout(nearbyFullMapIdleTimer);
+    nearbyFullMapIdleTimer = null;
+    nearbyFullMapSearchSerial++;
+    nearbyFullMapLastSearchKey = "";
+    nearbyFullMapInitialising = false;
+    nearbyFullMapInfoWindow?.close?.();
+    hideNearbyMapPlacePanel();
+    clearNearbyFullMapMarkers();
+    nearbyFullMap = null;
+    const mapEl = document.getElementById("nearby-full-map");
+    if (mapEl) mapEl.innerHTML = "";
+  }
+
+
+  function openCurrentNearbyStoreInGoogleMaps() {
+    const place = nearbyStorePlaces[nearbyStoreIndex];
+    if (!place) return;
+    const record = nearbyPlaceRecord(place);
+    if (record.googleMapsUrl) {
+      window.open(record.googleMapsUrl, "_blank", "noopener");
+    }
+  }
+
+
+  async function selectNearbyStoreCurrent() {
+    const place = nearbyStorePlaces[nearbyStoreIndex];
+    if (!place) return;
+    const record = nearbyPlaceRecord(place);
+    selectedStartGoogleStore = record;
+    const displayValue = [record.name, record.address].filter(Boolean).join(" — ");
+    document.getElementById("start-store").value = displayValue;
+    document.getElementById("start-store-search").value = displayValue;
+    try {
+      await saveGoogleStoreIfNeeded(record);
+      closeNearbyStores();
+      document.getElementById("start-mode-note").textContent = record.address
+        ? `Google store selected: ${record.name} — ${record.address}`
+        : `Google store selected: ${record.name}`;
+      document.getElementById("start-mode-note").className = "store-mode-note success";
+      showSuccessToast("Store selected", record.address || record.name);
+      setStatus("Store ready.", "success");
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast("Store save failed", "The Google result was selected, but could not be saved to Stores.");
+    }
+  }
+
+  function clearStartManualStoreForm() {
+    ["start-manual-name","start-manual-branch","start-manual-address","start-manual-maps-url","start-manual-website-url","start-manual-latitude","start-manual-longitude","start-manual-hours","start-manual-notes"]
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+    document.getElementById("start-manual-business-status").value = "";
+    const status = document.getElementById("start-manual-store-status");
+    status.textContent = "Manual entries are saved in the Stores sheet for later trips.";
+    status.className = "store-mode-note";
+  }
 
   function chooseManualStoreEntry() {
-
-    const input =
-      document.getElementById(
-        "start-store"
-      );
-
-    input.value =
-      "";
-
     closeStartStoreDropdown();
-
-    input.focus();
-
-    setStatus(
-      "Enter the new store name manually.",
-      "success"
-    );
+    closeNearbyChoice();
+    closeNearbyStores();
+    clearStartManualStoreForm();
+    const online = startShoppingMode === "ONLINE";
+    document.getElementById("start-manual-store-title").textContent = online ? "ADD ONLINE STORE" : "ADD STORE MANUALLY";
+    document.querySelector("#start-manual-store-overlay .change-body").textContent = online
+      ? "Enter the online merchant and its website URL. Physical branch/location fields are hidden because this purchase is online."
+      : "Use this only when Google cannot find the store. Fill what you know; only Store Name is required.";
+    document.querySelectorAll(".start-manual-physical-only").forEach(el => el.classList.toggle("hidden", online));
+    const websiteRow = document.getElementById("start-manual-website-row");
+    websiteRow?.classList.toggle("hidden", !online);
+    document.getElementById("start-manual-name").value = String(document.getElementById("start-store-search")?.value || document.getElementById("start-store")?.value || "").trim();
+    show("start-manual-store-overlay");
+    armAppBackGuard();
+    setTimeout(() => document.getElementById("start-manual-name").focus(), 80);
   }
+
+  function closeStartManualStoreForm() {
+    hide("start-manual-store-overlay");
+  }
+
+  async function saveStartManualStore() {
+    const name = String(document.getElementById("start-manual-name").value || "").trim();
+    const branchName = String(document.getElementById("start-manual-branch").value || "").trim();
+    const address = String(document.getElementById("start-manual-address").value || "").trim();
+    const businessStatus = String(document.getElementById("start-manual-business-status").value || "").trim();
+    const googleMapsUrl = String(document.getElementById("start-manual-maps-url").value || "").trim();
+    const websiteUrl = String(document.getElementById("start-manual-website-url").value || "").trim();
+    const latRaw = String(document.getElementById("start-manual-latitude").value || "").trim();
+    const lngRaw = String(document.getElementById("start-manual-longitude").value || "").trim();
+    const openingHours = String(document.getElementById("start-manual-hours").value || "").trim();
+    const notes = String(document.getElementById("start-manual-notes").value || "").trim();
+    const status = document.getElementById("start-manual-store-status");
+    const button = document.getElementById("start-manual-save-button");
+
+    if (!name) {
+      status.textContent = "Store Name is required.";
+      status.className = "store-mode-note error";
+      return;
+    }
+    if (startShoppingMode === "ONLINE" && !websiteUrl) {
+      status.textContent = "Website URL is required for an online store.";
+      status.className = "store-mode-note error";
+      return;
+    }
+    const latitude = latRaw === "" ? "" : Number(latRaw);
+    const longitude = lngRaw === "" ? "" : Number(lngRaw);
+    if ((latRaw !== "" && !Number.isFinite(latitude)) || (lngRaw !== "" && !Number.isFinite(longitude))) {
+      status.textContent = "Latitude/longitude must be valid numbers or left blank.";
+      status.className = "store-mode-note error";
+      return;
+    }
+
+    button.disabled = true;
+    status.textContent = "Saving manual store…";
+    status.className = "store-mode-note";
+    try {
+      const data = await sheetsGetValues(`'${STORES_SHEET}'!A2:N`, "UNFORMATTED_VALUE");
+      const rows = data.values || [];
+      const duplicate = rows.some(row =>
+        normalizeStore(row?.[1]) === normalizeStore(name) &&
+        normalizeStore(row?.[2]) === normalizeStore(branchName) &&
+        normalizeStore(row?.[3]) === normalizeStore(address)
+      );
+      if (duplicate) {
+        status.textContent = "That store is already saved with the same name, branch, and address.";
+        status.className = "store-mode-note error";
+        return;
+      }
+      let rowNumber = rows.length + 2;
+      for (let i=0;i<rows.length;i++) {
+        if (blank(rows[i]?.[0])) { rowNumber = i + 2; break; }
+      }
+      const storeId = "STORE-M-" + Date.now();
+      const type = startShoppingMode === "ONLINE" ? "Online" : "Physical";
+      await sheetsValuesBatchUpdate([{
+        range:`'${STORES_SHEET}'!A${rowNumber}:N${rowNumber}`,
+        values:[[
+          storeId, name, branchName, address, type, "", latitude, longitude,
+          businessStatus, openingHours, googleMapsUrl, notes, true, websiteUrl
+        ]]
+      }], "RAW");
+
+      const record = {
+        id:storeId, name, branchName, address, type, googlePlaceId:"",
+        latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes, websiteUrl
+      };
+      selectedStartGoogleStore = record;
+      visitedStoresLoadedFromTrips = false;
+      const savedEntry = {
+        storeId, name, branchName, address, type, googlePlaceId:"",
+        latitude, longitude, businessStatus, openingHours, googleMapsUrl, notes, websiteUrl,
+        active:true, lastUsed:Date.now(), source:"saved"
+      };
+      const savedKey = [normalizeStore(name), normalizeStore(branchName), normalizeStore(address)].join("|");
+      if (type === "Online") {
+        savedOnlineStoreDirectory = savedOnlineStoreDirectory.filter(existing =>
+          normalizeStore(existing.websiteUrl || existing.name) !== normalizeStore(websiteUrl || name)
+        );
+        savedOnlineStoreDirectory.unshift({...savedEntry});
+      } else {
+        visitedStores = visitedStores.filter(existing =>
+          [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
+        );
+        visitedStores.unshift(savedEntry);
+        savedStoreDirectory = savedStoreDirectory.filter(existing =>
+          [normalizeStore(existing.name), normalizeStore(existing.branchName), normalizeStore(existing.address)].join("|") !== savedKey
+        );
+        savedStoreDirectory.unshift({...savedEntry});
+      }
+      const displayValue = type === "Online"
+        ? [name, websiteUrl].filter(Boolean).join(" — ")
+        : [name, branchName, address].filter(Boolean).join(" — ");
+      document.getElementById("start-store").value = displayValue;
+      document.getElementById("start-store-search").value = displayValue;
+      closeStartManualStoreForm();
+      document.getElementById("start-mode-note").textContent = `Manual store ready: ${displayValue}`;
+      document.getElementById("start-mode-note").className = "store-mode-note success";
+      showSuccessToast("Manual store saved", displayValue);
+      setStatus("Store ready.", "success");
+    } catch (error) {
+      handleApiError(error);
+      status.textContent = "The manual store could not be saved.";
+      status.className = "store-mode-note error";
+    } finally {
+      button.disabled = false;
+    }
+  }
+
 
   async function writeCurrentStore(
     store
@@ -11394,7 +14140,10 @@
       selectedPaymentDraftId =
         "";
 
-      paymentMode = "SINGLE";
+      selectedStartGoogleStore = null;
+    startGooglePredictions = [];
+
+    paymentMode = "SINGLE";
       paymentAllocations = [];
       cashEditingAllocationId = "";
 
@@ -12706,6 +15455,152 @@
     ).classList.add(
       "hidden"
     );
+  }
+
+
+  function appLayerVisible(id) {
+    const element = document.getElementById(id);
+    return !!element && !element.classList.contains("hidden");
+  }
+
+  function hasVisibleAppSubflow() {
+    return [
+      "nearby-map-overlay",
+      "start-manual-store-overlay",
+      "nearby-stores-overlay",
+      "nearby-choice-overlay"
+    ].some(appLayerVisible);
+  }
+
+  function armAppBackGuard() {
+    if (appBackHandlingPopstate || appLayerVisible("app-exit-overlay")) return;
+
+    try {
+      const state = history.state || {};
+      const guardForThisLoad =
+        state.obsidianShoppingBackGuard === true &&
+        state.obsidianShoppingBackSession === APP_BACK_HISTORY_SESSION;
+      const baseForThisLoad =
+        state.obsidianShoppingBackBase === true &&
+        state.obsidianShoppingBackSession === APP_BACK_HISTORY_SESSION;
+
+      // Normal steady state: BASE already exists immediately behind this GUARD.
+      // Do not stack extra entries every time the app refreshes its UI.
+      if (guardForThisLoad && appBackGuardActive) return;
+
+      appBackGuardActive = false;
+
+      if (baseForThisLoad) {
+        // We are sitting on BASE (for example after a cancelled/intercepted Back).
+        // Restore the GUARD on top.
+        history.pushState(
+          {
+            obsidianShoppingBackGuard: true,
+            obsidianShoppingBackSession: APP_BACK_HISTORY_SESSION
+          },
+          "",
+          window.location.href
+        );
+      } else {
+        // This is either a brand-new page entry or a stale guard restored from a
+        // previous document load. Convert the CURRENT entry into our BASE first,
+        // then push a separate GUARD. This guarantees a real two-entry sentinel:
+        //
+        //     BASE -> GUARD (current)
+        //
+        // Android Back therefore stays inside this document long enough to fire
+        // popstate, where we can show the exit confirmation.
+        history.replaceState(
+          {
+            obsidianShoppingBackBase: true,
+            obsidianShoppingBackSession: APP_BACK_HISTORY_SESSION
+          },
+          "",
+          window.location.href
+        );
+        history.pushState(
+          {
+            obsidianShoppingBackGuard: true,
+            obsidianShoppingBackSession: APP_BACK_HISTORY_SESSION
+          },
+          "",
+          window.location.href
+        );
+      }
+
+      appBackGuardActive = true;
+    } catch (error) {
+      console.warn("Could not arm Android/PWA Back sentinel", error);
+      appBackGuardActive = false;
+    }
+  }
+
+  function refreshAppBackGuard() {
+    if (appBackHandlingPopstate || appLayerVisible("app-exit-overlay")) return;
+    setTimeout(armAppBackGuard, 0);
+  }
+
+  function appRequestBack() {
+    if (appBackGuardActive) {
+      history.back();
+      return;
+    }
+    appNavigateBackDirect();
+  }
+
+  function showAppExitPrompt() {
+    show("app-exit-overlay");
+  }
+
+  function cancelAppExit() {
+    hide("app-exit-overlay");
+    armAppBackGuard();
+  }
+
+  function confirmAppExit() {
+    hide("app-exit-overlay");
+    appBackGuardActive = false;
+    appBackHandlingPopstate = false;
+
+    // In a standalone/PWA window, history.back() hands control back to the
+    // platform. In an ordinary browser tab it returns to the previous page.
+    // Browsers intentionally do not expose a reliable force-close API.
+    try {
+      history.back();
+    } catch (_) {}
+  }
+
+  function appNavigateBackDirect() {
+    if (appLayerVisible("nearby-map-overlay")) {
+      closeNearbyFullMap();
+      return;
+    }
+
+    if (appLayerVisible("start-manual-store-overlay")) {
+      closeStartManualStoreForm();
+      if (startShoppingMode === "NEAR") {
+        openNearbyChoice();
+      } else {
+        void openStartStoreDropdown();
+      }
+      return;
+    }
+
+    if (appLayerVisible("nearby-stores-overlay")) {
+      closeNearbyStores();
+      if (startShoppingMode === "NEAR") {
+        openNearbyChoice();
+      } else {
+        void openStartStoreDropdown();
+        setTimeout(() => document.getElementById("start-store")?.focus(), 60);
+      }
+      return;
+    }
+
+    if (appLayerVisible("nearby-choice-overlay")) {
+      closeNearbyChoice();
+      setTimeout(armAppBackGuard, 0);
+    }
   }
 
 
@@ -17161,6 +20056,10 @@
     section
   ) {
 
+    // Step 2S: every primary-screen transition is a safe point to make sure
+    // Android/browser Back is still guarded after auth or PWA navigation.
+    refreshAppBackGuard();
+
     const ids = {
       history:
         "nav-history-button",
@@ -19277,6 +22176,10 @@
 
   async function openManagementSection() {
 
+    cancelManagementStoreEdit(
+      true
+    );
+
     if (
       !accessToken
     ) {
@@ -19349,7 +22252,8 @@
       tripsFormattedResult,
       historyResult,
       historyDatesResult,
-      paymentMethodsResult
+      paymentMethodsResult,
+      storesResult
     ] =
       await Promise.all(
         [
@@ -19375,6 +22279,10 @@
           ),
           sheetsGetValues(
             `'${PAYMENT_METHODS_SHEET}'!A2:H`,
+            "UNFORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${STORES_SHEET}'!A2:N`,
             "UNFORMATTED_VALUE"
           )
         ]
@@ -19474,6 +22382,39 @@
         )
         .filter(Boolean);
 
+    managementStores =
+      (storesResult.values || [])
+        .map(
+          (row, index) => {
+            const id = String(row[0] ?? "").trim();
+            const name = String(row[1] ?? "").trim();
+            if (!id && !name) {
+              return null;
+            }
+            const activeRaw = row[12];
+            return {
+              sheetRow: index + 2,
+              id,
+              name,
+              branchName: String(row[2] ?? "").trim(),
+              address: String(row[3] ?? "").trim(),
+              type: (String(row[4] ?? "Physical").trim() || "Physical") === "Manual" ? "Physical" : (String(row[4] ?? "Physical").trim() || "Physical"),
+              googlePlaceId: String(row[5] ?? "").trim(),
+              latitude: row[6] ?? "",
+              longitude: row[7] ?? "",
+              businessStatus: String(row[8] ?? "").trim(),
+              openingHours: String(row[9] ?? "").trim(),
+              googleMapsUrl: String(row[10] ?? "").trim(),
+              notes: String(row[11] ?? "").trim(),
+              websiteUrl: String(row[13] ?? "").trim(),
+              active:
+                activeRaw === true ||
+                String(activeRaw ?? "").trim().toUpperCase() === "TRUE"
+            };
+          }
+        )
+        .filter(Boolean);
+
     managementHistoryRows =
       (historyResult.values || [])
         .map(
@@ -19527,6 +22468,9 @@
       true
     );
     cancelManagementPaymentEdit(
+      true
+    );
+    cancelManagementStoreEdit(
       true
     );
 
@@ -20095,6 +23039,9 @@
     cancelManagementPaymentEdit(
       true
     );
+    cancelManagementStoreEdit(
+      true
+    );
 
     const box =
       document.getElementById(
@@ -20400,153 +23347,417 @@
     cancelManagementPaymentEdit(
       true
     );
-
-    const stores =
-      new Map();
-
-    managementProducts.forEach(
-      record => {
-
-        const store =
-          String(
-            record.lastStore || ""
-          ).trim();
-
-        if (!store) {
-          return;
-        }
-
-        const key =
-          normalizeStore(
-            store
-          );
-
-        if (
-          !stores.has(
-            key
-          )
-        ) {
-          stores.set(
-            key,
-            {
-              store:
-                store,
-              products:
-                0
-            }
-          );
-        }
-
-        stores.get(
-          key
-        ).products +=
-          1;
-      }
+    cancelManagementStoreEdit(
+      true
     );
-
-    managementTrips.forEach(
-      trip => {
-
-        const store =
-          String(
-            trip.store || ""
-          ).trim();
-
-        if (!store) {
-          return;
-        }
-
-        const key =
-          normalizeStore(
-            store
-          );
-
-        if (
-          !stores.has(
-            key
-          )
-        ) {
-          stores.set(
-            key,
-            {
-              store:
-                store,
-              products:
-                0
-            }
-          );
-        }
-      }
-    );
-
-    const rows =
-      Array.from(
-        stores.values()
-      )
-      .sort(
-        (a, b) =>
-          a.store.localeCompare(
-            b.store
-          )
-      );
 
     const box =
       document.getElementById(
         "management-content"
       );
 
-    if (
-      !rows.length
-    ) {
-      box.innerHTML =
-        '<div class="management-section-title">Stores</div>' +
-        '<div class="management-empty">No store records are stored yet.</div>';
-      return;
-    }
+    const rows =
+      managementStores
+        .map(
+          (record, originalIndex) => ({
+            record,
+            originalIndex
+          })
+        )
+        .sort(
+          (a, b) => {
+            if (a.record.active !== b.record.active) {
+              return a.record.active ? -1 : 1;
+            }
+            return String(a.record.name || "").localeCompare(
+              String(b.record.name || "")
+            );
+          }
+        );
 
     box.innerHTML =
       '<div class="management-section-title">Stores</div>' +
-      rows
-        .map(
-          record => {
+      '<button class="management-save-button" type="button" style="margin:0 0 12px;width:100%;" onclick="openManagementStoreEditor()">＋ FIND / ADD STORE</button>' +
+      (
+        rows.length
+          ? rows.map(
+              entry => {
+                const record = entry.record;
+                const title = [record.name, record.branchName].filter(Boolean).join(" — ") || "Unnamed store";
+                const meta = [
+                  record.type,
+                  record.address,
+                  record.googlePlaceId ? "Google-backed" : "Manual record",
+                  record.active ? "Active" : "Inactive"
+                ].filter(Boolean).join(" • ");
 
-            const tripCount =
-              managementTrips.filter(
-                trip =>
-                  normalizeStore(
-                    trip.store || ""
-                  ) ===
-                  normalizeStore(
-                    record.store
-                  )
-              ).length;
-
-            return (
-              '<div class="management-row">' +
-                '<div class="management-row-name">' +
-                  escapeHtml(
-                    record.store
-                  ) +
-                "</div>" +
-                '<div class="management-row-meta">' +
-                  escapeHtml(
-                    `${record.products} saved product record${record.products === 1 ? "" : "s"} • ${tripCount} finished trip${tripCount === 1 ? "" : "s"}`
-                  ) +
-                "</div>" +
-              "</div>"
-            );
-          }
-        )
-        .join(
-          ""
-        );
+                return (
+                  '<div class="management-row">' +
+                    '<div class="management-row-top">' +
+                      '<div class="management-row-name">' + escapeHtml(title) + '</div>' +
+                      '<div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;">' +
+                        '<button class="management-edit-button" type="button" onclick="editManagementStore(' + entry.originalIndex + ')">EDIT</button>' +
+                        '<button class="management-edit-button" type="button" style="background:' + (record.active ? '#7f3038' : '#24643b') + ';" onclick="toggleManagementStoreActive(' + entry.originalIndex + ')">' +
+                          (record.active ? 'DEACTIVATE' : 'REACTIVATE') +
+                        '</button>' +
+                      '</div>' +
+                    '</div>' +
+                    '<div class="management-row-meta">' + escapeHtml(meta || "Store") + '</div>' +
+                    (record.notes ? '<div class="management-row-meta">' + escapeHtml(record.notes) + '</div>' : '') +
+                  '</div>'
+                );
+              }
+            ).join("")
+          : '<div class="management-empty">No saved Stores records yet. Use FIND / ADD STORE to create the first one.</div>'
+      );
 
     scrollManagementContentIntoView();
   }
 
 
+  function openManagementStoreEditor(index = null) {
+
+    managementEditingStoreIndex =
+      Number.isInteger(index)
+        ? index
+        : null;
+
+    const record =
+      managementEditingStoreIndex === null
+        ? null
+        : managementStores[managementEditingStoreIndex];
+
+    managementStoreMode = "";
+
+    document.getElementById("management-store-editor-title").textContent =
+      record ? "Edit Store" : "Find or Add Store";
+
+    document.getElementById("management-store-name").value = record?.name || "";
+    document.getElementById("management-store-branch").value = record?.branchName || "";
+    document.getElementById("management-store-address").value = record?.address || "";
+    document.getElementById("management-store-type").value = record?.type === "Online" ? "Online" : "Physical";
+    document.getElementById("management-store-notes").value = record?.notes || "";
+
+    document.getElementById("management-store-google-search").value = "";
+    document.getElementById("management-store-google-search").disabled = true;
+    document.getElementById("management-store-google-search").placeholder = "Choose a mode first";
+    document.getElementById("management-open-manual-store").classList.add("hidden");
+    document.getElementById("management-google-placeholder").classList.add("hidden");
+
+    ["near", "remote", "online"].forEach(key => {
+      document.getElementById("management-store-mode-" + key)?.classList.remove("selected");
+    });
+
+    document.getElementById("management-save-store-button").textContent =
+      record ? "SAVE CHANGES" : "SAVE STORE";
+
+    if (record) {
+      managementStoreMode = record.type === "Online" ? "ONLINE" : "REMOTE";
+      document.getElementById("management-store-manual-fields").classList.remove("hidden");
+      document.getElementById("management-store-discovery").classList.add("hidden");
+    } else {
+      document.getElementById("management-store-manual-fields").classList.add("hidden");
+      document.getElementById("management-store-discovery").classList.remove("hidden");
+    }
+
+    show("management-store-editor");
+
+    document.getElementById("management-store-editor").scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+  function setManagementStoreMode(mode) {
+    managementStoreMode = mode;
+
+    ["NEAR", "REMOTE", "ONLINE"].forEach(candidate => {
+      const button = document.getElementById("management-store-mode-" + candidate.toLowerCase());
+      button?.classList.toggle("selected", candidate === mode);
+    });
+
+    const search = document.getElementById("management-store-google-search");
+    const manual = document.getElementById("management-open-manual-store");
+    const googlePlaceholder = document.getElementById("management-google-placeholder");
+    const note = document.getElementById("management-store-mode-note");
+
+    search.disabled = false;
+    manual.classList.remove("hidden");
+
+    if (mode === "NEAR") {
+      search.placeholder = "Search nearby stores by name, branch, or address";
+      googlePlaceholder.classList.remove("hidden");
+      note.textContent = "Near Me will request geolocation only when selected. Google Places connection is the next wiring step.";
+      note.className = "store-mode-note";
+      requestManagementNearMeLocation();
+    } else if (mode === "REMOTE") {
+      search.placeholder = "Search store, branch, city, neighborhood, or address";
+      googlePlaceholder.classList.remove("hidden");
+      note.textContent = "Remote Shopping never requests or uses your device location.";
+      note.className = "store-mode-note success";
+      search.focus();
+    } else {
+      search.placeholder = "Search or enter online merchant";
+      googlePlaceholder.classList.add("hidden");
+      note.textContent = "Online stores do not use geolocation. OCR/import comes in the later online-purchase stage.";
+      note.className = "store-mode-note success";
+      document.getElementById("management-store-type").value = "Online";
+      search.focus();
+    }
+  }
+
+  function requestManagementNearMeLocation() {
+    const note = document.getElementById("management-store-mode-note");
+    if (!navigator.geolocation) {
+      note.textContent = "This browser does not provide geolocation. Remote search and manual fallback are still available.";
+      note.className = "store-mode-note error";
+      return;
+    }
+    note.textContent = "Requesting location for Near Me…";
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        note.textContent = "Location ready (accuracy about " + Math.round(position.coords.accuracy) + " m). It will bias nearby Google results once Places is connected.";
+        note.className = "store-mode-note success";
+        document.getElementById("management-store-google-search").focus();
+      },
+      error => {
+        note.textContent = error.code === 1
+          ? "Location permission was not granted. You can use Remote Shopping or manual fallback instead."
+          : "Location could not be read. Remote search and manual fallback remain available.";
+        note.className = "store-mode-note error";
+        document.getElementById("management-store-google-search").focus();
+      },
+      { enableHighAccuracy:false, timeout:10000, maximumAge:300000 }
+    );
+  }
+
+  function openManagementManualStoreFields() {
+    const type = managementStoreMode === "ONLINE" ? "Online" : "Physical";
+    document.getElementById("management-store-type").value = type;
+    document.getElementById("management-store-manual-fields").classList.remove("hidden");
+    document.getElementById("management-store-name").value =
+      String(document.getElementById("management-store-google-search").value || "").trim();
+    document.getElementById("management-store-name").focus();
+    document.getElementById("management-store-manual-fields").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+
+
+  function editManagementStore(index) {
+    const record = managementStores[index];
+    if (!record) {
+      return;
+    }
+    openManagementStoreEditor(index);
+  }
+
+
+  function cancelManagementStoreEdit(silent = false) {
+    managementEditingStoreIndex = null;
+    hide(
+      "management-store-editor"
+    );
+    if (!silent) {
+      setStatus(
+        "Store edit cancelled.",
+        "success"
+      );
+    }
+  }
+
+
+  async function findNextStoreSheetRow() {
+    const idResult =
+      await sheetsGetValues(
+        `'${STORES_SHEET}'!A2:A`,
+        "FORMATTED_VALUE"
+      );
+
+    const rows =
+      idResult.values || [];
+
+    let rowNumber =
+      rows.length + 2;
+
+    for (
+      let index = 0;
+      index < rows.length;
+      index++
+    ) {
+      if (
+        blank(
+          rows[index]?.[0]
+        )
+      ) {
+        rowNumber =
+          index + 2;
+        break;
+      }
+    }
+
+    return rowNumber;
+  }
+
+
+  async function saveManagementStoreEdit() {
+
+    const name = String(document.getElementById("management-store-name").value || "").trim();
+    const branchName = String(document.getElementById("management-store-branch").value || "").trim();
+    const address = String(document.getElementById("management-store-address").value || "").trim();
+    const type = String(document.getElementById("management-store-type").value || "Physical").trim();
+    const notes = String(document.getElementById("management-store-notes").value || "").trim();
+
+    if (!name) {
+      showErrorToast(
+        "Store name required",
+        "Enter a recognizable store or merchant name."
+      );
+      return;
+    }
+
+    const editing =
+      managementEditingStoreIndex !== null
+        ? managementStores[managementEditingStoreIndex]
+        : null;
+
+    const duplicate =
+      managementStores.find(
+        record =>
+          record !== editing &&
+          normalizeStore(record.name) === normalizeStore(name) &&
+          normalizeStore(record.branchName) === normalizeStore(branchName) &&
+          normalizeStore(record.address) === normalizeStore(address)
+      );
+
+    if (duplicate) {
+      showErrorToast(
+        "Store already saved",
+        "A store with the same name, branch, and address already exists."
+      );
+      return;
+    }
+
+    const button = document.getElementById(
+      "management-save-store-button"
+    );
+    button.disabled = true;
+
+    try {
+      setStatus(
+        editing ? "Saving store..." : "Adding store...",
+        "working"
+      );
+
+      const rowNumber =
+        editing
+          ? editing.sheetRow
+          : await findNextStoreSheetRow();
+
+      const storeId =
+        editing?.id ||
+        (
+          "STORE-" +
+          Date.now()
+        );
+
+      await sheetsValuesBatchUpdate(
+        [{
+          range: `'${STORES_SHEET}'!A${rowNumber}:N${rowNumber}`,
+          values: [[
+            storeId,
+            name,
+            branchName,
+            address,
+            type,
+            editing?.googlePlaceId || "",
+            editing?.latitude ?? "",
+            editing?.longitude ?? "",
+            editing?.businessStatus || "",
+            editing?.openingHours || "",
+            editing?.googleMapsUrl || "",
+            notes,
+            editing ? editing.active : true,
+            editing?.websiteUrl || ""
+          ]]
+        }],
+        "RAW"
+      );
+
+      await loadManagementData();
+      cancelManagementStoreEdit(true);
+      showManagementStores();
+
+      showSuccessToast(
+        editing ? "Store updated" : "Store added",
+        [name, branchName].filter(Boolean).join(" — ")
+      );
+      setStatus(
+        "Stores updated.",
+        "success"
+      );
+
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast(
+        "Store save failed",
+        "The store was not changed."
+      );
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+
+  async function toggleManagementStoreActive(index) {
+
+    const record = managementStores[index];
+    if (!record) {
+      return;
+    }
+
+    const nextActive = !record.active;
+
+    try {
+      setStatus(
+        nextActive ? "Reactivating store..." : "Deactivating store...",
+        "working"
+      );
+
+      await sheetsValuesBatchUpdate(
+        [{
+          range: `'${STORES_SHEET}'!M${record.sheetRow}`,
+          values: [[nextActive]]
+        }],
+        "RAW"
+      );
+
+      record.active = nextActive;
+      showManagementStores();
+
+      showSuccessToast(
+        nextActive ? "Store reactivated" : "Store deactivated",
+        [record.name, record.branchName].filter(Boolean).join(" — ")
+      );
+      setStatus(
+        "Stores updated.",
+        "success"
+      );
+
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast(
+        "Store update failed",
+        "The store status was not changed."
+      );
+    }
+  }
+
+
   function showManagementHistoryAudit() {
 
+    cancelManagementStoreEdit(
+      true
+    );
     cancelManagementProductEdit(
       true
     );
@@ -20636,6 +23847,9 @@
 
   function showManagementAbout() {
 
+    cancelManagementStoreEdit(
+      true
+    );
     cancelManagementProductEdit(
       true
     );
@@ -20698,6 +23912,9 @@
 
   function closeManagementSection() {
 
+    cancelManagementStoreEdit(
+      true
+    );
     cancelManagementProductEdit(
       true
     );
