@@ -2737,41 +2737,48 @@
     }
 
     .app-modal-back {
-      position:relative;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:44px;
-      height:44px;
-      margin:0 0 12px;
-      padding:0;
-      border:1px solid #555d70;
-      border-radius:13px;
-      background:#262b36;
-      color:transparent;
-      font-size:0;
-      line-height:1;
-      box-shadow:0 7px 20px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);
-      flex:0 0 44px;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      margin: 0 0 12px;
+      padding: 0;
+      border: 1px solid #555d70;
+      border-radius: 14px;
+      background: #262b36;
+      color: transparent;
+      font-size: 0;
+      line-height: 1;
+      box-shadow: 0 7px 20px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);
+      flex: 0 0 48px;
+      appearance: none;
+      -webkit-appearance: none;
     }
 
     .app-modal-back::before {
-      content:"←";
-      position:absolute;
-      left:50%;
-      top:50%;
-      transform:translate(-50%,-53%);
-      color:#ffffff;
-      font-family:Arial, Helvetica, sans-serif;
-      font-size:27px;
-      line-height:1;
-      font-weight:900;
-      letter-spacing:-1px;
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 28px 28px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.8' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H6'/><path d='M11 7L6 12L11 17'/></svg>");
     }
 
     .app-modal-back:active {
-      transform:scale(.95);
+      transform: scale(.95);
       background:#303644;
+    }
+
+    .app-modal-back:focus-visible {
+      outline: 2px solid #8e59d1;
+      outline-offset: 2px;
     }
 
     .app-exit-card {
