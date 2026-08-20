@@ -5898,8 +5898,10 @@
   const STORES_SHEET =
     "Stores";
 
-  // V6 Stage 1 — new reference tables. These are READ-ONLY in this milestone.
-  // Existing V5 shopping behavior continues to use Products / Trip History as before.
+  // V6 Stage 2A — canonical product reference tables.
+  // Shopping still uses the existing V5 Products / Trip History engine.
+  // After a successfully-added item, V6 now learns an exact canonical identity
+  // without changing the existing cart, pricing, history, or checkout behavior.
   const PRODUCT_CATALOG_SHEET =
     "Product Catalog";
 
@@ -9197,12 +9199,12 @@
 
 
   // ============================================================
-  // V6 STAGE 1 — READ-ONLY REFERENCE DATA
+  // V6 STAGE 2A — CANONICAL PRODUCT REFERENCE DATA
   // ============================================================
   //
-  // This milestone deliberately does NOT create, edit, match, merge, or
-  // calculate anything from these tables. It only proves that V6 can read
-  // the new backend model safely while preserving every V5 workflow.
+  // Stage 2A keeps matching intentionally conservative: exact normalized names
+  // only. It does not fuzzy-match, merge, split, prompt, or calculate group promos.
+  // New canonical rows are learned only after the normal shopping item write succeeds.
   // ============================================================
 
   async function loadV6ReferenceData() {
@@ -9302,6 +9304,308 @@
           modified: row[5] ?? ""
         }))
         .filter(record => record.promoGroupProductId || record.promoGroupId || record.productId);
+  }
+
+
+
+  function nextSequentialV6Id(prefix, records, fieldName) {
+
+    let maxNumber = 0;
+    const pattern = new RegExp("^" + prefix + "-(\\d+)$", "i");
+
+    records.forEach(record => {
+      const value = String(record?.[fieldName] || "").trim();
+      const match = value.match(pattern);
+      if (!match) return;
+      const number = Number(match[1]);
+      if (Number.isFinite(number) && number > maxNumber) maxNumber = number;
+    });
+
+    return prefix + "-" + String(maxNumber + 1).padStart(6, "0");
+  }
+
+
+  async function findNextReferenceRow(sheetName, idColumn = "A") {
+
+    const result = await sheetsGetValues(
+      `'${sheetName}'!${idColumn}2:${idColumn}`,
+      "FORMATTED_VALUE"
+    );
+
+    const rows = result.values || [];
+
+    for (let index = 0; index < rows.length; index++) {
+      if (blank(rows[index]?.[0])) return index + 2;
+    }
+
+    return rows.length + 2;
+  }
+
+
+  function findCanonicalProductByExactName(productName) {
+
+    const normalized = normalizeProductIdentity(productName);
+    if (!normalized) return null;
+
+    const catalogMatch = productCatalog.find(record =>
+      record.active !== false &&
+      normalizeProductIdentity(record.canonicalName) === normalized
+    );
+
+    if (catalogMatch) return catalogMatch;
+
+    const aliasMatch = productAliases.find(record =>
+      record.confirmed === true &&
+      String(record.productId || "").trim() &&
+      normalizeProductIdentity(record.aliasValue) === normalized &&
+      ["NAME", "STORE DESCRIPTION", "OCR"].includes(String(record.aliasType || "").trim().toUpperCase())
+    );
+
+    if (!aliasMatch) return null;
+
+    return productCatalog.find(record =>
+      String(record.productId || "").trim() === String(aliasMatch.productId || "").trim() &&
+      record.active !== false
+    ) || null;
+  }
+
+
+  function currentCanonicalAliasSource() {
+
+    if (startShoppingMode === "ONLINE") return "Online Trip";
+    if (startShoppingMode === "REMOTE") return "Remote Trip";
+    if (startShoppingMode === "NEAR") return "Physical Trip";
+    return "Shopping Trip";
+  }
+
+
+  function currentCanonicalStoreId() {
+
+    const direct = String(selectedStartGoogleStore?.storeId || "").trim();
+    if (direct) return direct;
+
+    const selectedId = String(selectedStartGoogleStore?.id || "").trim();
+    if (selectedId.toUpperCase().startsWith("STORE-")) return selectedId;
+
+    const placeId = String(selectedStartGoogleStore?.googlePlaceId || "").trim();
+    const allStores = [...savedStoreDirectory, ...savedOnlineStoreDirectory];
+
+    if (placeId) {
+      const byPlace = allStores.find(store => String(store.googlePlaceId || "").trim() === placeId);
+      if (byPlace?.storeId) return String(byPlace.storeId).trim();
+    }
+
+    const activeStoreText = normalizeStore(activeTrip?.store || "");
+    if (!activeStoreText) return "";
+
+    const byDisplay = allStores.find(store => {
+      const candidates = [
+        store.name,
+        [store.name, store.branchName, store.address].filter(Boolean).join(" — "),
+        [store.name, store.websiteUrl].filter(Boolean).join(" — ")
+      ].map(normalizeStore).filter(Boolean);
+      return candidates.includes(activeStoreText);
+    });
+
+    return String(byDisplay?.storeId || "").trim();
+  }
+
+
+  async function ensureCanonicalNameAlias(productRecord, productName, source, nowValue) {
+
+    const normalized = normalizeProductIdentity(productName);
+    if (!normalized || !productRecord?.productId) return null;
+
+    const existing = productAliases.find(record =>
+      String(record.productId || "").trim() === String(productRecord.productId || "").trim() &&
+      String(record.aliasType || "").trim().toUpperCase() === "NAME" &&
+      normalizeProductIdentity(record.aliasValue) === normalized
+    );
+
+    if (existing) {
+      existing.lastSeen = nowValue;
+      if (existing.sheetRow) {
+        await sheetsValuesBatchUpdate([{
+          range: `'${PRODUCT_ALIASES_SHEET}'!J${existing.sheetRow}`,
+          values: [[nowValue]]
+        }], "RAW");
+      }
+      return existing;
+    }
+
+    const aliasId = nextSequentialV6Id("ALIAS", productAliases, "aliasId");
+    const row = await findNextReferenceRow(PRODUCT_ALIASES_SHEET);
+    const storeId = currentCanonicalStoreId();
+
+    await sheetsValuesBatchUpdate([{
+      range: `'${PRODUCT_ALIASES_SHEET}'!A${row}:K${row}`,
+      values: [[
+        aliasId,
+        productRecord.productId,
+        "Name",
+        productName,
+        storeId,
+        source,
+        "",
+        true,
+        nowValue,
+        nowValue,
+        "Learned from a confirmed shopping item"
+      ]]
+    }], "RAW");
+
+    const record = {
+      sheetRow: row,
+      aliasId,
+      productId: productRecord.productId,
+      aliasType: "Name",
+      aliasValue: productName,
+      storeId,
+      source,
+      barcode: "",
+      confirmed: true,
+      created: nowValue,
+      lastSeen: nowValue,
+      notes: "Learned from a confirmed shopping item"
+    };
+
+    productAliases.push(record);
+    return record;
+  }
+
+
+  async function ensureStoreScopedBarcodeAlias(productRecord, productName, barcode, source, nowValue) {
+
+    const cleanBarcode = String(barcode || "").trim();
+    const storeId = currentCanonicalStoreId();
+
+    // A barcode without a confirmed Store ID is deliberately NOT learned yet.
+    // Reused barcodes are a known real-world case, so Stage 2A never creates a
+    // globally-scoped barcode identity that could later merge unrelated products.
+    if (!cleanBarcode || !storeId || !productRecord?.productId) return null;
+
+    const existing = productAliases.find(record =>
+      String(record.productId || "").trim() === String(productRecord.productId || "").trim() &&
+      String(record.aliasType || "").trim().toUpperCase() === "BARCODE" &&
+      String(record.barcode || "").trim() === cleanBarcode &&
+      String(record.storeId || "").trim() === storeId
+    );
+
+    if (existing) {
+      existing.lastSeen = nowValue;
+      if (existing.sheetRow) {
+        await sheetsValuesBatchUpdate([{
+          range: `'${PRODUCT_ALIASES_SHEET}'!J${existing.sheetRow}`,
+          values: [[nowValue]]
+        }], "RAW");
+      }
+      return existing;
+    }
+
+    const aliasId = nextSequentialV6Id("ALIAS", productAliases, "aliasId");
+    const row = await findNextReferenceRow(PRODUCT_ALIASES_SHEET);
+
+    await sheetsValuesBatchUpdate([{
+      range: `'${PRODUCT_ALIASES_SHEET}'!A${row}:K${row}`,
+      values: [[
+        aliasId,
+        productRecord.productId,
+        "Barcode",
+        productName,
+        storeId,
+        source,
+        cleanBarcode,
+        true,
+        nowValue,
+        nowValue,
+        "Store-scoped barcode learned from a confirmed shopping item"
+      ]]
+    }], "RAW");
+
+    const record = {
+      sheetRow: row,
+      aliasId,
+      productId: productRecord.productId,
+      aliasType: "Barcode",
+      aliasValue: productName,
+      storeId,
+      source,
+      barcode: cleanBarcode,
+      confirmed: true,
+      created: nowValue,
+      lastSeen: nowValue,
+      notes: "Store-scoped barcode learned from a confirmed shopping item"
+    };
+
+    productAliases.push(record);
+    return record;
+  }
+
+
+  async function ensureCanonicalProductForConfirmedItem(productName, barcode) {
+
+    const cleanName = String(productName || "").trim();
+    if (!cleanName) return null;
+
+    const nowValue = localIsoWithOffset(new Date());
+    const source = currentCanonicalAliasSource();
+    let productRecord = findCanonicalProductByExactName(cleanName);
+
+    if (!productRecord) {
+      const productId = nextSequentialV6Id("PROD", productCatalog, "productId");
+      const row = await findNextReferenceRow(PRODUCT_CATALOG_SHEET);
+
+      await sheetsValuesBatchUpdate([{
+        range: `'${PRODUCT_CATALOG_SHEET}'!A${row}:J${row}`,
+        values: [[
+          productId,
+          cleanName,
+          "",
+          "",
+          "",
+          "",
+          "",
+          true,
+          nowValue,
+          nowValue
+        ]]
+      }], "RAW");
+
+      productRecord = {
+        sheetRow: row,
+        productId,
+        canonicalName: cleanName,
+        brand: "",
+        variant: "",
+        size: "",
+        unit: "",
+        notes: "",
+        active: true,
+        created: nowValue,
+        modified: nowValue
+      };
+
+      productCatalog.push(productRecord);
+    }
+
+    await ensureCanonicalNameAlias(productRecord, cleanName, source, nowValue);
+    await ensureStoreScopedBarcodeAlias(productRecord, cleanName, barcode, source, nowValue);
+
+    return productRecord;
+  }
+
+
+  async function learnCanonicalIdentityAfterShoppingWrite(productName, barcode) {
+
+    try {
+      return await ensureCanonicalProductForConfirmedItem(productName, barcode);
+    } catch (error) {
+      // Canonical learning is intentionally non-blocking in Stage 2A. The normal
+      // shopping write already succeeded, so an identity-table problem must never
+      // make the user believe the item itself failed to save.
+      console.warn("V6 canonical identity learning failed", error);
+      return null;
+    }
   }
 
 
@@ -11405,6 +11709,14 @@
           promoTotal:
             currentPricing.promoTotal
         });
+
+
+      // V6 Stage 2A: learn canonical identity only AFTER the existing shopping
+      // item has been saved successfully. This is non-blocking by design.
+      await learnCanonicalIdentityAfterShoppingWrite(
+        product,
+        currentBarcode
+      );
 
 
       button.disabled =
@@ -24028,6 +24340,10 @@
             )
           ) +
         "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">V6 canonical learning</div>' +
+        '<div class="management-row-meta">Exact-name learning active; fuzzy matching still off</div>' +
       "</div>" +
       '<div class="management-row">' +
         '<div class="management-row-name">V6 canonical products loaded</div>' +
