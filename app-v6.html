@@ -24,75 +24,6 @@
     defer
   >
 
-  // V6 Stage 3B.1 — promo engine test lab. In-memory only; no Sheets writes.
-  let promoLabItems = [
-    {name:"Test item A", qty:1, price:60},
-    {name:"Test item B", qty:1, price:60}
-  ];
-
-  function showManagementPromoLab() {
-    hide("management-product-editor"); hide("management-canonical-editor"); hide("management-promo-group-editor"); hide("management-payment-editor"); hide("management-store-editor");
-    const panel=document.getElementById("management-promo-lab"); panel?.classList.remove("hidden");
-    renderPromoLabItems(); promoLabTypeChanged();
-    const content=document.getElementById("management-content"); if(content) content.innerHTML='<div class="management-section-title">Promo Test Lab</div><div class="management-empty">This lab never writes to Google Sheets. Use it to verify promo math before real data enters the catalog.</div>';
-  }
-
-  function promoLabTypeChanged(){
-    const type=document.getElementById("promo-lab-type")?.value||"BUY_X_GET_Y";
-    const showId=(id,on)=>document.getElementById(id)?.classList.toggle("hidden",!on);
-    showId("promo-lab-buy-field", type==="BUY_X_GET_Y" || type==="QUANTITY_DISCOUNT");
-    showId("promo-lab-free-field", type==="BUY_X_GET_Y");
-    showId("promo-lab-bundle-qty-field", type==="BUNDLE_PRICE");
-    showId("promo-lab-bundle-price-field", type==="BUNDLE_PRICE");
-    showId("promo-lab-percent-field", type==="PERCENT");
-    showId("promo-lab-qmode-field", type==="QUANTITY_DISCOUNT");
-    showId("promo-lab-qvalue-field", type==="QUANTITY_DISCOUNT");
-    showId("promo-lab-app-rule-field", type==="QUANTITY_DISCOUNT");
-  }
-
-  function renderPromoLabItems(){
-    const host=document.getElementById("promo-lab-items"); if(!host) return;
-    host.innerHTML=promoLabItems.map((it,i)=>`<div class="promo-lab-item">
-      <div><label>Name</label><input value="${escapeHtml(String(it.name||''))}" oninput="promoLabItems[${i}].name=this.value"></div>
-      <div><label>Qty</label><input type="number" min="0" step="1" value="${Number(it.qty)||0}" oninput="promoLabItems[${i}].qty=Number(this.value)||0"></div>
-      <div><label>Unit price</label><input type="number" min="0" step="0.01" value="${Number(it.price)||0}" oninput="promoLabItems[${i}].price=Number(this.value)||0"></div>
-      <button type="button" onclick="removePromoLabItem(${i})">REMOVE</button></div>`).join('');
-  }
-  function addPromoLabItem(){ promoLabItems.push({name:`Test item ${String.fromCharCode(65+promoLabItems.length)}`,qty:1,price:60}); renderPromoLabItems(); }
-  function removePromoLabItem(i){ promoLabItems.splice(i,1); renderPromoLabItems(); }
-
-  function expandPromoLabUnits(items){
-    const units=[]; items.forEach((it,idx)=>{ const q=Math.max(0,Math.floor(Number(it.qty)||0)); for(let n=0;n<q;n++) units.push({itemIndex:idx,name:it.name||`Item ${idx+1}`,price:Math.max(0,Number(it.price)||0),discount:0}); }); return units;
-  }
-
-  function calculatePromoLabEngine(def, items){
-    const units=expandPromoLabUnits(items);
-    const regular=units.reduce((s,u)=>s+u.price,0);
-    if(!units.length) return {regular,total:0,savings:0,units,note:"No test units."};
-    if(def.type==="PERCENT"){
-      const pct=Math.max(0,Math.min(100,Number(def.percent)||0))/100; units.forEach(u=>u.discount=u.price*pct);
-    } else if(def.type==="BUNDLE_PRICE"){
-      const q=Math.max(1,Math.floor(Number(def.bundleQty)||0)); const price=Math.max(0,Number(def.bundlePrice)||0); const groups=Math.floor(units.length/q);
-      for(let g=0;g<groups;g++){ const group=units.slice(g*q,(g+1)*q); const reg=group.reduce((s,u)=>s+u.price,0); const disc=Math.max(0,reg-price); const denom=reg||1; group.forEach(u=>u.discount=disc*(u.price/denom)); }
-    } else if(def.type==="BUY_X_GET_Y"){
-      const buy=Math.max(1,Math.floor(Number(def.buy)||0)); const free=Math.max(1,Math.floor(Number(def.free)||0)); const groupSize=buy+free; const groups=Math.floor(units.length/groupSize);
-      for(let g=0;g<groups;g++){ const group=units.slice(g*groupSize,(g+1)*groupSize); const ordered=[...group].sort((a,b)=>a.price-b.price); ordered.slice(0,free).forEach(u=>u.discount=u.price); }
-    } else if(def.type==="QUANTITY_DISCOUNT"){
-      const threshold=Math.max(1,Math.floor(Number(def.buy)||0)); const value=Math.max(0,Number(def.qvalue)||0); const count=units.length; if(count>=threshold){
-        let applyCount=count; if(def.appRule==="COMPLETE_GROUPS_ONLY") applyCount=Math.floor(count/threshold)*threshold;
-        units.slice(0,applyCount).forEach(u=>{ u.discount=def.qmode==="FIXED_UNIT_PRICE"?Math.max(0,u.price-value):Math.min(u.price,value); });
-      }
-    }
-    const savings=units.reduce((s,u)=>s+u.discount,0); return {regular,total:Math.max(0,regular-savings),savings,units};
-  }
-
-  function runPromoLab(){
-    const def={ type:document.getElementById("promo-lab-type")?.value||"BUY_X_GET_Y", buy:Number(document.getElementById("promo-lab-buy")?.value||0), free:Number(document.getElementById("promo-lab-free")?.value||0), bundleQty:Number(document.getElementById("promo-lab-bundle-qty")?.value||0), bundlePrice:Number(document.getElementById("promo-lab-bundle-price")?.value||0), percent:Number(document.getElementById("promo-lab-percent")?.value||0), qmode:document.getElementById("promo-lab-qmode")?.value||"FIXED_UNIT_PRICE", qvalue:Number(document.getElementById("promo-lab-qvalue")?.value||0), appRule:document.getElementById("promo-lab-app-rule")?.value||"ALL_QUALIFYING_UNITS", freeRule:document.getElementById("promo-lab-free-rule")?.value||"Cheapest eligible item free" };
-    const r=calculatePromoLabEngine(def,promoLabItems); const host=document.getElementById("promo-lab-results"); if(!host) return;
-    const byItem=promoLabItems.map((it,i)=>{ const us=r.units.filter(u=>u.itemIndex===i); const reg=us.reduce((s,u)=>s+u.price,0), sav=us.reduce((s,u)=>s+u.discount,0); return `<div>${escapeHtml(it.name||`Item ${i+1}`)}: ${us.length} unit(s) • regular ${formatMoney(reg)} • promo ${formatMoney(reg-sav)} • saved ${formatMoney(sav)}</div>`; }).join('');
-    host.innerHTML=`<div class="promo-lab-result-line"><span>Regular total</span><strong>${formatMoney(r.regular)}</strong></div><div class="promo-lab-result-line"><span>Promo total</span><strong>${formatMoney(r.total)}</strong></div><div class="promo-lab-result-line"><span>Savings</span><strong class="savings-positive">${formatMoney(r.savings)}</strong></div><div class="promo-lab-breakdown">${byItem||'No temporary items.'}</div>`;
-  }
-
 </script>
 
   <script
@@ -3806,7 +3737,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3B.1 — promo engine test lab
+    V6 Stage 3B.1.1 — promo test lab fix
   </div>
 
   <button
@@ -6026,7 +5957,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3B.1 — promo engine test lab. Production remains index.html.
+    V6 Stage 3B.1.1 — promo test lab fix. Production remains index.html.
   </div>
 
 </div>
@@ -6573,6 +6504,76 @@
 </nav>
 
 <script>
+
+  // V6 Stage 3B.1.1 — promo test lab fix. In-memory only; no Sheets writes.
+  let promoLabItems = [
+    {name:"Test item A", qty:1, price:60},
+    {name:"Test item B", qty:1, price:60}
+  ];
+
+  function showManagementPromoLab() {
+    hide("management-product-editor"); hide("management-canonical-editor"); hide("management-promo-group-editor"); hide("management-payment-editor"); hide("management-store-editor");
+    const panel=document.getElementById("management-promo-lab"); panel?.classList.remove("hidden");
+    renderPromoLabItems(); promoLabTypeChanged();
+    const content=document.getElementById("management-content"); if(content) content.innerHTML='<div class="management-section-title">Promo Test Lab</div><div class="management-empty">This lab never writes to Google Sheets. Use it to verify promo math before real data enters the catalog.</div>';
+  }
+
+  function promoLabTypeChanged(){
+    const type=document.getElementById("promo-lab-type")?.value||"BUY_X_GET_Y";
+    const showId=(id,on)=>document.getElementById(id)?.classList.toggle("hidden",!on);
+    showId("promo-lab-buy-field", type==="BUY_X_GET_Y" || type==="QUANTITY_DISCOUNT");
+    showId("promo-lab-free-field", type==="BUY_X_GET_Y");
+    showId("promo-lab-bundle-qty-field", type==="BUNDLE_PRICE");
+    showId("promo-lab-bundle-price-field", type==="BUNDLE_PRICE");
+    showId("promo-lab-percent-field", type==="PERCENT");
+    showId("promo-lab-qmode-field", type==="QUANTITY_DISCOUNT");
+    showId("promo-lab-qvalue-field", type==="QUANTITY_DISCOUNT");
+    showId("promo-lab-app-rule-field", type==="QUANTITY_DISCOUNT");
+  }
+
+  function renderPromoLabItems(){
+    const host=document.getElementById("promo-lab-items"); if(!host) return;
+    host.innerHTML=promoLabItems.map((it,i)=>`<div class="promo-lab-item">
+      <div><label>Name</label><input value="${escapeHtml(String(it.name||''))}" oninput="promoLabItems[${i}].name=this.value"></div>
+      <div><label>Qty</label><input type="number" min="0" step="1" value="${Number(it.qty)||0}" oninput="promoLabItems[${i}].qty=Number(this.value)||0"></div>
+      <div><label>Unit price</label><input type="number" min="0" step="0.01" value="${Number(it.price)||0}" oninput="promoLabItems[${i}].price=Number(this.value)||0"></div>
+      <button type="button" onclick="removePromoLabItem(${i})">REMOVE</button></div>`).join('');
+  }
+  function addPromoLabItem(){ promoLabItems.push({name:`Test item ${String.fromCharCode(65+promoLabItems.length)}`,qty:1,price:60}); renderPromoLabItems(); }
+  function removePromoLabItem(i){ promoLabItems.splice(i,1); renderPromoLabItems(); }
+
+  function expandPromoLabUnits(items){
+    const units=[]; items.forEach((it,idx)=>{ const q=Math.max(0,Math.floor(Number(it.qty)||0)); for(let n=0;n<q;n++) units.push({itemIndex:idx,name:it.name||`Item ${idx+1}`,price:Math.max(0,Number(it.price)||0),discount:0}); }); return units;
+  }
+
+  function calculatePromoLabEngine(def, items){
+    const units=expandPromoLabUnits(items);
+    const regular=units.reduce((s,u)=>s+u.price,0);
+    if(!units.length) return {regular,total:0,savings:0,units,note:"No test units."};
+    if(def.type==="PERCENT"){
+      const pct=Math.max(0,Math.min(100,Number(def.percent)||0))/100; units.forEach(u=>u.discount=u.price*pct);
+    } else if(def.type==="BUNDLE_PRICE"){
+      const q=Math.max(1,Math.floor(Number(def.bundleQty)||0)); const price=Math.max(0,Number(def.bundlePrice)||0); const groups=Math.floor(units.length/q);
+      for(let g=0;g<groups;g++){ const group=units.slice(g*q,(g+1)*q); const reg=group.reduce((s,u)=>s+u.price,0); const disc=Math.max(0,reg-price); const denom=reg||1; group.forEach(u=>u.discount=disc*(u.price/denom)); }
+    } else if(def.type==="BUY_X_GET_Y"){
+      const buy=Math.max(1,Math.floor(Number(def.buy)||0)); const free=Math.max(1,Math.floor(Number(def.free)||0)); const groupSize=buy+free; const groups=Math.floor(units.length/groupSize);
+      for(let g=0;g<groups;g++){ const group=units.slice(g*groupSize,(g+1)*groupSize); const ordered=[...group].sort((a,b)=>a.price-b.price); ordered.slice(0,free).forEach(u=>u.discount=u.price); }
+    } else if(def.type==="QUANTITY_DISCOUNT"){
+      const threshold=Math.max(1,Math.floor(Number(def.buy)||0)); const value=Math.max(0,Number(def.qvalue)||0); const count=units.length; if(count>=threshold){
+        let applyCount=count; if(def.appRule==="COMPLETE_GROUPS_ONLY") applyCount=Math.floor(count/threshold)*threshold;
+        units.slice(0,applyCount).forEach(u=>{ u.discount=def.qmode==="FIXED_UNIT_PRICE"?Math.max(0,u.price-value):Math.min(u.price,value); });
+      }
+    }
+    const savings=units.reduce((s,u)=>s+u.discount,0); return {regular,total:Math.max(0,regular-savings),savings,units};
+  }
+
+  function runPromoLab(){
+    const def={ type:document.getElementById("promo-lab-type")?.value||"BUY_X_GET_Y", buy:Number(document.getElementById("promo-lab-buy")?.value||0), free:Number(document.getElementById("promo-lab-free")?.value||0), bundleQty:Number(document.getElementById("promo-lab-bundle-qty")?.value||0), bundlePrice:Number(document.getElementById("promo-lab-bundle-price")?.value||0), percent:Number(document.getElementById("promo-lab-percent")?.value||0), qmode:document.getElementById("promo-lab-qmode")?.value||"FIXED_UNIT_PRICE", qvalue:Number(document.getElementById("promo-lab-qvalue")?.value||0), appRule:document.getElementById("promo-lab-app-rule")?.value||"ALL_QUALIFYING_UNITS", freeRule:document.getElementById("promo-lab-free-rule")?.value||"Cheapest eligible item free" };
+    const r=calculatePromoLabEngine(def,promoLabItems); const host=document.getElementById("promo-lab-results"); if(!host) return;
+    const byItem=promoLabItems.map((it,i)=>{ const us=r.units.filter(u=>u.itemIndex===i); const reg=us.reduce((s,u)=>s+u.price,0), sav=us.reduce((s,u)=>s+u.discount,0); return `<div>${escapeHtml(it.name||`Item ${i+1}`)}: ${us.length} unit(s) • regular ${formatMoney(reg)} • promo ${formatMoney(reg-sav)} • saved ${formatMoney(sav)}</div>`; }).join('');
+    host.innerHTML=`<div class="promo-lab-result-line"><span>Regular total</span><strong>${formatMoney(r.regular)}</strong></div><div class="promo-lab-result-line"><span>Promo total</span><strong>${formatMoney(r.total)}</strong></div><div class="promo-lab-result-line"><span>Savings</span><strong class="savings-positive">${formatMoney(r.savings)}</strong></div><div class="promo-lab-breakdown">${byItem||'No temporary items.'}</div>`;
+  }
+
 
   const GOOGLE_CLIENT_ID =
     "357419603703-8no49j1eunhv6g82kkb89tqa84ab7krl.apps.googleusercontent.com";
