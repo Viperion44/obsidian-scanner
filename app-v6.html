@@ -3715,6 +3715,14 @@
     }
 
 
+    /* V6 Stage 3C.1 — non-persistent canonical matcher test lab */
+    .matcher-lab-results { margin-top:14px; padding:13px; border-radius:10px; background:#151820; line-height:1.55; }
+    .matcher-lab-score { font-size:28px; font-weight:900; margin:4px 0 10px; }
+    .matcher-lab-good { color:#75df91; }
+    .matcher-lab-warn { color:#f2c58a; }
+    .matcher-lab-block { color:#ff9393; }
+    .matcher-lab-detail { margin-top:8px; color:#aeb4c0; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+
     /* V6 Stage 3B.1 — non-persistent promo engine test lab */
     .promo-lab-card { margin-bottom:14px; padding:16px; border-radius:13px; background:#242833; }
     .promo-lab-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -3737,7 +3745,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3C — human-proof canonical matching
+    V6 Stage 3C.1 — product matcher test lab
   </div>
 
   <button
@@ -5495,6 +5503,16 @@
       <button
         class="management-action"
         type="button"
+        onclick="showManagementMatcherLab()"
+      >
+        <span class="management-action-icon">🧠</span>
+        <span class="management-action-title">Product Matcher Lab</span>
+        <span class="management-action-desc">Test typo, spacing, punctuation, and package-size matching without saving data.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
         onclick="showManagementPromoGroups()"
       >
         <span class="management-action-icon">🏷️</span>
@@ -5698,6 +5716,36 @@
         <button class="management-cancel-button" type="button" onclick="cancelManagementCanonicalEdit()">CANCEL</button>
         <button id="management-save-canonical-button" class="management-save-button" type="button" onclick="saveManagementCanonicalEdit()">SAVE CANONICAL PRODUCT</button>
       </div>
+    </div>
+
+    <div id="management-matcher-lab" class="management-editor-card hidden">
+      <div class="management-editor-title">Product Matcher Test Lab</div>
+      <div class="canonical-management-summary">Temporary in-memory tester only. It does not create canonical products, aliases, shopping items, or Sheet rows.</div>
+
+      <div class="field">
+        <label for="matcher-lab-canonical">Existing canonical product</label>
+        <input id="matcher-lab-canonical" type="text" value="Lyncott Queso Cottage 280 g" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="matcher-lab-entered">Messy / entered product name</label>
+        <input id="matcher-lab-entered" type="text" value="lyncot tques ocotagge 280g" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="matcher-lab-preset">Synthetic test preset</label>
+        <select id="matcher-lab-preset" onchange="applyMatcherLabPreset()">
+          <option value="custom">Custom</option>
+          <option value="ugly" selected>Ugly spacing + heavy typos</option>
+          <option value="mild">Mild typos</option>
+          <option value="punctuation">Punctuation / spacing changes</option>
+          <option value="unit">Unit spelling variation</option>
+          <option value="conflict">Danger test: conflicting 400 g size</option>
+        </select>
+      </div>
+
+      <button type="button" onclick="runMatcherLab()">RUN MATCH TEST</button>
+      <div id="matcher-lab-results" class="matcher-lab-results">Run a synthetic comparison. Nothing here is saved.</div>
     </div>
 
     <div
@@ -5957,7 +6005,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3C — human-proof canonical matching. Production remains index.html.
+    V6 Stage 3C.1 — product matcher test lab. Production remains index.html.
   </div>
 
 </div>
@@ -6506,13 +6554,100 @@
 
 <script>
 
-  // V6 Stage 3C — human-proof canonical matching. In-memory only; no Sheets writes.
+  // V6 Stage 3C.1 — in-memory product matcher test lab. No Sheets writes.
+  function showManagementMatcherLab() {
+    hide("management-product-editor");
+    hide("management-canonical-editor");
+    hide("management-promo-group-editor");
+    hide("management-promo-lab");
+    hide("management-payment-editor");
+    hide("management-store-editor");
+
+    const panel = document.getElementById("management-matcher-lab");
+    panel?.classList.remove("hidden");
+
+    const content = document.getElementById("management-content");
+    if (content) {
+      content.innerHTML = '<div class="management-section-title">Product Matcher Test Lab</div><div class="management-empty">Synthetic only. Use this to attack the matcher with typos and malformed spacing before any real canonical product exists.</div>';
+    }
+
+    applyMatcherLabPreset();
+    setTimeout(function() {
+      panel?.scrollIntoView({behavior:"smooth", block:"start"});
+    }, 80);
+  }
+
+  function applyMatcherLabPreset() {
+    const preset = document.getElementById("matcher-lab-preset")?.value || "custom";
+    const canonical = document.getElementById("matcher-lab-canonical");
+    const entered = document.getElementById("matcher-lab-entered");
+    if (!canonical || !entered || preset === "custom") return;
+
+    canonical.value = "Lyncott Queso Cottage 280 g";
+    const examples = {
+      ugly: "lyncot tques ocotagge 280g",
+      mild: "lincot queso cotage 280g",
+      punctuation: "LYNCOTT.QUESO,COTTAGE 280 G",
+      unit: "lyncott queso cottage 280 grs",
+      conflict: "Lyncott Queso Cottage 400g"
+    };
+    entered.value = examples[preset] || entered.value;
+    runMatcherLab();
+  }
+
+  function runMatcherLab() {
+    const canonical = String(document.getElementById("matcher-lab-canonical")?.value || "").trim();
+    const entered = String(document.getElementById("matcher-lab-entered")?.value || "").trim();
+    const host = document.getElementById("matcher-lab-results");
+    if (!host) return;
+
+    if (!canonical || !entered) {
+      host.innerHTML = '<div class="matcher-lab-block"><strong>Enter both product names first.</strong></div>';
+      return;
+    }
+
+    const conflict = canonicalPackageConflict(entered, canonical);
+    const packageMatch = canonicalPackageMatch(entered, canonical);
+    const score = canonicalCandidateScore(entered, canonical);
+    const enteredNormalized = canonicalNormalizeForMatch(entered);
+    const canonicalNormalized = canonicalNormalizeForMatch(canonical);
+    const enteredCompact = canonicalCompactForMatch(entered);
+    const canonicalCompact = canonicalCompactForMatch(canonical);
+
+    let verdict = "NO SUGGESTION";
+    let verdictClass = "matcher-lab-warn";
+    let explanation = "Similarity is below the conservative candidate threshold.";
+
+    if (conflict) {
+      verdict = "BLOCKED — PACKAGE SIZE CONFLICT";
+      verdictClass = "matcher-lab-block";
+      explanation = "The matcher detected incompatible recognized package measurements, so text similarity is not allowed to link these products.";
+    } else if (score >= 58) {
+      verdict = "WOULD SHOW AS A POSSIBLE MATCH";
+      verdictClass = "matcher-lab-good";
+      explanation = "The candidate is strong enough to ask the user, but fuzzy text alone never auto-links a canonical product.";
+    }
+
+    host.innerHTML =
+      `<div class="small-label">MATCH SCORE</div>` +
+      `<div class="matcher-lab-score ${verdictClass}">${score}%</div>` +
+      `<div class="${verdictClass}"><strong>${escapeHtml(verdict)}</strong></div>` +
+      `<div class="matcher-lab-detail">${escapeHtml(explanation)}</div>` +
+      `<div class="matcher-lab-detail"><strong>Package measurement:</strong> ${conflict ? "CONFLICT" : (packageMatch ? "MATCH" : "No comparable recognized package measure")}</div>` +
+      `<div class="matcher-lab-detail"><strong>Entered normalized:</strong> ${escapeHtml(enteredNormalized)}</div>` +
+      `<div class="matcher-lab-detail"><strong>Canonical normalized:</strong> ${escapeHtml(canonicalNormalized)}</div>` +
+      `<div class="matcher-lab-detail"><strong>Entered compact:</strong> ${escapeHtml(enteredCompact)}</div>` +
+      `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
+  }
+
+  // V6 Stage 3C.1 — product matcher test lab. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
   ];
 
   function showManagementPromoLab() {
+    hide("management-matcher-lab");
     hide("management-product-editor"); hide("management-canonical-editor"); hide("management-promo-group-editor"); hide("management-payment-editor"); hide("management-store-editor");
     const panel=document.getElementById("management-promo-lab"); panel?.classList.remove("hidden");
     renderPromoLabItems(); promoLabTypeChanged();
@@ -24132,6 +24267,9 @@
     shouldScroll = true
   ) {
 
+    hide("management-matcher-lab");
+    hide("management-promo-lab");
+
     cancelManagementProductEdit(
       true
     );
@@ -24704,6 +24842,9 @@
 
   function showManagementCanonicalProducts(shouldScroll = true) {
 
+    hide("management-matcher-lab");
+    hide("management-promo-lab");
+
     cancelManagementPromoGroupEdit(true);
 
     cancelManagementProductEdit(true);
@@ -24938,6 +25079,9 @@
 
 
   function showManagementPromoGroups(shouldScroll = true) {
+
+    hide("management-matcher-lab");
+    hide("management-promo-lab");
 
     cancelManagementProductEdit(true);
     cancelManagementCanonicalEdit(true);
@@ -25375,6 +25519,9 @@
 
   function showManagementPayments() {
 
+    hide("management-matcher-lab");
+    hide("management-promo-lab");
+
     cancelManagementPromoGroupEdit(true);
 
     cancelManagementProductEdit(
@@ -25687,6 +25834,9 @@
 
 
   function showManagementStores() {
+
+    hide("management-matcher-lab");
+    hide("management-promo-lab");
 
     cancelManagementPromoGroupEdit(true);
 
@@ -26107,6 +26257,9 @@
 
   function showManagementHistoryAudit() {
 
+    hide("management-matcher-lab");
+    hide("management-promo-lab");
+
     cancelManagementPromoGroupEdit(true);
 
     cancelManagementStoreEdit(
@@ -26203,6 +26356,9 @@
 
 
   function showManagementAbout() {
+
+    hide("management-matcher-lab");
+    hide("management-promo-lab");
 
     cancelManagementPromoGroupEdit(true);
 
