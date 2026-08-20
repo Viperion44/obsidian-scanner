@@ -1724,6 +1724,101 @@
       line-height: 1.45;
     }
 
+    /* V6 Stage 3A — promo group definition + membership management */
+    .promo-group-summary {
+      margin-bottom: 12px;
+      padding: 11px 12px;
+      border: 1px solid #4a5060;
+      border-radius: 10px;
+      background: #1c2028;
+      color: #cfd4dd;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .promo-group-id {
+      margin-bottom: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #171a20;
+      color: #c9a7f2;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .promo-group-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .promo-group-grid .wide { grid-column: 1 / -1; }
+
+    .promo-group-toggle {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top:10px;
+      padding:11px 12px;
+      border:1px solid #4b5260;
+      border-radius:10px;
+      background:#1c2028;
+    }
+
+    .promo-group-toggle input {
+      width:22px;
+      height:22px;
+      margin:0;
+      flex:0 0 auto;
+      accent-color:#8b4fc4;
+    }
+
+    .promo-group-toggle label { margin:0; }
+
+    .promo-product-list {
+      display:grid;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .promo-product-row {
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding:10px 11px;
+      border:1px solid #3e4450;
+      border-radius:9px;
+      background:#191d25;
+    }
+
+    .promo-product-row input {
+      width:22px;
+      height:22px;
+      margin:1px 0 0;
+      flex:0 0 auto;
+      accent-color:#8b4fc4;
+    }
+
+    .promo-product-name {
+      font-size:13px;
+      font-weight:800;
+      line-height:1.35;
+    }
+
+    .promo-product-meta {
+      margin-top:3px;
+      color:#9fa6b1;
+      font-size:11px;
+      line-height:1.4;
+    }
+
+    @media (max-width:520px) {
+      .promo-group-grid { grid-template-columns:1fr; }
+      .promo-group-grid .wide { grid-column:auto; }
+    }
+
     @media (max-width: 520px) {
       .canonical-management-grid {
         grid-template-columns: 1fr;
@@ -3627,7 +3722,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 2D — alias management
+    V6 Stage 3A — promo group management
   </div>
 
   <button
@@ -5385,6 +5480,16 @@
       <button
         class="management-action"
         type="button"
+        onclick="showManagementPromoGroups()"
+      >
+        <span class="management-action-icon">🏷️</span>
+        <span class="management-action-title">Promo Groups</span>
+        <span class="management-action-desc">Define mix &amp; match offers and eligible canonical products.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
         onclick="showManagementPayments()"
       >
         <span class="management-action-icon">💳</span>
@@ -5571,6 +5676,94 @@
     </div>
 
     <div
+      id="management-promo-group-editor"
+      class="management-editor-card hidden"
+    >
+      <div id="management-promo-group-editor-title" class="management-editor-title">Add Promo Group</div>
+
+      <label>Promo Group ID</label>
+      <div id="management-promo-group-id" class="promo-group-id">Assigned when saved</div>
+
+      <div class="promo-group-grid">
+        <div class="wide">
+          <label for="management-promo-name">Promo name</label>
+          <input id="management-promo-name" type="text" autocomplete="off" placeholder="Example: Brand line 2x1">
+        </div>
+        <div>
+          <label for="management-promo-type">Promo type</label>
+          <select id="management-promo-type" onchange="managementPromoTypeChanged()">
+            <option value="BUY_X_GET_Y">Buy X, get Y free</option>
+            <option value="BUNDLE_PRICE">Bundle quantity for fixed price</option>
+            <option value="PERCENT">Percentage discount</option>
+          </select>
+        </div>
+        <div>
+          <label for="management-promo-store-id">Store ID (optional)</label>
+          <input id="management-promo-store-id" type="text" autocomplete="off" placeholder="Blank = any store">
+        </div>
+        <div id="management-promo-buy-field">
+          <label for="management-promo-buy-quantity">Buy quantity</label>
+          <input id="management-promo-buy-quantity" type="number" inputmode="numeric" min="1" step="1">
+        </div>
+        <div id="management-promo-free-field">
+          <label for="management-promo-free-quantity">Free quantity</label>
+          <input id="management-promo-free-quantity" type="number" inputmode="numeric" min="1" step="1">
+        </div>
+        <div id="management-promo-bundle-quantity-field" class="hidden">
+          <label for="management-promo-bundle-quantity">Bundle quantity</label>
+          <input id="management-promo-bundle-quantity" type="number" inputmode="numeric" min="1" step="1">
+        </div>
+        <div id="management-promo-bundle-price-field" class="hidden">
+          <label for="management-promo-bundle-price">Bundle price</label>
+          <input id="management-promo-bundle-price" type="number" inputmode="decimal" min="0" step="0.01">
+        </div>
+        <div id="management-promo-percent-field" class="hidden">
+          <label for="management-promo-percent-off">Percent off</label>
+          <input id="management-promo-percent-off" type="number" inputmode="decimal" min="0" max="100" step="0.01">
+        </div>
+        <div>
+          <label for="management-promo-free-item-rule">Free item rule</label>
+          <select id="management-promo-free-item-rule">
+            <option value="Cheapest eligible item free">Cheapest eligible item free</option>
+            <option value="Same-price item free">Same-price item free</option>
+            <option value="Manual / retailer-defined">Manual / retailer-defined</option>
+          </select>
+        </div>
+        <div>
+          <label for="management-promo-start-date">Start date (optional)</label>
+          <input id="management-promo-start-date" type="date">
+        </div>
+        <div>
+          <label for="management-promo-end-date">End date (optional)</label>
+          <input id="management-promo-end-date" type="date">
+        </div>
+        <div class="wide">
+          <label for="management-promo-notes">Notes</label>
+          <textarea id="management-promo-notes" rows="3" autocomplete="off"></textarea>
+        </div>
+      </div>
+
+      <div class="promo-group-toggle">
+        <input id="management-promo-mix-match" type="checkbox" checked>
+        <label for="management-promo-mix-match">Mix &amp; Match across eligible products</label>
+      </div>
+
+      <div class="promo-group-toggle">
+        <input id="management-promo-active" type="checkbox" checked>
+        <label for="management-promo-active">Promo group is active</label>
+      </div>
+
+      <div class="management-section-title" style="margin-top:16px;">Eligible Canonical Products</div>
+      <div id="management-promo-products" class="promo-product-list"></div>
+      <div class="hint">Stage 3A stores the promo definition and membership only. Shopping totals are not recalculated from promo groups yet.</div>
+
+      <div class="management-editor-actions">
+        <button class="management-cancel-button" type="button" onclick="cancelManagementPromoGroupEdit()">CANCEL</button>
+        <button id="management-save-promo-group-button" class="management-save-button" type="button" onclick="saveManagementPromoGroupEdit()">SAVE PROMO GROUP</button>
+      </div>
+    </div>
+
+    <div
       id="management-payment-editor"
       class="management-editor-card hidden"
     >
@@ -5690,7 +5883,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 2D — safe alias move/detach management. Production remains index.html.
+    V6 Stage 3A — promo group definitions and membership management. Production remains index.html.
   </div>
 
 </div>
@@ -6412,6 +6605,7 @@
   ];
   let managementEditingProductIndex = null;
   let managementEditingCanonicalIndex = null;
+  let managementEditingPromoGroupIndex = null;
   let managementEditingPaymentIndex = null;
   let managementEditingStoreIndex = null;
 
@@ -24148,6 +24342,8 @@
 
   function showManagementCanonicalProducts(shouldScroll = true) {
 
+    cancelManagementPromoGroupEdit(true);
+
     cancelManagementProductEdit(true);
     cancelManagementCanonicalEdit(true);
     cancelManagementPaymentEdit(true);
@@ -24379,6 +24575,325 @@
   }
 
 
+  function showManagementPromoGroups(shouldScroll = true) {
+
+    cancelManagementProductEdit(true);
+    cancelManagementCanonicalEdit(true);
+    cancelManagementPromoGroupEdit(true);
+    cancelManagementPaymentEdit(true);
+    cancelManagementStoreEdit(true);
+
+    const box = document.getElementById("management-content");
+    const activeCount = promoGroups.filter(record => record.active !== false).length;
+
+    box.innerHTML =
+      '<div class="management-section-title">Promo Groups</div>' +
+      '<div class="promo-group-summary">' +
+        escapeHtml(`${promoGroups.length} promo group${promoGroups.length === 1 ? "" : "s"} loaded • ${activeCount} active. Stage 3A manages definitions and canonical-product membership only; checkout calculation remains unchanged.`) +
+      '</div>' +
+      '<button type="button" onclick="editManagementPromoGroup(null)" style="margin:0 0 12px;">＋ ADD PROMO GROUP</button>' +
+      (promoGroups.length
+        ? promoGroups
+            .map((record, originalIndex) => ({record, originalIndex}))
+            .sort((a,b) => String(a.record.promoName || a.record.promoGroupId).localeCompare(String(b.record.promoName || b.record.promoGroupId)))
+            .map(entry => {
+              const record = entry.record;
+              const memberCount = promoGroupProducts.filter(link =>
+                link.active !== false &&
+                String(link.promoGroupId || "").trim() === String(record.promoGroupId || "").trim()
+              ).length;
+              const detail = [
+                record.promoType || "Unspecified type",
+                record.mixAndMatch ? "Mix & Match" : "Single-product grouping",
+                record.storeId ? `Store ${record.storeId}` : "Any store",
+                `${memberCount} eligible product${memberCount === 1 ? "" : "s"}`,
+                record.active === false ? "INACTIVE" : "ACTIVE"
+              ].join(" • ");
+              return (
+                '<div class="management-row">' +
+                  '<div class="management-row-top">' +
+                    '<div class="management-row-name">' + escapeHtml(record.promoName || "Unnamed promo group") + '</div>' +
+                    '<button class="management-edit-button" type="button" onclick="editManagementPromoGroup(' + entry.originalIndex + ')">EDIT</button>' +
+                  '</div>' +
+                  '<div class="management-row-meta">' + escapeHtml((record.promoGroupId || "No Promo Group ID") + " • " + detail) + '</div>' +
+                '</div>'
+              );
+            }).join("")
+        : '<div class="management-empty">No promo groups are stored yet.</div>');
+
+    if (shouldScroll) scrollManagementContentIntoView();
+  }
+
+
+  function editManagementPromoGroup(index) {
+
+    const isNew = index === null || index === undefined;
+    const record = isNew ? null : promoGroups[index];
+    if (!isNew && !record) return;
+
+    managementEditingPromoGroupIndex = isNew ? null : index;
+
+    document.getElementById("management-promo-group-editor-title").textContent = isNew ? "Add Promo Group" : "Edit Promo Group";
+    document.getElementById("management-promo-group-id").textContent = isNew ? "Assigned when saved" : (record.promoGroupId || "—");
+    document.getElementById("management-promo-name").value = record?.promoName || "";
+    document.getElementById("management-promo-type").value = record?.promoType || "BUY_X_GET_Y";
+    document.getElementById("management-promo-buy-quantity").value = record?.buyQuantity ?? "";
+    document.getElementById("management-promo-free-quantity").value = record?.freeQuantity ?? "";
+    document.getElementById("management-promo-bundle-quantity").value = record?.bundleQuantity ?? "";
+    document.getElementById("management-promo-bundle-price").value = record?.bundlePrice ?? "";
+    document.getElementById("management-promo-percent-off").value = record?.percentOff ?? "";
+    document.getElementById("management-promo-mix-match").checked = record ? record.mixAndMatch === true : true;
+    document.getElementById("management-promo-free-item-rule").value = record?.freeItemRule || "Cheapest eligible item free";
+    document.getElementById("management-promo-store-id").value = record?.storeId || "";
+    document.getElementById("management-promo-start-date").value = v6DateInputValue(record?.startDate);
+    document.getElementById("management-promo-end-date").value = v6DateInputValue(record?.endDate);
+    document.getElementById("management-promo-notes").value = record?.notes || "";
+    document.getElementById("management-promo-active").checked = record ? record.active !== false : true;
+
+    renderManagementPromoProducts(record?.promoGroupId || "");
+    managementPromoTypeChanged();
+    show("management-promo-group-editor");
+    document.getElementById("management-promo-group-editor").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+
+  function v6DateInputValue(value) {
+    if (!value) return "";
+    const raw = String(value).trim();
+    const direct = raw.match(/^\d{4}-\d{2}-\d{2}/);
+    if (direct) return direct[0];
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  }
+
+
+  function managementPromoTypeChanged() {
+    const type = String(document.getElementById("management-promo-type")?.value || "BUY_X_GET_Y");
+    const buy = document.getElementById("management-promo-buy-field");
+    const free = document.getElementById("management-promo-free-field");
+    const bundleQty = document.getElementById("management-promo-bundle-quantity-field");
+    const bundlePrice = document.getElementById("management-promo-bundle-price-field");
+    const percent = document.getElementById("management-promo-percent-field");
+
+    [buy, free, bundleQty, bundlePrice, percent].forEach(el => el?.classList.add("hidden"));
+    if (type === "BUY_X_GET_Y") {
+      buy?.classList.remove("hidden");
+      free?.classList.remove("hidden");
+    } else if (type === "BUNDLE_PRICE") {
+      bundleQty?.classList.remove("hidden");
+      bundlePrice?.classList.remove("hidden");
+    } else if (type === "PERCENT") {
+      percent?.classList.remove("hidden");
+    }
+  }
+
+
+  function renderManagementPromoProducts(promoGroupId) {
+    const box = document.getElementById("management-promo-products");
+    if (!box) return;
+
+    const activeProducts = productCatalog
+      .filter(record => record.active !== false && record.productId)
+      .sort((a,b) => String(a.canonicalName || a.productId).localeCompare(String(b.canonicalName || b.productId)));
+
+    if (!activeProducts.length) {
+      box.innerHTML = '<div class="management-empty">No active canonical products exist yet. You can save the promo group now and attach products later.</div>';
+      return;
+    }
+
+    const linked = new Set(
+      promoGroupProducts
+        .filter(link => link.active !== false && String(link.promoGroupId || "").trim() === String(promoGroupId || "").trim())
+        .map(link => String(link.productId || "").trim())
+        .filter(Boolean)
+    );
+
+    box.innerHTML = activeProducts.map(record => {
+      const detail = [record.productId, record.brand, record.variant, [record.size, record.unit].filter(value => String(value ?? "").trim()).join(" ")].filter(Boolean).join(" • ");
+      return (
+        '<label class="promo-product-row">' +
+          '<input class="management-promo-product-checkbox" type="checkbox" value="' + escapeHtml(record.productId) + '"' + (linked.has(String(record.productId).trim()) ? ' checked' : '') + '>' +
+          '<span><span class="promo-product-name">' + escapeHtml(record.canonicalName || "Unnamed canonical product") + '</span>' +
+          '<span class="promo-product-meta">' + escapeHtml(detail) + '</span></span>' +
+        '</label>'
+      );
+    }).join("");
+  }
+
+
+  function cancelManagementPromoGroupEdit(silent) {
+    managementEditingPromoGroupIndex = null;
+    hide("management-promo-group-editor");
+    if (!silent) setStatus("Promo group edit cancelled.", "success");
+  }
+
+
+  function managementPromoSelectedProductIds() {
+    return Array.from(document.querySelectorAll(".management-promo-product-checkbox:checked"))
+      .map(input => String(input.value || "").trim())
+      .filter(Boolean);
+  }
+
+
+  async function saveManagementPromoGroupEdit() {
+
+    const existingRecord = managementEditingPromoGroupIndex === null ? null : promoGroups[managementEditingPromoGroupIndex];
+    const promoName = String(document.getElementById("management-promo-name").value || "").trim();
+    const promoType = String(document.getElementById("management-promo-type").value || "").trim();
+    const buyQuantity = normalizeNumericValue(document.getElementById("management-promo-buy-quantity").value);
+    const freeQuantity = normalizeNumericValue(document.getElementById("management-promo-free-quantity").value);
+    const bundleQuantity = normalizeNumericValue(document.getElementById("management-promo-bundle-quantity").value);
+    const bundlePrice = normalizeNumericValue(document.getElementById("management-promo-bundle-price").value);
+    const percentOff = normalizeNumericValue(document.getElementById("management-promo-percent-off").value);
+    const mixAndMatch = document.getElementById("management-promo-mix-match").checked;
+    const freeItemRule = String(document.getElementById("management-promo-free-item-rule").value || "").trim();
+    const storeId = String(document.getElementById("management-promo-store-id").value || "").trim();
+    const startDate = String(document.getElementById("management-promo-start-date").value || "").trim();
+    const endDate = String(document.getElementById("management-promo-end-date").value || "").trim();
+    const notes = String(document.getElementById("management-promo-notes").value || "").trim();
+    const active = document.getElementById("management-promo-active").checked;
+    const selectedProductIds = managementPromoSelectedProductIds();
+
+    if (!promoName) {
+      showErrorToast("Promo name required", "Enter a name for this promotion group.");
+      return;
+    }
+
+    if (promoType === "BUY_X_GET_Y" && (!isUsableNumber(buyQuantity) || Number(buyQuantity) < 1 || !isUsableNumber(freeQuantity) || Number(freeQuantity) < 1)) {
+      showErrorToast("Quantities required", "Buy X, get Y free needs both Buy Quantity and Free Quantity.");
+      return;
+    }
+    if (promoType === "BUNDLE_PRICE" && (!isUsableNumber(bundleQuantity) || Number(bundleQuantity) < 1 || !isUsableNumber(bundlePrice) || Number(bundlePrice) < 0)) {
+      showErrorToast("Bundle details required", "Enter both a valid Bundle Quantity and Bundle Price.");
+      return;
+    }
+    if (promoType === "PERCENT" && (!isUsableNumber(percentOff) || Number(percentOff) <= 0 || Number(percentOff) > 100)) {
+      showErrorToast("Discount required", "Percentage discounts must be greater than 0 and no more than 100.");
+      return;
+    }
+    if (startDate && endDate && endDate < startDate) {
+      showErrorToast("Date range invalid", "End Date cannot be before Start Date.");
+      return;
+    }
+
+    const button = document.getElementById("management-save-promo-group-button");
+    button.disabled = true;
+    button.textContent = "SAVING...";
+    setStatus("Saving promo group...", "working");
+
+    try {
+      const now = localIsoWithOffset(new Date());
+      let record = existingRecord;
+
+      if (!record) {
+        const promoGroupId = nextSequentialV6Id("PROMO", promoGroups, "promoGroupId");
+        const row = await findNextReferenceRow(PROMO_GROUPS_SHEET);
+        record = {
+          sheetRow: row,
+          promoGroupId,
+          created: now
+        };
+        promoGroups.push(record);
+        managementEditingPromoGroupIndex = promoGroups.length - 1;
+      }
+
+      const values = [[
+        record.promoGroupId,
+        promoName,
+        promoType,
+        promoType === "BUY_X_GET_Y" ? buyQuantity : "",
+        promoType === "BUY_X_GET_Y" ? freeQuantity : "",
+        promoType === "BUNDLE_PRICE" ? bundleQuantity : "",
+        promoType === "BUNDLE_PRICE" ? bundlePrice : "",
+        promoType === "PERCENT" ? percentOff : "",
+        mixAndMatch,
+        freeItemRule,
+        storeId,
+        startDate,
+        endDate,
+        active,
+        notes,
+        record.created || now,
+        now
+      ]];
+
+      await sheetsValuesBatchUpdate([{
+        range: `'${PROMO_GROUPS_SHEET}'!A${record.sheetRow}:Q${record.sheetRow}`,
+        values
+      }], "RAW");
+
+      Object.assign(record, {
+        promoName,
+        promoType,
+        buyQuantity: promoType === "BUY_X_GET_Y" ? buyQuantity : "",
+        freeQuantity: promoType === "BUY_X_GET_Y" ? freeQuantity : "",
+        bundleQuantity: promoType === "BUNDLE_PRICE" ? bundleQuantity : "",
+        bundlePrice: promoType === "BUNDLE_PRICE" ? bundlePrice : "",
+        percentOff: promoType === "PERCENT" ? percentOff : "",
+        mixAndMatch,
+        freeItemRule,
+        storeId,
+        startDate,
+        endDate,
+        active,
+        notes,
+        modified: now
+      });
+
+      const existingLinks = promoGroupProducts.filter(link => String(link.promoGroupId || "").trim() === String(record.promoGroupId).trim());
+      const selected = new Set(selectedProductIds);
+      const updates = [];
+
+      for (const link of existingLinks) {
+        const shouldBeActive = selected.has(String(link.productId || "").trim());
+        if (link.active !== shouldBeActive) {
+          link.active = shouldBeActive;
+          link.modified = now;
+          updates.push({
+            range: `'${PROMO_GROUP_PRODUCTS_SHEET}'!D${link.sheetRow}:F${link.sheetRow}`,
+            values: [[shouldBeActive, link.created || "", now]]
+          });
+        }
+        selected.delete(String(link.productId || "").trim());
+      }
+
+      for (const productId of selected) {
+        const linkId = nextSequentialV6Id("PROMOLINK", promoGroupProducts, "promoGroupProductId");
+        const row = await findNextReferenceRow(PROMO_GROUP_PRODUCTS_SHEET);
+        const newLink = {
+          sheetRow: row,
+          promoGroupProductId: linkId,
+          promoGroupId: record.promoGroupId,
+          productId,
+          active: true,
+          created: now,
+          modified: now
+        };
+        promoGroupProducts.push(newLink);
+        updates.push({
+          range: `'${PROMO_GROUP_PRODUCTS_SHEET}'!A${row}:F${row}`,
+          values: [[linkId, record.promoGroupId, productId, true, now, now]]
+        });
+      }
+
+      if (updates.length) await sheetsValuesBatchUpdate(updates, "RAW");
+
+      cancelManagementPromoGroupEdit(true);
+      showManagementPromoGroups(false);
+      setStatus("Promo group saved.", "success");
+      showSuccessToast("Promo group saved", `${selectedProductIds.length} eligible canonical product${selectedProductIds.length === 1 ? "" : "s"} selected.`);
+      scrollManagementContentIntoView();
+    } catch (error) {
+      handleApiError(error);
+      showErrorToast("Save failed", "The promo group was not saved.");
+    } finally {
+      button.disabled = false;
+      button.textContent = "SAVE PROMO GROUP";
+    }
+  }
+
+
   function cancelManagementCanonicalEdit(silent) {
 
     managementEditingCanonicalIndex = null;
@@ -24461,6 +24976,8 @@
 
 
   function showManagementPayments() {
+
+    cancelManagementPromoGroupEdit(true);
 
     cancelManagementProductEdit(
       true
@@ -24772,6 +25289,8 @@
 
 
   function showManagementStores() {
+
+    cancelManagementPromoGroupEdit(true);
 
     cancelManagementProductEdit(
       true
@@ -25190,6 +25709,8 @@
 
   function showManagementHistoryAudit() {
 
+    cancelManagementPromoGroupEdit(true);
+
     cancelManagementStoreEdit(
       true
     );
@@ -25284,6 +25805,8 @@
 
 
   function showManagementAbout() {
+
+    cancelManagementPromoGroupEdit(true);
 
     cancelManagementStoreEdit(
       true
