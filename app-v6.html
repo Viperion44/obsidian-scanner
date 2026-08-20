@@ -1489,6 +1489,92 @@
       line-height: 1.35;
     }
 
+    /* V6 Stage 2B Canonical Candidate Match */
+    .canonical-match-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2580;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+    }
+
+    .canonical-match-overlay.hidden { display: none; }
+
+    .canonical-match-card {
+      width: min(100%, 520px);
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 18px;
+      border: 1px solid #5a4c70;
+      border-radius: 15px;
+      background: #242833;
+      box-shadow: 0 18px 50px rgba(0,0,0,.5);
+    }
+
+    .canonical-match-entered {
+      margin-top: 10px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #191d25;
+      color: #f1f3f6;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .canonical-match-candidate {
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid #4b5260;
+      border-radius: 12px;
+      background: #1b1f28;
+    }
+
+    .canonical-match-name {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+
+    .canonical-match-meta {
+      margin-top: 5px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .canonical-match-other-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .canonical-match-other {
+      margin: 0;
+      padding: 11px 12px;
+      border: 1px solid #444b58;
+      border-radius: 10px;
+      background: #20242d;
+      color: #fff;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .canonical-match-actions {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .canonical-match-actions button { margin: 0; }
+    .canonical-match-yes { background: #7137b5; }
+    .canonical-match-new { background: #3b414d; }
+    .canonical-match-more { background: #4a3a61; }
+
     /* V4 Existing Product Search */
     .product-search-overlay {
       position: fixed;
@@ -3383,7 +3469,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 1 — canonical product + promo reference data
+    V6 Stage 2B — canonical product candidate matching
   </div>
 
   <button
@@ -5381,7 +5467,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 1 — read-only canonical product and promo reference data. Production remains index.html.
+    V6 Stage 2B — conservative cross-store canonical candidate matching. Production remains index.html.
   </div>
 
 </div>
@@ -5516,6 +5602,35 @@
 
     </div>
 
+  </div>
+</div>
+
+<div
+  id="canonical-match-overlay"
+  class="canonical-match-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="canonical-match-title"
+>
+  <div class="canonical-match-card">
+    <div id="canonical-match-title" class="identity-title">IS THIS THE SAME PRODUCT?</div>
+    <div class="identity-body">Obsidian Shopping found a likely match from your existing product history. Nothing will be linked unless you confirm it.</div>
+    <div class="small-label" style="margin-top:14px;">YOU ENTERED</div>
+    <div id="canonical-match-entered" class="canonical-match-entered">—</div>
+    <div class="small-label" style="margin-top:14px;">POSSIBLE MATCH</div>
+    <div class="canonical-match-candidate">
+      <div id="canonical-match-name" class="canonical-match-name">—</div>
+      <div id="canonical-match-meta" class="canonical-match-meta"></div>
+    </div>
+    <div id="canonical-match-other-wrap" class="hidden">
+      <div class="small-label" style="margin-top:14px;">OTHER POSSIBLE MATCHES</div>
+      <div id="canonical-match-other-list" class="canonical-match-other-list"></div>
+    </div>
+    <div class="canonical-match-actions">
+      <button class="canonical-match-yes" type="button" onclick="resolveCanonicalCandidate('same')">YES — SAME PRODUCT</button>
+      <button id="canonical-match-more-button" class="canonical-match-more" type="button" onclick="showOtherCanonicalCandidates()">SHOW OTHER MATCHES</button>
+      <button class="canonical-match-new" type="button" onclick="resolveCanonicalCandidate('new')">NO — THIS IS A NEW PRODUCT</button>
+    </div>
   </div>
 </div>
 
@@ -5946,7 +6061,7 @@
 
   let productDatabase = [];
 
-  // V6 Stage 1 — in-memory snapshots of the new backend reference tables.
+  // V6 Stage 2B — in-memory snapshots of the canonical identity and promo tables.
   // Nothing writes to these arrays or sheets yet.
   let productCatalog = [];
   let productAliases = [];
@@ -6052,6 +6167,10 @@
   let toastHideTimer = null;
   let toastRemoveTimer = null;
   let productChangeModeResolver = null;
+
+  let canonicalCandidateResolver = null;
+  let canonicalCandidateMatches = [];
+  let canonicalCandidateSelectedIndex = 0;
 
   let wrongProductMode = null;
   let wrongProductOriginalName = "";
@@ -6275,7 +6394,7 @@
       productDatabase =
         await loadProductDatabase();
 
-      // V6 Stage 1: load the four new backend tables without changing any
+      // V6 Stage 2B: load the four backend reference tables before matching any
       // existing product lookup, pricing, shopping, or finishing behavior.
       await loadV6ReferenceData();
 
@@ -9199,12 +9318,13 @@
 
 
   // ============================================================
-  // V6 STAGE 2A — CANONICAL PRODUCT REFERENCE DATA
+  // V6 STAGE 2B — CANONICAL PRODUCT CANDIDATE MATCHING
   // ============================================================
   //
-  // Stage 2A keeps matching intentionally conservative: exact normalized names
-  // only. It does not fuzzy-match, merge, split, prompt, or calculate group promos.
-  // New canonical rows are learned only after the normal shopping item write succeeds.
+  // Stage 2B keeps matching conservative. Exact confirmed aliases resolve silently.
+  // Otherwise, strong token/size candidates may be shown to the user BEFORE the item
+  // is written. No candidate is merged automatically, and weak matches are ignored.
+  // Promo-group calculation and OCR remain out of scope for this stage.
   // ============================================================
 
   async function loadV6ReferenceData() {
@@ -9542,50 +9662,326 @@
   }
 
 
-  async function ensureCanonicalProductForConfirmedItem(productName, barcode) {
+  function canonicalMatchTokens(value) {
+
+    return normalizeProductIdentity(value)
+      .split(/\s+/)
+      .filter(token => token && token.length >= 2);
+  }
+
+
+  function canonicalNumericTokens(value) {
+
+    return canonicalMatchTokens(value)
+      .filter(token => /^\d+(?:\.\d+)?$/.test(token));
+  }
+
+
+  function canonicalCandidateScore(enteredName, candidateName) {
+
+    const enteredTokens = canonicalMatchTokens(enteredName);
+    const candidateTokens = canonicalMatchTokens(candidateName);
+
+    if (!enteredTokens.length || !candidateTokens.length) return 0;
+
+    const enteredSet = new Set(enteredTokens);
+    const candidateSet = new Set(candidateTokens);
+    let common = 0;
+
+    enteredSet.forEach(token => {
+      if (candidateSet.has(token)) common += 1;
+    });
+
+    if (!common) return 0;
+
+    const coverageEntered = common / enteredSet.size;
+    const coverageCandidate = common / candidateSet.size;
+    let score = (coverageEntered * 55) + (coverageCandidate * 35);
+
+    const enteredNumbers = canonicalNumericTokens(enteredName);
+    const candidateNumbers = canonicalNumericTokens(candidateName);
+
+    // If both names contain explicit numeric package information (for example
+    // 280 g vs 400 g), conflicting numbers are a strong reason NOT to suggest
+    // that they are the same product.
+    if (enteredNumbers.length && candidateNumbers.length) {
+      const numberOverlap = enteredNumbers.some(number => candidateNumbers.includes(number));
+      if (!numberOverlap) return 0;
+      score += 10;
+    }
+
+    const normalizedEntered = normalizeProductIdentity(enteredName);
+    const normalizedCandidate = normalizeProductIdentity(candidateName);
+    if (normalizedEntered.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedEntered)) {
+      score += 12;
+    }
+
+    return Math.min(100, Math.round(score));
+  }
+
+
+  function buildCanonicalCandidatePool(enteredName) {
+
+    const exact = findCanonicalProductByExactName(enteredName);
+    if (exact) {
+      return [{
+        kind: "canonical",
+        productId: exact.productId,
+        canonicalName: exact.canonicalName,
+        score: 100,
+        storeNames: [],
+        exact: true
+      }];
+    }
+
+    const byKey = new Map();
+
+    productCatalog.forEach(record => {
+      if (record.active === false || !record.productId || !record.canonicalName) return;
+      const score = canonicalCandidateScore(enteredName, record.canonicalName);
+      if (score < 58) return;
+      byKey.set("C|" + record.productId, {
+        kind: "canonical",
+        productId: record.productId,
+        canonicalName: record.canonicalName,
+        score,
+        storeNames: [],
+        exact: false
+      });
+    });
+
+    productAliases.forEach(alias => {
+      if (!alias.confirmed || !alias.productId || !alias.aliasValue) return;
+      const type = String(alias.aliasType || "").trim().toUpperCase();
+      if (!["NAME", "STORE DESCRIPTION", "OCR"].includes(type)) return;
+      const product = productCatalog.find(record =>
+        record.active !== false && String(record.productId || "").trim() === String(alias.productId || "").trim()
+      );
+      if (!product) return;
+      const score = canonicalCandidateScore(enteredName, alias.aliasValue);
+      if (score < 58) return;
+      const key = "C|" + product.productId;
+      const previous = byKey.get(key);
+      if (!previous || score > previous.score) {
+        byKey.set(key, {
+          kind: "canonical",
+          productId: product.productId,
+          canonicalName: product.canonicalName,
+          score,
+          storeNames: [],
+          exact: false
+        });
+      }
+    });
+
+    // Legacy Products remains useful during the transition. It lets Stage 2B
+    // recognize products bought before Product Catalog existed. A confirmed
+    // selection will seed that legacy identity into Product Catalog after the
+    // normal shopping write succeeds.
+    productDatabase.forEach(record => {
+      const name = String(record.product || "").trim();
+      if (!name) return;
+      const score = canonicalCandidateScore(enteredName, name);
+      if (score < 62) return;
+      const key = "L|" + normalizeProductIdentity(name);
+      const previous = byKey.get(key);
+      if (!previous) {
+        byKey.set(key, {
+          kind: "legacy",
+          productId: "",
+          canonicalName: name,
+          score,
+          storeNames: record.store ? [String(record.store)] : [],
+          exact: false
+        });
+      } else {
+        previous.score = Math.max(previous.score, score);
+        if (record.store && !previous.storeNames.includes(String(record.store))) {
+          previous.storeNames.push(String(record.store));
+        }
+      }
+    });
+
+    return Array.from(byKey.values())
+      .sort((a, b) => b.score - a.score || a.canonicalName.localeCompare(b.canonicalName))
+      .slice(0, 6);
+  }
+
+
+  function canonicalCandidateMeta(candidate) {
+
+    const parts = [];
+    if (candidate.kind === "canonical") parts.push("Canonical product");
+    else parts.push("Previously purchased product");
+    if (candidate.storeNames?.length) parts.push("Seen at " + candidate.storeNames.slice(0, 3).join(", "));
+    parts.push("Match confidence " + candidate.score + "%");
+    return parts.join(" • ");
+  }
+
+
+  function renderCanonicalCandidateOverlay() {
+
+    const candidate = canonicalCandidateMatches[canonicalCandidateSelectedIndex];
+    if (!candidate) return;
+
+    document.getElementById("canonical-match-entered").textContent =
+      String(document.getElementById("product-name")?.value || "").trim() || "—";
+    document.getElementById("canonical-match-name").textContent = candidate.canonicalName;
+    document.getElementById("canonical-match-meta").textContent = canonicalCandidateMeta(candidate);
+
+    const moreButton = document.getElementById("canonical-match-more-button");
+    moreButton.classList.toggle("hidden", canonicalCandidateMatches.length <= 1);
+    document.getElementById("canonical-match-other-wrap").classList.add("hidden");
+    show("canonical-match-overlay");
+  }
+
+
+  function showOtherCanonicalCandidates() {
+
+    const wrap = document.getElementById("canonical-match-other-wrap");
+    const list = document.getElementById("canonical-match-other-list");
+    const others = canonicalCandidateMatches
+      .map((candidate, index) => ({candidate, index}))
+      .filter(entry => entry.index !== canonicalCandidateSelectedIndex);
+
+    list.innerHTML = others.length
+      ? others.map(entry =>
+          '<button class="canonical-match-other" type="button" onclick="selectOtherCanonicalCandidate(' + entry.index + ')">' +
+            '<b>' + escapeHtml(entry.candidate.canonicalName) + '</b><br>' +
+            '<span class="muted">' + escapeHtml(canonicalCandidateMeta(entry.candidate)) + '</span>' +
+          '</button>'
+        ).join("")
+      : '<div class="management-empty">No other strong matches were found.</div>';
+
+    wrap.classList.remove("hidden");
+  }
+
+
+  function selectOtherCanonicalCandidate(index) {
+
+    if (!canonicalCandidateMatches[index]) return;
+    canonicalCandidateSelectedIndex = index;
+    renderCanonicalCandidateOverlay();
+  }
+
+
+  function resolveCanonicalCandidate(choice) {
+
+    hide("canonical-match-overlay");
+
+    const resolver = canonicalCandidateResolver;
+    canonicalCandidateResolver = null;
+
+    const selected = canonicalCandidateMatches[canonicalCandidateSelectedIndex] || null;
+    canonicalCandidateMatches = [];
+    canonicalCandidateSelectedIndex = 0;
+
+    if (!resolver) return;
+    resolver(choice === "same" ? selected : {kind:"new"});
+  }
+
+
+  function cancelCanonicalCandidatePrompt() {
+
+    if (!canonicalCandidateResolver) {
+      hide("canonical-match-overlay");
+      return;
+    }
+    resolveCanonicalCandidate("new");
+  }
+
+
+  function resolveCanonicalIdentityBeforeShoppingWrite(productName) {
+
+    const exact = findCanonicalProductByExactName(productName);
+    if (exact) {
+      return Promise.resolve({
+        kind: "canonical",
+        productId: exact.productId,
+        canonicalName: exact.canonicalName,
+        score: 100,
+        exact: true
+      });
+    }
+
+    const candidates = buildCanonicalCandidatePool(productName)
+      .filter(candidate => candidate.score >= 62);
+
+    if (!candidates.length) return Promise.resolve({kind:"new"});
+
+    canonicalCandidateMatches = candidates;
+    canonicalCandidateSelectedIndex = 0;
+    renderCanonicalCandidateOverlay();
+
+    return new Promise(resolve => {
+      canonicalCandidateResolver = resolve;
+    });
+  }
+
+
+  async function createCanonicalProductFromName(canonicalName, nowValue) {
+
+    const cleanName = String(canonicalName || "").trim();
+    if (!cleanName) return null;
+
+    const existing = findCanonicalProductByExactName(cleanName);
+    if (existing) return existing;
+
+    const productId = nextSequentialV6Id("PROD", productCatalog, "productId");
+    const row = await findNextReferenceRow(PRODUCT_CATALOG_SHEET);
+
+    await sheetsValuesBatchUpdate([{
+      range: `'${PRODUCT_CATALOG_SHEET}'!A${row}:J${row}`,
+      values: [[productId, cleanName, "", "", "", "", "", true, nowValue, nowValue]]
+    }], "RAW");
+
+    const record = {
+      sheetRow: row,
+      productId,
+      canonicalName: cleanName,
+      brand: "",
+      variant: "",
+      size: "",
+      unit: "",
+      notes: "",
+      active: true,
+      created: nowValue,
+      modified: nowValue
+    };
+
+    productCatalog.push(record);
+    return record;
+  }
+
+
+  async function ensureCanonicalProductForConfirmedItem(productName, barcode, resolution = null) {
 
     const cleanName = String(productName || "").trim();
     if (!cleanName) return null;
 
     const nowValue = localIsoWithOffset(new Date());
     const source = currentCanonicalAliasSource();
-    let productRecord = findCanonicalProductByExactName(cleanName);
+    let productRecord = null;
+
+    if (resolution?.kind === "canonical" && resolution.productId) {
+      productRecord = productCatalog.find(record =>
+        record.active !== false && String(record.productId || "").trim() === String(resolution.productId || "").trim()
+      ) || null;
+    }
+
+    if (!productRecord && resolution?.kind === "legacy" && resolution.canonicalName) {
+      productRecord = await createCanonicalProductFromName(resolution.canonicalName, nowValue);
+      if (productRecord) {
+        await ensureCanonicalNameAlias(productRecord, resolution.canonicalName, "Legacy Product History", nowValue);
+      }
+    }
+
+    if (!productRecord && resolution?.kind !== "new") {
+      productRecord = findCanonicalProductByExactName(cleanName);
+    }
 
     if (!productRecord) {
-      const productId = nextSequentialV6Id("PROD", productCatalog, "productId");
-      const row = await findNextReferenceRow(PRODUCT_CATALOG_SHEET);
-
-      await sheetsValuesBatchUpdate([{
-        range: `'${PRODUCT_CATALOG_SHEET}'!A${row}:J${row}`,
-        values: [[
-          productId,
-          cleanName,
-          "",
-          "",
-          "",
-          "",
-          "",
-          true,
-          nowValue,
-          nowValue
-        ]]
-      }], "RAW");
-
-      productRecord = {
-        sheetRow: row,
-        productId,
-        canonicalName: cleanName,
-        brand: "",
-        variant: "",
-        size: "",
-        unit: "",
-        notes: "",
-        active: true,
-        created: nowValue,
-        modified: nowValue
-      };
-
-      productCatalog.push(productRecord);
+      productRecord = await createCanonicalProductFromName(cleanName, nowValue);
     }
 
     await ensureCanonicalNameAlias(productRecord, cleanName, source, nowValue);
@@ -9595,12 +9991,12 @@
   }
 
 
-  async function learnCanonicalIdentityAfterShoppingWrite(productName, barcode) {
+  async function learnCanonicalIdentityAfterShoppingWrite(productName, barcode, resolution) {
 
     try {
-      return await ensureCanonicalProductForConfirmedItem(productName, barcode);
+      return await ensureCanonicalProductForConfirmedItem(productName, barcode, resolution);
     } catch (error) {
-      // Canonical learning is intentionally non-blocking in Stage 2A. The normal
+      // Canonical learning remains non-blocking in Stage 2B. The normal
       // shopping write already succeeded, so an identity-table problem must never
       // make the user believe the item itself failed to save.
       console.warn("V6 canonical identity learning failed", error);
@@ -11654,6 +12050,12 @@
 
     try {
 
+      // V6 Stage 2B: resolve a strong cross-store/canonical candidate before
+      // writing the item. Exact aliases resolve silently; suggestions always
+      // require the user's confirmation.
+      const canonicalResolution =
+        await resolveCanonicalIdentityBeforeShoppingWrite(product);
+
       await applyWrongProductChangeIfNeeded(
         product
       );
@@ -11711,11 +12113,12 @@
         });
 
 
-      // V6 Stage 2A: learn canonical identity only AFTER the existing shopping
-      // item has been saved successfully. This is non-blocking by design.
+      // V6 Stage 2B: after the normal item write succeeds, persist the user-
+      // confirmed identity decision as canonical aliases.
       await learnCanonicalIdentityAfterShoppingWrite(
         product,
-        currentBarcode
+        currentBarcode,
+        canonicalResolution
       );
 
 
@@ -15911,6 +16314,7 @@
 
   function hasVisibleAppSubflow() {
     return [
+      "canonical-match-overlay",
       "nearby-map-overlay",
       "start-manual-store-overlay",
       "nearby-stores-overlay",
@@ -16017,6 +16421,11 @@
   }
 
   function appNavigateBackDirect() {
+    if (appLayerVisible("canonical-match-overlay")) {
+      cancelCanonicalCandidatePrompt();
+      return;
+    }
+
     if (appLayerVisible("nearby-map-overlay")) {
       closeNearbyFullMap();
       return;
@@ -24343,7 +24752,7 @@
       "</div>" +
       '<div class="management-row">' +
         '<div class="management-row-name">V6 canonical learning</div>' +
-        '<div class="management-row-meta">Exact-name learning active; fuzzy matching still off</div>' +
+        '<div class="management-row-meta">Exact aliases automatic; strong cross-store candidates require confirmation</div>' +
       "</div>" +
       '<div class="management-row">' +
         '<div class="management-row-name">V6 canonical products loaded</div>' +
