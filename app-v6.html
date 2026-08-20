@@ -1575,6 +1575,99 @@
     .canonical-match-new { background: #3b414d; }
     .canonical-match-more { background: #4a3a61; }
 
+    /* V6 Stage 2C — Canonical Product Management */
+    .canonical-management-summary {
+      margin-bottom: 12px;
+      padding: 11px 12px;
+      border: 1px solid #4a5060;
+      border-radius: 10px;
+      background: #1c2028;
+      color: #cfd4dd;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .canonical-management-id {
+      margin-bottom: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #171a20;
+      color: #c9a7f2;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .canonical-management-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .canonical-management-grid .wide {
+      grid-column: 1 / -1;
+    }
+
+    .canonical-active-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 11px 12px;
+      border: 1px solid #4b5260;
+      border-radius: 10px;
+      background: #1c2028;
+    }
+
+    .canonical-active-row input {
+      width: 22px;
+      height: 22px;
+      margin: 0;
+      flex: 0 0 auto;
+      accent-color: #8b4fc4;
+    }
+
+    .canonical-active-row label {
+      margin: 0;
+    }
+
+    .canonical-alias-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .canonical-alias-row {
+      padding: 10px 11px;
+      border: 1px solid #3e4450;
+      border-radius: 9px;
+      background: #191d25;
+    }
+
+    .canonical-alias-value {
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .canonical-alias-meta {
+      margin-top: 4px;
+      color: #9fa6b1;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 520px) {
+      .canonical-management-grid {
+        grid-template-columns: 1fr;
+      }
+      .canonical-management-grid .wide {
+        grid-column: auto;
+      }
+    }
+
     /* V4 Existing Product Search */
     .product-search-overlay {
       position: fixed;
@@ -3469,7 +3562,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 2B — canonical product candidate matching
+    V6 Stage 2C — canonical product management
   </div>
 
   <button
@@ -5197,7 +5290,7 @@
       </div>
 
       <div class="management-warning">
-        Products and payment methods can be maintained here. Historical trip records remain protected from destructive edits.
+        Products, canonical identities, and payment methods can be maintained here. Historical trip records remain protected from destructive edits.
       </div>
 
     </div>
@@ -5212,6 +5305,16 @@
         <span class="management-action-icon">📦</span>
         <span class="management-action-title">Products</span>
         <span class="management-action-desc">Review saved product/store records.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
+        onclick="showManagementCanonicalProducts()"
+      >
+        <span class="management-action-icon">🧬</span>
+        <span class="management-action-title">Canonical Products</span>
+        <span class="management-action-desc">Review and correct cross-store product identities.</span>
       </button>
 
       <button
@@ -5265,7 +5368,7 @@
       </div>
 
       <div class="management-empty">
-        Products, payment methods, stores, and history auditing will appear here.
+        Products, canonical identities, payment methods, stores, and history auditing will appear here.
       </div>
     </div>
 
@@ -5345,6 +5448,61 @@
 
       </div>
 
+    </div>
+
+    <div
+      id="management-canonical-editor"
+      class="management-editor-card hidden"
+    >
+      <div class="management-editor-title">Edit Canonical Product</div>
+
+      <label>Product ID</label>
+      <div id="management-canonical-id" class="canonical-management-id">—</div>
+
+      <div class="canonical-management-grid">
+        <div class="wide">
+          <label for="management-canonical-name">Canonical name</label>
+          <input id="management-canonical-name" type="text" autocomplete="off">
+        </div>
+        <div>
+          <label for="management-canonical-brand">Brand</label>
+          <input id="management-canonical-brand" type="text" autocomplete="off">
+        </div>
+        <div>
+          <label for="management-canonical-variant">Variant</label>
+          <input id="management-canonical-variant" type="text" autocomplete="off">
+        </div>
+        <div>
+          <label for="management-canonical-size">Size</label>
+          <input id="management-canonical-size" type="text" inputmode="decimal" autocomplete="off">
+        </div>
+        <div>
+          <label for="management-canonical-unit">Unit</label>
+          <input id="management-canonical-unit" type="text" autocomplete="off" placeholder="g, kg, ml, L, piece…">
+        </div>
+        <div class="wide">
+          <label for="management-canonical-notes">Notes</label>
+          <textarea id="management-canonical-notes" rows="3" autocomplete="off"></textarea>
+        </div>
+      </div>
+
+      <div class="canonical-active-row">
+        <input id="management-canonical-active" type="checkbox">
+        <label for="management-canonical-active">Canonical product is active</label>
+      </div>
+
+      <div class="management-editor-note">
+        The Product ID stays unchanged when you correct the canonical name or descriptive fields. This keeps every linked alias and future trip tied to the same underlying product identity.
+      </div>
+
+      <div class="management-section-title" style="margin-top:16px;">Attached Aliases</div>
+      <div id="management-canonical-aliases" class="canonical-alias-list"></div>
+      <div class="hint">Stage 2C shows aliases for inspection only. Moving or removing aliases will be added as a separate safety-focused update.</div>
+
+      <div class="management-editor-actions">
+        <button class="management-cancel-button" type="button" onclick="cancelManagementCanonicalEdit()">CANCEL</button>
+        <button id="management-save-canonical-button" class="management-save-button" type="button" onclick="saveManagementCanonicalEdit()">SAVE CANONICAL PRODUCT</button>
+      </div>
     </div>
 
     <div
@@ -5467,7 +5625,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 2B — conservative cross-store canonical candidate matching. Production remains index.html.
+    V6 Stage 2C — canonical catalog management. Production remains index.html.
   </div>
 
 </div>
@@ -6159,6 +6317,7 @@
     {storeId:"ONLINE-CHEDRAUI-MX", name:"Chedraui", type:"Online", websiteUrl:"https://www.chedraui.com.mx/", source:"online-builtin", active:true}
   ];
   let managementEditingProductIndex = null;
+  let managementEditingCanonicalIndex = null;
   let managementEditingPaymentIndex = null;
   let managementEditingStoreIndex = null;
 
@@ -23322,6 +23481,9 @@
     cancelManagementProductEdit(
       true
     );
+    cancelManagementCanonicalEdit(
+      true
+    );
     cancelManagementPaymentEdit(
       true
     );
@@ -23886,9 +24048,196 @@
     }
   }
 
+  function showManagementCanonicalProducts(shouldScroll = true) {
+
+    cancelManagementProductEdit(true);
+    cancelManagementCanonicalEdit(true);
+    cancelManagementPaymentEdit(true);
+    cancelManagementStoreEdit(true);
+
+    const box = document.getElementById("management-content");
+
+    if (!productCatalog.length) {
+      box.innerHTML =
+        '<div class="management-section-title">Canonical Products</div>' +
+        '<div class="canonical-management-summary">The catalog is connected, but no canonical products have been learned yet. The first confirmed shopping item will create one automatically.</div>' +
+        '<div class="management-empty">No canonical product records are stored yet.</div>';
+      if (shouldScroll) scrollManagementContentIntoView();
+      return;
+    }
+
+    const rows = productCatalog
+      .map((record, originalIndex) => ({record, originalIndex}))
+      .sort((a,b) => String(a.record.canonicalName || a.record.productId).localeCompare(String(b.record.canonicalName || b.record.productId)));
+
+    const activeCount = productCatalog.filter(record => record.active !== false).length;
+
+    box.innerHTML =
+      '<div class="management-section-title">Canonical Products</div>' +
+      '<div class="canonical-management-summary">' +
+        escapeHtml(`${productCatalog.length} canonical product${productCatalog.length === 1 ? "" : "s"} loaded • ${activeCount} active. Names and descriptive fields can be corrected here without changing Product IDs.`) +
+      '</div>' +
+      rows.map(entry => {
+        const record = entry.record;
+        const aliases = productAliases.filter(alias => String(alias.productId || "").trim() === String(record.productId || "").trim());
+        const detail = [record.brand, record.variant, [record.size, record.unit].filter(value => String(value ?? "").trim()).join(" ")].filter(Boolean).join(" • ");
+        return (
+          '<div class="management-row">' +
+            '<div class="management-row-top">' +
+              '<div class="management-row-name">' + escapeHtml(record.canonicalName || "Unnamed canonical product") + '</div>' +
+              '<button class="management-edit-button" type="button" onclick="editManagementCanonicalProduct(' + entry.originalIndex + ')">EDIT</button>' +
+            '</div>' +
+            '<div class="management-row-meta">' +
+              escapeHtml(record.productId || "No Product ID") +
+              (detail ? ' • ' + escapeHtml(detail) : '') +
+              ' • ' + escapeHtml(`${aliases.length} alias${aliases.length === 1 ? "" : "es"}`) +
+              (record.active === false ? ' • INACTIVE' : '') +
+            '</div>' +
+          '</div>'
+        );
+      }).join("");
+
+    if (shouldScroll) scrollManagementContentIntoView();
+  }
+
+
+  function editManagementCanonicalProduct(index) {
+
+    const record = productCatalog[index];
+    if (!record) return;
+
+    managementEditingCanonicalIndex = index;
+
+    document.getElementById("management-canonical-id").textContent = record.productId || "—";
+    document.getElementById("management-canonical-name").value = record.canonicalName || "";
+    document.getElementById("management-canonical-brand").value = record.brand || "";
+    document.getElementById("management-canonical-variant").value = record.variant || "";
+    document.getElementById("management-canonical-size").value = record.size ?? "";
+    document.getElementById("management-canonical-unit").value = record.unit || "";
+    document.getElementById("management-canonical-notes").value = record.notes || "";
+    document.getElementById("management-canonical-active").checked = record.active !== false;
+
+    renderManagementCanonicalAliases(record.productId);
+    show("management-canonical-editor");
+
+    document.getElementById("management-canonical-editor").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+
+  function renderManagementCanonicalAliases(productId) {
+
+    const box = document.getElementById("management-canonical-aliases");
+    if (!box) return;
+
+    const aliases = productAliases
+      .filter(alias => String(alias.productId || "").trim() === String(productId || "").trim())
+      .sort((a,b) => String(a.aliasType || "").localeCompare(String(b.aliasType || "")) || String(a.aliasValue || a.barcode || "").localeCompare(String(b.aliasValue || b.barcode || "")));
+
+    if (!aliases.length) {
+      box.innerHTML = '<div class="management-empty">No aliases are attached to this canonical product yet.</div>';
+      return;
+    }
+
+    box.innerHTML = aliases.map(alias => {
+      const visibleValue = alias.aliasValue || alias.barcode || "(empty alias)";
+      const meta = [alias.aliasType || "Alias", alias.source, alias.storeId ? `Store ${alias.storeId}` : "", alias.confirmed ? "Confirmed" : "Unconfirmed"].filter(Boolean).join(" • ");
+      return (
+        '<div class="canonical-alias-row">' +
+          '<div class="canonical-alias-value">' + escapeHtml(visibleValue) + '</div>' +
+          '<div class="canonical-alias-meta">' + escapeHtml(meta) + '</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+
+  function cancelManagementCanonicalEdit(silent) {
+
+    managementEditingCanonicalIndex = null;
+    hide("management-canonical-editor");
+
+    if (!silent) setStatus("Canonical product edit cancelled.", "success");
+  }
+
+
+  async function saveManagementCanonicalEdit() {
+
+    if (managementEditingCanonicalIndex === null) return;
+
+    const record = productCatalog[managementEditingCanonicalIndex];
+    if (!record || !record.sheetRow || !record.productId) return;
+
+    const canonicalName = String(document.getElementById("management-canonical-name").value || "").trim();
+    const brand = String(document.getElementById("management-canonical-brand").value || "").trim();
+    const variant = String(document.getElementById("management-canonical-variant").value || "").trim();
+    const size = String(document.getElementById("management-canonical-size").value || "").trim();
+    const unit = String(document.getElementById("management-canonical-unit").value || "").trim();
+    const notes = String(document.getElementById("management-canonical-notes").value || "").trim();
+    const active = document.getElementById("management-canonical-active").checked;
+
+    if (!canonicalName) {
+      showErrorToast("Canonical name required", "Enter a canonical product name before saving.");
+      return;
+    }
+
+    const normalized = normalizeProductIdentity(canonicalName);
+    const duplicate = productCatalog.find((other, index) =>
+      index !== managementEditingCanonicalIndex &&
+      other.active !== false &&
+      normalizeProductIdentity(other.canonicalName) === normalized
+    );
+
+    if (duplicate) {
+      showErrorToast("Canonical product already exists", `That name already belongs to ${duplicate.productId || "another canonical product"}.`);
+      return;
+    }
+
+    const saveButton = document.getElementById("management-save-canonical-button");
+    saveButton.disabled = true;
+    saveButton.textContent = "SAVING...";
+    setStatus("Saving canonical product...", "working");
+
+    try {
+      const modified = localIsoWithOffset(new Date());
+      await sheetsValuesBatchUpdate([{
+        range: `'${PRODUCT_CATALOG_SHEET}'!B${record.sheetRow}:J${record.sheetRow}`,
+        values: [[
+          canonicalName,
+          brand,
+          variant,
+          size,
+          unit,
+          notes,
+          active,
+          record.created || "",
+          modified
+        ]]
+      }], "RAW");
+
+      Object.assign(record, {canonicalName, brand, variant, size, unit, notes, active, modified});
+
+      saveButton.disabled = false;
+      saveButton.textContent = "SAVE CANONICAL PRODUCT";
+      cancelManagementCanonicalEdit(true);
+      showManagementCanonicalProducts(false);
+      showSuccessToast("Canonical product updated", `${record.productId} keeps the same identity.`);
+      setStatus("Canonical product saved.", "success");
+      scrollManagementContentIntoView();
+    } catch (error) {
+      saveButton.disabled = false;
+      saveButton.textContent = "SAVE CANONICAL PRODUCT";
+      handleApiError(error);
+      showErrorToast("Canonical save failed", "The canonical product was not changed.");
+    }
+  }
+
+
   function showManagementPayments() {
 
     cancelManagementProductEdit(
+      true
+    );
+    cancelManagementCanonicalEdit(
       true
     );
     cancelManagementPaymentEdit(
@@ -24197,6 +24546,9 @@
   function showManagementStores() {
 
     cancelManagementProductEdit(
+      true
+    );
+    cancelManagementCanonicalEdit(
       true
     );
     cancelManagementPaymentEdit(
@@ -24616,6 +24968,9 @@
     cancelManagementProductEdit(
       true
     );
+    cancelManagementCanonicalEdit(
+      true
+    );
     cancelManagementPaymentEdit(
       true
     );
@@ -24708,6 +25063,9 @@
     cancelManagementProductEdit(
       true
     );
+    cancelManagementCanonicalEdit(
+      true
+    );
     cancelManagementPaymentEdit(
       true
     );
@@ -24752,7 +25110,7 @@
       "</div>" +
       '<div class="management-row">' +
         '<div class="management-row-name">V6 canonical learning</div>' +
-        '<div class="management-row-meta">Exact aliases automatic; strong cross-store candidates require confirmation</div>' +
+        '<div class="management-row-meta">Exact aliases automatic; strong cross-store candidates require confirmation; canonical catalog editable in Management</div>' +
       "</div>" +
       '<div class="management-row">' +
         '<div class="management-row-name">V6 canonical products loaded</div>' +
@@ -24799,6 +25157,9 @@
       true
     );
     cancelManagementProductEdit(
+      true
+    );
+    cancelManagementCanonicalEdit(
       true
     );
     cancelManagementPaymentEdit(
