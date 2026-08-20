@@ -3735,6 +3735,149 @@
     .promo-lab-breakdown { margin-top:10px; color:#aeb4c0; font-size:12px; line-height:1.45; }
     @media(max-width:520px){ .promo-lab-grid{grid-template-columns:1fr;} .promo-lab-grid .wide{grid-column:auto;} .promo-lab-item{grid-template-columns:1fr 1fr;} .promo-lab-item button{grid-column:1/-1;width:100%;} }
 
+
+    /* V6 Stage 3D — user-triggered online product search foundation */
+    .online-product-search-card {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #4b5260;
+      border-radius: 11px;
+      background: #1c2028;
+    }
+
+    .online-product-search-button {
+      margin: 0;
+      background: #4a3a61;
+    }
+
+    .online-product-search-source {
+      margin-top: 7px;
+      color: #aeb4c0;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .online-search-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2700;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: calc(18px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));
+      background: rgba(0,0,0,.74);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+    }
+
+    .online-search-overlay.hidden { display: none; }
+
+    .online-search-card {
+      width: min(100%, 560px);
+      margin-top: 18px;
+      padding: 17px;
+      border: 1px solid #5a4c70;
+      border-radius: 15px;
+      background: #242833;
+      box-shadow: 0 18px 50px rgba(0,0,0,.5);
+    }
+
+    .online-search-preview-note {
+      margin-top: 10px;
+      padding: 10px 11px;
+      border: 1px solid #74588d;
+      border-radius: 10px;
+      background: #2c2239;
+      color: #ddc8f5;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .online-search-source-box {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #191d25;
+      color: #d9dde4;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .online-search-query-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 12px;
+      align-items: stretch;
+    }
+
+    .online-search-query-row button {
+      width: auto;
+      min-width: 112px;
+      margin: 0;
+    }
+
+    .online-search-results {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .online-search-result {
+      padding: 12px;
+      border: 1px solid #444b58;
+      border-radius: 11px;
+      background: #191d25;
+    }
+
+    .online-search-result-name {
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+
+    .online-search-result-meta {
+      margin-top: 5px;
+      color: #aeb4c0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .online-search-result button {
+      margin-top: 9px;
+      padding: 10px 11px;
+      font-size: 12px;
+    }
+
+    .online-search-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .online-search-actions button { margin: 0; }
+
+    .online-search-manual { background: #3b414d; }
+
+    .online-search-preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .online-search-preview-grid .wide { grid-column: 1 / -1; }
+
+    @media (max-width: 520px) {
+      .online-search-query-row { grid-template-columns: 1fr; }
+      .online-search-query-row button { width: 100%; }
+      .online-search-actions { grid-template-columns: 1fr; }
+      .online-search-preview-grid { grid-template-columns: 1fr; }
+      .online-search-preview-grid .wide { grid-column: auto; }
+    }
+
 </style>
 </head>
 
@@ -3745,7 +3888,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3C.1 — product matcher test lab
+    V6 Stage 3D — online product search foundation
   </div>
 
   <button
@@ -4179,6 +4322,21 @@
             the item I am holding.
           </label>
 
+        </div>
+
+        <div id="online-product-search-card" class="online-product-search-card">
+          <button
+            id="online-product-search-button"
+            class="online-product-search-button"
+            type="button"
+            onclick="openOnlineProductSearchFromItem()"
+            disabled
+          >
+            🌐 LOOK FOR THIS PRODUCT ONLINE
+          </button>
+          <div id="online-product-search-source" class="online-product-search-source">
+            Enter product keywords first.
+          </div>
         </div>
 
         <button
@@ -5513,6 +5671,16 @@
       <button
         class="management-action"
         type="button"
+        onclick="showManagementOnlineSearchPreview()"
+      >
+        <span class="management-action-icon">🌐</span>
+        <span class="management-action-title">Online Search Preview</span>
+        <span class="management-action-desc">Preview the shopper-facing retailer search flow without network requests or Sheet writes.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
         onclick="showManagementPromoGroups()"
       >
         <span class="management-action-icon">🏷️</span>
@@ -5855,6 +6023,26 @@
       </div>
     </div>
 
+    <div id="management-online-search-preview" class="management-editor-card hidden">
+      <div class="management-editor-title">Online Product Search Preview</div>
+      <div class="promo-group-summary">Stage 3D foundation only. This preview makes no retailer request and writes nothing to Google Sheets. It uses the same result overlay the normal shopping screen will use.</div>
+      <div class="online-search-preview-grid">
+        <div>
+          <label for="online-preview-store">Shopping location / retailer</label>
+          <input id="online-preview-store" type="text" value="Walmart México" autocomplete="off">
+        </div>
+        <div>
+          <label for="online-preview-website">E-commerce website</label>
+          <input id="online-preview-website" type="url" value="https://www.walmart.com.mx/" autocomplete="off">
+        </div>
+        <div class="wide">
+          <label for="online-preview-query">Product keywords</label>
+          <input id="online-preview-query" type="text" value="Lyncott queso cottage" autocomplete="off">
+        </div>
+      </div>
+      <button type="button" onclick="openOnlineProductSearchPreview()">PREVIEW ONLINE PRODUCT SEARCH</button>
+    </div>
+
     <div id="management-promo-lab" class="management-editor-card hidden">
       <div class="management-editor-title">Promo Test Lab</div>
       <div class="promo-group-summary">Temporary in-memory calculator only. Nothing entered here is written to Google Sheets, Products, trips, aliases, or history.</div>
@@ -6005,7 +6193,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3C.1 — product matcher test lab. Production remains index.html.
+    V6 Stage 3D — online product search foundation. Production remains index.html.
   </div>
 
 </div>
@@ -6198,6 +6386,29 @@
     <div class="change-actions">
       <button id="alias-management-confirm" class="change-history" type="button" onclick="confirmAliasManagementAction()">CONFIRM</button>
       <button class="change-cancel" type="button" onclick="closeAliasManagementOverlay()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<div
+  id="online-product-search-overlay"
+  class="online-search-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="online-product-search-title"
+>
+  <div class="online-search-card">
+    <div id="online-product-search-title" class="product-search-title">LOOK FOR THIS PRODUCT ONLINE</div>
+    <div id="online-product-search-preview-note" class="online-search-preview-note">Stage 3D preview: result cards are simulated so we can validate the flow before connecting a live retailer adapter.</div>
+    <div id="online-product-search-source-box" class="online-search-source-box">—</div>
+    <div class="online-search-query-row">
+      <input id="online-product-search-query" type="search" autocomplete="off" placeholder="Product keywords">
+      <button id="online-product-search-run-button" type="button" onclick="runOnlineProductSearchPreview()">SEARCH</button>
+    </div>
+    <div id="online-product-search-results" class="online-search-results">Enter keywords and tap SEARCH.</div>
+    <div class="online-search-actions">
+      <button class="online-search-manual" type="button" onclick="closeOnlineProductSearch(true)">ENTER / KEEP IT MANUALLY</button>
+      <button class="change-cancel" type="button" onclick="closeOnlineProductSearch(false)">CANCEL</button>
     </div>
   </div>
 </div>
@@ -6554,8 +6765,208 @@
 
 <script>
 
-  // V6 Stage 3C.1 — in-memory product matcher test lab. No Sheets writes.
+  // V6 Stage 3D — user-triggered retailer catalog search foundation.
+  // No network requests are made in this stage. The adapter/source resolution and
+  // shopper-facing result flow are real; result cards are deliberately simulated.
+  const PRODUCT_SEARCH_SOURCE_DEFINITIONS = [
+    {id:"WALMART_MX", retailerName:"Walmart México", websiteUrl:"https://www.walmart.com.mx/", domains:["walmart.com.mx"], storeKeywords:["walmart"]},
+    {id:"SORIANA_MX", retailerName:"Soriana", websiteUrl:"https://www.soriana.com/", domains:["soriana.com"], storeKeywords:["soriana"]},
+    {id:"CHEDRAUI_MX", retailerName:"Chedraui", websiteUrl:"https://www.chedraui.com.mx/", domains:["chedraui.com.mx"], storeKeywords:["chedraui"]}
+  ];
+
+  let onlineProductSearchContext = "";
+  let onlineProductSearchSource = null;
+  let onlineProductSearchPreviewResults = [];
+
+  function safeHostname(url) {
+    try { return new URL(String(url || "").trim()).hostname.toLowerCase().replace(/^www\./, ""); }
+    catch (_) { return ""; }
+  }
+
+  function sourceDefinitionFromStore(storeName, websiteUrl) {
+    const storeKey = normalizeStore(String(storeName || ""));
+    const host = safeHostname(websiteUrl);
+    const known = PRODUCT_SEARCH_SOURCE_DEFINITIONS.find(source =>
+      source.domains.some(domain => host === domain || host.endsWith("." + domain)) ||
+      source.storeKeywords.some(keyword => storeKey.includes(normalizeStore(keyword)))
+    );
+    if (known) return {...known, websiteUrl: String(websiteUrl || known.websiteUrl).trim() || known.websiteUrl};
+    if (websiteUrl) {
+      return {
+        id:"GENERIC_RETAILER",
+        retailerName:String(storeName || host || "Retailer").trim() || "Retailer",
+        websiteUrl:String(websiteUrl).trim(),
+        domains:host ? [host] : [],
+        storeKeywords:[]
+      };
+    }
+    return null;
+  }
+
+  function resolveProductSearchSourceForActiveTrip() {
+    const storeName = String(activeTrip?.store || document.getElementById("form-store")?.textContent || "").trim();
+    let websiteUrl = String(activeTrip?.websiteUrl || selectedStartGoogleStore?.websiteUrl || "").trim();
+
+    if (!websiteUrl && storeName) {
+      const allStores = [...savedStoreDirectory, ...savedOnlineStoreDirectory, ...managementStores];
+      const storeKey = normalizeStore(storeName);
+      const saved = allStores.find(store => {
+        const title = [store.name, store.branchName].filter(Boolean).join(" — ");
+        const nameKey = normalizeStore(store.name || "");
+        const titleKey = normalizeStore(title);
+        return storeKey === titleKey || storeKey === nameKey || (nameKey && storeKey.includes(nameKey));
+      });
+      websiteUrl = String(saved?.websiteUrl || "").trim();
+    }
+
+    return sourceDefinitionFromStore(storeName, websiteUrl);
+  }
+
+  function updateOnlineProductSearchAvailability() {
+    const button = document.getElementById("online-product-search-button");
+    const note = document.getElementById("online-product-search-source");
+    if (!button || !note) return;
+
+    const query = String(document.getElementById("product-name")?.value || "").trim();
+    const source = resolveProductSearchSourceForActiveTrip();
+
+    if (!query) {
+      button.disabled = true;
+      note.textContent = source ? `Search source: ${source.retailerName}. Enter product keywords first.` : "Enter product keywords first.";
+      return;
+    }
+
+    if (!source) {
+      button.disabled = true;
+      note.textContent = "No e-commerce website is configured for this shopping location yet. Manual entry still works normally.";
+      return;
+    }
+
+    button.disabled = false;
+    note.textContent = `Search source: ${source.retailerName} • ${safeHostname(source.websiteUrl) || source.websiteUrl}`;
+  }
+
+  function openOnlineProductSearchFromItem() {
+    const query = String(document.getElementById("product-name")?.value || "").trim();
+    if (!query) { showFormError("Enter some product keywords before searching online.", "product-name"); return; }
+
+    const source = resolveProductSearchSourceForActiveTrip();
+    if (!source) {
+      showErrorToast("No online catalog configured", "This store needs an e-commerce website before online product lookup can be used.");
+      return;
+    }
+
+    onlineProductSearchContext = "item";
+    openOnlineProductSearchOverlay(source, query);
+  }
+
+  function showManagementOnlineSearchPreview() {
+    hide("management-matcher-lab");
+    hide("management-promo-lab");
+    hide("management-product-editor");
+    hide("management-canonical-editor");
+    hide("management-promo-group-editor");
+    hide("management-payment-editor");
+    hide("management-store-editor");
+
+    const panel = document.getElementById("management-online-search-preview");
+    panel?.classList.remove("hidden");
+    const content = document.getElementById("management-content");
+    if (content) content.innerHTML = '<div class="management-section-title">Online Search Preview</div><div class="management-empty">No retailer request and no Sheet write occurs in Stage 3D. This validates the shopper-facing flow and source architecture only.</div>' ;
+    setTimeout(() => panel?.scrollIntoView({behavior:"smooth", block:"start"}), 80);
+  }
+
+  function openOnlineProductSearchPreview() {
+    const storeName = String(document.getElementById("online-preview-store")?.value || "").trim();
+    const websiteUrl = String(document.getElementById("online-preview-website")?.value || "").trim();
+    const query = String(document.getElementById("online-preview-query")?.value || "").trim();
+    if (!storeName || !websiteUrl || !query) {
+      showErrorToast("Preview incomplete", "Enter a retailer, e-commerce website, and product query.");
+      return;
+    }
+    const source = sourceDefinitionFromStore(storeName, websiteUrl);
+    if (!source) return;
+    onlineProductSearchContext = "preview";
+    openOnlineProductSearchOverlay(source, query);
+  }
+
+  function openOnlineProductSearchOverlay(source, query) {
+    onlineProductSearchSource = source;
+    onlineProductSearchPreviewResults = [];
+    document.getElementById("online-product-search-query").value = query;
+    document.getElementById("online-product-search-source-box").innerHTML =
+      `<strong>${escapeHtml(source.retailerName)}</strong><br>${escapeHtml(source.websiteUrl)}<br><span class="muted">Source adapter: ${escapeHtml(source.id)}</span>`;
+    document.getElementById("online-product-search-results").textContent = "Ready to search. Stage 3D will simulate the retailer response.";
+    document.getElementById("online-product-search-overlay").classList.remove("hidden");
+    setTimeout(() => document.getElementById("online-product-search-query")?.focus(), 50);
+  }
+
+  function buildSimulatedRetailerResults(query, source) {
+    const cleaned = String(query || "").trim().replace(/\s+/g, " ");
+    const title = cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "Product";
+    const alreadyHasMeasure = /\b\d+(?:[.,]\d+)?\s*(?:kg|g|gr|grs|ml|l|lt|lts)\b/i.test(cleaned);
+    return [
+      {title, detail:"Simulated closest retailer title"},
+      {title: alreadyHasMeasure ? `${title} — alternate listing` : `${title} 280 g`, detail:"Simulated package-size variant"},
+      {title: `${title} Light`, detail:"Simulated product variant"}
+    ].map((result, index) => ({...result, index, sourceId:source.id}));
+  }
+
+  function runOnlineProductSearchPreview() {
+    const query = String(document.getElementById("online-product-search-query")?.value || "").trim();
+    const host = document.getElementById("online-product-search-results");
+    const button = document.getElementById("online-product-search-run-button");
+    if (!query || !onlineProductSearchSource || !host) return;
+
+    button.disabled = true;
+    button.textContent = "SEARCHING…";
+    host.innerHTML = '<div class="management-empty">Searching retailer catalog preview…</div>' ;
+
+    setTimeout(function() {
+      onlineProductSearchPreviewResults = buildSimulatedRetailerResults(query, onlineProductSearchSource);
+      host.innerHTML = onlineProductSearchPreviewResults.map((result, index) =>
+        `<div class="online-search-result">` +
+          `<div class="online-search-result-name">${escapeHtml(result.title)}</div>` +
+          `<div class="online-search-result-meta">${escapeHtml(result.detail)} • ${escapeHtml(onlineProductSearchSource.retailerName)} • PREVIEW ONLY</div>` +
+          `<button type="button" onclick="useOnlineProductSearchResult(${index})">USE THIS PRODUCT</button>` +
+        `</div>`
+      ).join("");
+      button.disabled = false;
+      button.textContent = "SEARCH AGAIN";
+    }, 650);
+  }
+
+  function useOnlineProductSearchResult(index) {
+    const result = onlineProductSearchPreviewResults[index];
+    if (!result) return;
+
+    if (onlineProductSearchContext === "item") {
+      const input = document.getElementById("product-name");
+      input.value = result.title;
+      productNameChanged();
+      closeOnlineProductSearch(false);
+      showSuccessToast("Online suggestion selected", "Preview result copied to Product. Confirm the product name before adding the item.");
+      return;
+    }
+
+    document.getElementById("online-preview-query").value = result.title;
+    closeOnlineProductSearch(false);
+    showSuccessToast("Preview selection works", "The selected result was returned to the preview form. No shopping data was written.");
+  }
+
+  function closeOnlineProductSearch(keepManual) {
+    document.getElementById("online-product-search-overlay")?.classList.add("hidden");
+    if (keepManual && onlineProductSearchContext === "item") {
+      document.getElementById("product-name")?.focus();
+      showSuccessToast("Manual entry kept", "Continue typing or correcting the product name yourself.");
+    }
+    onlineProductSearchContext = "";
+    onlineProductSearchSource = null;
+    onlineProductSearchPreviewResults = [];
+  }
+
   function showManagementMatcherLab() {
+    hide("management-online-search-preview");
     hide("management-product-editor");
     hide("management-canonical-editor");
     hide("management-promo-group-editor");
@@ -6640,7 +7051,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3C.1 — product matcher test lab. In-memory only; no Sheets writes.
+  // V6 Stage 3D — online product search foundation. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
@@ -6648,6 +7059,7 @@
 
   function showManagementPromoLab() {
     hide("management-matcher-lab");
+    hide("management-online-search-preview");
     hide("management-product-editor"); hide("management-canonical-editor"); hide("management-promo-group-editor"); hide("management-payment-editor"); hide("management-store-editor");
     const panel=document.getElementById("management-promo-lab"); panel?.classList.remove("hidden");
     renderPromoLabItems(); promoLabTypeChanged();
@@ -11577,6 +11989,8 @@
     updatePricing();
 
     renderPriceComparisons();
+
+    updateOnlineProductSearchAvailability();
   }
 
 
@@ -12617,6 +13031,8 @@
     updateWrongProductPreviousPrice();
 
     renderPriceComparisons();
+
+    updateOnlineProductSearchAvailability();
   }
 
 
@@ -17262,6 +17678,7 @@
 
   function hasVisibleAppSubflow() {
     return [
+      "online-product-search-overlay",
       "canonical-match-overlay",
       "nearby-map-overlay",
       "start-manual-store-overlay",
@@ -17369,6 +17786,11 @@
   }
 
   function appNavigateBackDirect() {
+    if (appLayerVisible("online-product-search-overlay")) {
+      closeOnlineProductSearch(false);
+      return;
+    }
+
     if (appLayerVisible("canonical-match-overlay")) {
       cancelCanonicalCandidatePrompt();
       return;
@@ -18447,6 +18869,8 @@
       false;
 
     renderPriceComparisons();
+
+    updateOnlineProductSearchAvailability();
 
     showSuccessToast(
       "Existing product selected",
@@ -24268,6 +24692,7 @@
   ) {
 
     hide("management-matcher-lab");
+    hide("management-online-search-preview");
     hide("management-promo-lab");
 
     cancelManagementProductEdit(
@@ -24843,6 +25268,7 @@
   function showManagementCanonicalProducts(shouldScroll = true) {
 
     hide("management-matcher-lab");
+    hide("management-online-search-preview");
     hide("management-promo-lab");
 
     cancelManagementPromoGroupEdit(true);
@@ -25081,6 +25507,7 @@
   function showManagementPromoGroups(shouldScroll = true) {
 
     hide("management-matcher-lab");
+    hide("management-online-search-preview");
     hide("management-promo-lab");
 
     cancelManagementProductEdit(true);
@@ -25520,6 +25947,7 @@
   function showManagementPayments() {
 
     hide("management-matcher-lab");
+    hide("management-online-search-preview");
     hide("management-promo-lab");
 
     cancelManagementPromoGroupEdit(true);
@@ -25836,6 +26264,7 @@
   function showManagementStores() {
 
     hide("management-matcher-lab");
+    hide("management-online-search-preview");
     hide("management-promo-lab");
 
     cancelManagementPromoGroupEdit(true);
@@ -26258,6 +26687,7 @@
   function showManagementHistoryAudit() {
 
     hide("management-matcher-lab");
+    hide("management-online-search-preview");
     hide("management-promo-lab");
 
     cancelManagementPromoGroupEdit(true);
@@ -26358,6 +26788,7 @@
   function showManagementAbout() {
 
     hide("management-matcher-lab");
+    hide("management-online-search-preview");
     hide("management-promo-lab");
 
     cancelManagementPromoGroupEdit(true);
