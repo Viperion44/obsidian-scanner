@@ -3383,7 +3383,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V5 store discovery — nearby cards + manual fallback
+    V6 Stage 1 — canonical product + promo reference data
   </div>
 
   <button
@@ -5381,7 +5381,7 @@
   </div>
 
   <div class="help">
-    V5 Step 2R — polished back button + reliable Android exit guard. The live app is still index.html.
+    V6 Stage 1 — read-only canonical product and promo reference data. Production remains index.html.
   </div>
 
 </div>
@@ -5898,6 +5898,20 @@
   const STORES_SHEET =
     "Stores";
 
+  // V6 Stage 1 — new reference tables. These are READ-ONLY in this milestone.
+  // Existing V5 shopping behavior continues to use Products / Trip History as before.
+  const PRODUCT_CATALOG_SHEET =
+    "Product Catalog";
+
+  const PRODUCT_ALIASES_SHEET =
+    "Product Aliases";
+
+  const PROMO_GROUPS_SHEET =
+    "Promo Groups";
+
+  const PROMO_GROUP_PRODUCTS_SHEET =
+    "Promo Group Products";
+
   const CURRENT_STORE_CELL =
     "U21";
 
@@ -5929,6 +5943,13 @@
   let scannerPaused = false;
 
   let productDatabase = [];
+
+  // V6 Stage 1 — in-memory snapshots of the new backend reference tables.
+  // Nothing writes to these arrays or sheets yet.
+  let productCatalog = [];
+  let productAliases = [];
+  let promoGroups = [];
+  let promoGroupProducts = [];
 
   let activeTrip = null;
   let openTripCandidate = null;
@@ -6251,6 +6272,10 @@
 
       productDatabase =
         await loadProductDatabase();
+
+      // V6 Stage 1: load the four new backend tables without changing any
+      // existing product lookup, pricing, shopping, or finishing behavior.
+      await loadV6ReferenceData();
 
       populateKnownStores();
 
@@ -9168,6 +9193,115 @@
           savings
         )
     };
+  }
+
+
+  // ============================================================
+  // V6 STAGE 1 — READ-ONLY REFERENCE DATA
+  // ============================================================
+  //
+  // This milestone deliberately does NOT create, edit, match, merge, or
+  // calculate anything from these tables. It only proves that V6 can read
+  // the new backend model safely while preserving every V5 workflow.
+  // ============================================================
+
+  async function loadV6ReferenceData() {
+
+    const [
+      catalogResult,
+      aliasesResult,
+      promoGroupsResult,
+      promoGroupProductsResult
+    ] = await Promise.all([
+      sheetsGetValues(
+        `'${PRODUCT_CATALOG_SHEET}'!A2:J`,
+        "UNFORMATTED_VALUE"
+      ),
+      sheetsGetValues(
+        `'${PRODUCT_ALIASES_SHEET}'!A2:K`,
+        "UNFORMATTED_VALUE"
+      ),
+      sheetsGetValues(
+        `'${PROMO_GROUPS_SHEET}'!A2:Q`,
+        "UNFORMATTED_VALUE"
+      ),
+      sheetsGetValues(
+        `'${PROMO_GROUP_PRODUCTS_SHEET}'!A2:F`,
+        "UNFORMATTED_VALUE"
+      )
+    ]);
+
+    productCatalog =
+      (catalogResult.values || [])
+        .map((row, index) => ({
+          sheetRow: index + 2,
+          productId: String(row[0] ?? "").trim(),
+          canonicalName: String(row[1] ?? "").trim(),
+          brand: String(row[2] ?? "").trim(),
+          variant: String(row[3] ?? "").trim(),
+          size: row[4] ?? "",
+          unit: String(row[5] ?? "").trim(),
+          notes: String(row[6] ?? "").trim(),
+          active: row[7] === true || String(row[7] ?? "").trim().toUpperCase() === "TRUE",
+          created: row[8] ?? "",
+          modified: row[9] ?? ""
+        }))
+        .filter(record => record.productId || record.canonicalName);
+
+    productAliases =
+      (aliasesResult.values || [])
+        .map((row, index) => ({
+          sheetRow: index + 2,
+          aliasId: String(row[0] ?? "").trim(),
+          productId: String(row[1] ?? "").trim(),
+          aliasType: String(row[2] ?? "").trim(),
+          aliasValue: String(row[3] ?? "").trim(),
+          storeId: String(row[4] ?? "").trim(),
+          source: String(row[5] ?? "").trim(),
+          barcode: String(row[6] ?? "").trim(),
+          confirmed: row[7] === true || String(row[7] ?? "").trim().toUpperCase() === "TRUE",
+          created: row[8] ?? "",
+          lastSeen: row[9] ?? "",
+          notes: String(row[10] ?? "").trim()
+        }))
+        .filter(record => record.aliasId || record.productId || record.aliasValue || record.barcode);
+
+    promoGroups =
+      (promoGroupsResult.values || [])
+        .map((row, index) => ({
+          sheetRow: index + 2,
+          promoGroupId: String(row[0] ?? "").trim(),
+          promoName: String(row[1] ?? "").trim(),
+          promoType: String(row[2] ?? "").trim(),
+          buyQuantity: normalizeNumericValue(row[3]),
+          freeQuantity: normalizeNumericValue(row[4]),
+          bundleQuantity: normalizeNumericValue(row[5]),
+          bundlePrice: normalizeNumericValue(row[6]),
+          percentOff: normalizeNumericValue(row[7]),
+          mixAndMatch: row[8] === true || String(row[8] ?? "").trim().toUpperCase() === "TRUE",
+          freeItemRule: String(row[9] ?? "").trim(),
+          storeId: String(row[10] ?? "").trim(),
+          startDate: row[11] ?? "",
+          endDate: row[12] ?? "",
+          active: row[13] === true || String(row[13] ?? "").trim().toUpperCase() === "TRUE",
+          notes: String(row[14] ?? "").trim(),
+          created: row[15] ?? "",
+          modified: row[16] ?? ""
+        }))
+        .filter(record => record.promoGroupId || record.promoName);
+
+    promoGroupProducts =
+      (promoGroupProductsResult.values || [])
+        .map((row, index) => ({
+          sheetRow: index + 2,
+          promoGroupProductId: String(row[0] ?? "").trim(),
+          promoGroupId: String(row[1] ?? "").trim(),
+          productId: String(row[2] ?? "").trim(),
+          active: row[3] === true || String(row[3] ?? "").trim().toUpperCase() === "TRUE",
+          created: row[4] ?? "",
+          modified: row[5] ?? ""
+        }))
+        .filter(record => record.promoGroupProductId || record.promoGroupId || record.productId);
   }
 
 
@@ -23893,6 +24027,30 @@
               managementPaymentMethods.length
             )
           ) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">V6 canonical products loaded</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(String(productCatalog.length)) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">V6 product aliases loaded</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(String(productAliases.length)) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">V6 promo groups loaded</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(String(promoGroups.length)) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">V6 promo-product links loaded</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(String(promoGroupProducts.length)) +
         "</div>" +
       "</div>" +
       '<div class="management-row">' +
