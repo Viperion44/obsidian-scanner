@@ -3737,7 +3737,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3B.1.1 — promo test lab fix
+    V6 Stage 3B.1.2 — promo test lab auto-scroll
   </div>
 
   <button
@@ -5957,7 +5957,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3B.1.1 — promo test lab fix. Production remains index.html.
+    V6 Stage 3B.1.2 — promo test lab auto-scroll. Production remains index.html.
   </div>
 
 </div>
@@ -6505,7 +6505,7 @@
 
 <script>
 
-  // V6 Stage 3B.1.1 — promo test lab fix. In-memory only; no Sheets writes.
+  // V6 Stage 3B.1.2 — promo test lab auto-scroll. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
@@ -6516,6 +6516,11 @@
     const panel=document.getElementById("management-promo-lab"); panel?.classList.remove("hidden");
     renderPromoLabItems(); promoLabTypeChanged();
     const content=document.getElementById("management-content"); if(content) content.innerHTML='<div class="management-section-title">Promo Test Lab</div><div class="management-empty">This lab never writes to Google Sheets. Use it to verify promo math before real data enters the catalog.</div>';
+    if (panel) {
+      setTimeout(function() {
+        panel.scrollIntoView({behavior:"smooth", block:"start"});
+      }, 80);
+    }
   }
 
   function promoLabTypeChanged(){
