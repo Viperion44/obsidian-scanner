@@ -3737,7 +3737,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3B.1.2 — promo test lab auto-scroll
+    V6 Stage 3C — human-proof canonical matching
   </div>
 
   <button
@@ -5957,7 +5957,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3B.1.2 — promo test lab auto-scroll. Production remains index.html.
+    V6 Stage 3C — human-proof canonical matching. Production remains index.html.
   </div>
 
 </div>
@@ -6120,6 +6120,7 @@
       <button class="canonical-match-yes" type="button" onclick="resolveCanonicalCandidate('same')">YES — SAME PRODUCT</button>
       <button id="canonical-match-more-button" class="canonical-match-more" type="button" onclick="showOtherCanonicalCandidates()">SHOW OTHER MATCHES</button>
       <button class="canonical-match-new" type="button" onclick="resolveCanonicalCandidate('new')">NO — THIS IS A NEW PRODUCT</button>
+      <button class="change-cancel" type="button" onclick="resolveCanonicalCandidate('cancel')">CANCEL — DO NOT ADD YET</button>
     </div>
   </div>
 </div>
@@ -6505,7 +6506,7 @@
 
 <script>
 
-  // V6 Stage 3B.1.2 — promo test lab auto-scroll. In-memory only; no Sheets writes.
+  // V6 Stage 3C — human-proof canonical matching. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
@@ -10265,61 +10266,256 @@
   }
 
 
-  function canonicalMatchTokens(value) {
+  // V6 Stage 3C — human-proof product-name matching.
+  // Matching deliberately uses several representations of the SAME text:
+  // cleaned words, compact text with spaces removed, fuzzy tokens, and package
+  // measurements. Fuzzy text can SUGGEST a product, but never auto-links it.
+  function canonicalNormalizeForMatch(value) {
 
-    return normalizeProductIdentity(value)
+    let text = String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      // Keep decimal separators meaningful before punctuation is removed.
+      .replace(/(\d)[,](\d)/g, "$1.$2")
+      // Make 280g / 280 g and 1l / 1 l comparable.
+      .replace(/(\d)([a-z])/g, "$1 $2")
+      .replace(/([a-z])(\d)/g, "$1 $2")
+      .replace(/[^a-z0-9.]+/g, " ")
+      .trim()
+      .replace(/\s+/g, " ");
+
+    const unitMap = new Map([
+      ["gr", "g"], ["grs", "g"], ["gram", "g"], ["grams", "g"],
+      ["gramo", "g"], ["gramos", "g"],
+      ["kgs", "kg"], ["kilo", "kg"], ["kilos", "kg"],
+      ["kilogram", "kg"], ["kilograms", "kg"], ["kilogramo", "kg"], ["kilogramos", "kg"],
+      ["milliliter", "ml"], ["milliliters", "ml"], ["millilitre", "ml"], ["millilitres", "ml"],
+      ["mililitro", "ml"], ["mililitros", "ml"],
+      ["lt", "l"], ["lts", "l"], ["ltr", "l"], ["ltrs", "l"],
+      ["liter", "l"], ["liters", "l"], ["litre", "l"], ["litres", "l"],
+      ["litro", "l"], ["litros", "l"]
+    ]);
+
+    const tokens = text.split(/\s+/).filter(Boolean).map(token => unitMap.get(token) || token);
+    return tokens.join(" ");
+  }
+
+
+  function canonicalCompactForMatch(value) {
+    return canonicalNormalizeForMatch(value).replace(/[^a-z0-9]/g, "");
+  }
+
+
+  function canonicalMatchTokens(value) {
+    return canonicalNormalizeForMatch(value)
       .split(/\s+/)
-      .filter(token => token && token.length >= 2);
+      .filter(token => token && (token.length >= 2 || ["g", "l"].includes(token)));
   }
 
 
   function canonicalNumericTokens(value) {
-
     return canonicalMatchTokens(value)
       .filter(token => /^\d+(?:\.\d+)?$/.test(token));
   }
 
 
+  function canonicalPackageMeasures(value) {
+    const tokens = canonicalNormalizeForMatch(value).split(/\s+/).filter(Boolean);
+    const measures = [];
+
+    for (let index = 0; index < tokens.length - 1; index++) {
+      const number = Number(tokens[index]);
+      const unit = tokens[index + 1];
+      if (!Number.isFinite(number) || number < 0) continue;
+
+      if (unit === "g") measures.push({family:"mass", value:number});
+      else if (unit === "kg") measures.push({family:"mass", value:number * 1000});
+      else if (unit === "ml") measures.push({family:"volume", value:number});
+      else if (unit === "l") measures.push({family:"volume", value:number * 1000});
+    }
+
+    return measures;
+  }
+
+
+  function canonicalPackageConflict(left, right) {
+    const a = canonicalPackageMeasures(left);
+    const b = canonicalPackageMeasures(right);
+    if (!a.length || !b.length) return false;
+
+    const sharedFamilies = new Set(a.map(entry => entry.family).filter(family => b.some(entry => entry.family === family)));
+    if (!sharedFamilies.size) return false;
+
+    for (const family of sharedFamilies) {
+      const av = a.filter(entry => entry.family === family).map(entry => entry.value);
+      const bv = b.filter(entry => entry.family === family).map(entry => entry.value);
+      const overlap = av.some(x => bv.some(y => Math.abs(x - y) < 0.000001));
+      if (!overlap) return true;
+    }
+
+    return false;
+  }
+
+
+  function canonicalPackageMatch(left, right) {
+    const a = canonicalPackageMeasures(left);
+    const b = canonicalPackageMeasures(right);
+    if (!a.length || !b.length) return false;
+    return a.some(x => b.some(y => x.family === y.family && Math.abs(x.value - y.value) < 0.000001));
+  }
+
+
+  function canonicalLevenshteinDistance(a, b) {
+    const left = String(a || "");
+    const right = String(b || "");
+    if (left === right) return 0;
+    if (!left.length) return right.length;
+    if (!right.length) return left.length;
+
+    let previous = Array.from({length:right.length + 1}, (_, i) => i);
+    for (let i = 1; i <= left.length; i++) {
+      const current = [i];
+      for (let j = 1; j <= right.length; j++) {
+        const cost = left[i - 1] === right[j - 1] ? 0 : 1;
+        current[j] = Math.min(
+          current[j - 1] + 1,
+          previous[j] + 1,
+          previous[j - 1] + cost
+        );
+      }
+      previous = current;
+    }
+    return previous[right.length];
+  }
+
+
+  function canonicalStringSimilarity(a, b) {
+    const left = String(a || "");
+    const right = String(b || "");
+    const longest = Math.max(left.length, right.length);
+    if (!longest) return 1;
+    return Math.max(0, 1 - (canonicalLevenshteinDistance(left, right) / longest));
+  }
+
+
+  function canonicalDiceSimilarity(a, b) {
+    const left = String(a || "");
+    const right = String(b || "");
+    if (left === right) return 1;
+    if (left.length < 2 || right.length < 2) return canonicalStringSimilarity(left, right);
+
+    const counts = new Map();
+    for (let i = 0; i < left.length - 1; i++) {
+      const gram = left.slice(i, i + 2);
+      counts.set(gram, (counts.get(gram) || 0) + 1);
+    }
+
+    let matches = 0;
+    for (let i = 0; i < right.length - 1; i++) {
+      const gram = right.slice(i, i + 2);
+      const count = counts.get(gram) || 0;
+      if (count > 0) {
+        matches++;
+        counts.set(gram, count - 1);
+      }
+    }
+
+    return (2 * matches) / ((left.length - 1) + (right.length - 1));
+  }
+
+
+  function canonicalTokenFuzzyCoverage(sourceTokens, targetTokens) {
+    if (!sourceTokens.length || !targetTokens.length) return 0;
+
+    let total = 0;
+    sourceTokens.forEach(source => {
+      let best = 0;
+      targetTokens.forEach(target => {
+        if (/^\d/.test(source) || /^\d/.test(target)) {
+          if (source === target) best = Math.max(best, 1);
+          return;
+        }
+        best = Math.max(best, canonicalStringSimilarity(source, target));
+      });
+      // Mild typos score; unrelated words contribute almost nothing.
+      total += best >= 0.58 ? best : 0;
+    });
+
+    return total / sourceTokens.length;
+  }
+
+
   function canonicalCandidateScore(enteredName, candidateName) {
 
+    const enteredNormalized = canonicalNormalizeForMatch(enteredName);
+    const candidateNormalized = canonicalNormalizeForMatch(candidateName);
+    if (!enteredNormalized || !candidateNormalized) return 0;
+
+    // Package-size conflicts are a hard safety stop. Text similarity must never
+    // turn Coca-Cola 600 ml into Coca-Cola 2 L, for example.
+    if (canonicalPackageConflict(enteredName, candidateName)) return 0;
+
+    const enteredCompact = canonicalCompactForMatch(enteredName);
+    const candidateCompact = canonicalCompactForMatch(candidateName);
     const enteredTokens = canonicalMatchTokens(enteredName);
     const candidateTokens = canonicalMatchTokens(candidateName);
-
-    if (!enteredTokens.length || !candidateTokens.length) return 0;
 
     const enteredSet = new Set(enteredTokens);
     const candidateSet = new Set(candidateTokens);
     let common = 0;
-
     enteredSet.forEach(token => {
-      if (candidateSet.has(token)) common += 1;
+      if (candidateSet.has(token)) common++;
     });
 
-    if (!common) return 0;
+    const exactCoverageEntered = enteredSet.size ? common / enteredSet.size : 0;
+    const exactCoverageCandidate = candidateSet.size ? common / candidateSet.size : 0;
+    const fuzzyEntered = canonicalTokenFuzzyCoverage(enteredTokens, candidateTokens);
+    const fuzzyCandidate = canonicalTokenFuzzyCoverage(candidateTokens, enteredTokens);
+    const compactEdit = canonicalStringSimilarity(enteredCompact, candidateCompact);
+    const compactDice = canonicalDiceSimilarity(enteredCompact, candidateCompact);
 
-    const coverageEntered = common / enteredSet.size;
-    const coverageCandidate = common / candidateSet.size;
-    let score = (coverageEntered * 55) + (coverageCandidate * 35);
+    // Compact comparison is intentionally important: it survives horrible word
+    // boundaries such as "lyncot tques ocotagge" while the token comparison
+    // still rewards recognizable words such as "lincot queso cotage".
+    let score =
+      (compactEdit * 31) +
+      (compactDice * 24) +
+      (fuzzyEntered * 17) +
+      (fuzzyCandidate * 10) +
+      (exactCoverageEntered * 10) +
+      (exactCoverageCandidate * 6);
 
+    if (enteredCompact.includes(candidateCompact) || candidateCompact.includes(enteredCompact)) {
+      score += 5;
+    }
+
+    if (canonicalPackageMatch(enteredName, candidateName)) score += 8;
+
+    // Brand/line safety net: a short or informal description such as
+    // "Lyncott small" should still be allowed to SURFACE the Lyncott family as
+    // a candidate. This never auto-links; it only earns a conservative prompt.
+    const enteredWords = enteredTokens.filter(token => !/^\d/.test(token) && !["g","kg","ml","l"].includes(token));
+    const candidateWords = candidateTokens.filter(token => !/^\d/.test(token) && !["g","kg","ml","l"].includes(token));
+    if (enteredWords.length && candidateWords.length) {
+      const brandLikeSimilarity = canonicalStringSimilarity(enteredWords[0], candidateWords[0]);
+      if (enteredWords[0].length >= 4 && candidateWords[0].length >= 4 && brandLikeSimilarity >= 0.86) {
+        score = Math.max(score, 60);
+      }
+    }
+
+    // Preserve the old conservative safeguard for explicit standalone numbers
+    // when neither side contains a recognized g/kg/ml/L package measurement.
+    const enteredMeasures = canonicalPackageMeasures(enteredName);
+    const candidateMeasures = canonicalPackageMeasures(candidateName);
     const enteredNumbers = canonicalNumericTokens(enteredName);
     const candidateNumbers = canonicalNumericTokens(candidateName);
-
-    // If both names contain explicit numeric package information (for example
-    // 280 g vs 400 g), conflicting numbers are a strong reason NOT to suggest
-    // that they are the same product.
-    if (enteredNumbers.length && candidateNumbers.length) {
+    if (!enteredMeasures.length && !candidateMeasures.length && enteredNumbers.length && candidateNumbers.length) {
       const numberOverlap = enteredNumbers.some(number => candidateNumbers.includes(number));
-      if (!numberOverlap) return 0;
-      score += 10;
+      if (!numberOverlap) score -= 18;
     }
 
-    const normalizedEntered = normalizeProductIdentity(enteredName);
-    const normalizedCandidate = normalizeProductIdentity(candidateName);
-    if (normalizedEntered.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedEntered)) {
-      score += 12;
-    }
-
-    return Math.min(100, Math.round(score));
+    return Math.max(0, Math.min(100, Math.round(score)));
   }
 
 
@@ -10480,7 +10676,9 @@
     canonicalCandidateSelectedIndex = 0;
 
     if (!resolver) return;
-    resolver(choice === "same" ? selected : {kind:"new"});
+    if (choice === "same") resolver(selected);
+    else if (choice === "cancel") resolver({kind:"cancel"});
+    else resolver({kind:"new"});
   }
 
 
@@ -10490,7 +10688,7 @@
       hide("canonical-match-overlay");
       return;
     }
-    resolveCanonicalCandidate("new");
+    resolveCanonicalCandidate("cancel");
   }
 
 
@@ -10508,7 +10706,9 @@
     }
 
     const candidates = buildCanonicalCandidatePool(productName)
-      .filter(candidate => candidate.score >= 62);
+      // Stage 3C allows conservative brand-family suggestions down to 58.
+      // They still require explicit YES confirmation and can never auto-link.
+      .filter(candidate => candidate.score >= 58);
 
     if (!candidates.length) return Promise.resolve({kind:"new"});
 
@@ -12658,6 +12858,16 @@
       // require the user's confirmation.
       const canonicalResolution =
         await resolveCanonicalIdentityBeforeShoppingWrite(product);
+
+      // Stage 3C: Back/CANCEL from the identity prompt means exactly that.
+      // Do not reinterpret it as "new product" and do not write any shopping row.
+      if (canonicalResolution?.kind === "cancel") {
+        button.disabled = false;
+        button.textContent = "ADD ITEM TO TRIP";
+        setStatus("Product matching cancelled. Nothing was added.", "success");
+        showSuccessToast("Item not added", "Review the product name and try again when ready.");
+        return;
+      }
 
       await applyWrongProductChangeIfNeeded(
         product
