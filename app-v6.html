@@ -1724,7 +1724,7 @@
       line-height: 1.45;
     }
 
-    /* V6 Stage 3A — promo group definition + membership management */
+    /* V6 Stage 3A.1 — quantity-discount promo definitions */
     .promo-group-summary {
       margin-bottom: 12px;
       padding: 11px 12px;
@@ -3722,7 +3722,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3A — promo group management
+    V6 Stage 3A.1 — quantity discount promo definitions
   </div>
 
   <button
@@ -5695,6 +5695,7 @@
             <option value="BUY_X_GET_Y">Buy X, get Y free</option>
             <option value="BUNDLE_PRICE">Bundle quantity for fixed price</option>
             <option value="PERCENT">Percentage discount</option>
+            <option value="QUANTITY_DISCOUNT">Quantity discount / special unit price</option>
           </select>
         </div>
         <div>
@@ -5720,6 +5721,24 @@
         <div id="management-promo-percent-field" class="hidden">
           <label for="management-promo-percent-off">Percent off</label>
           <input id="management-promo-percent-off" type="number" inputmode="decimal" min="0" max="100" step="0.01">
+        </div>
+        <div id="management-promo-quantity-mode-field" class="hidden">
+          <label for="management-promo-quantity-mode">Quantity discount mode</label>
+          <select id="management-promo-quantity-mode">
+            <option value="FIXED_UNIT_PRICE">Fixed promo unit price</option>
+            <option value="AMOUNT_OFF_EACH">Amount off each qualifying unit</option>
+          </select>
+        </div>
+        <div id="management-promo-quantity-value-field" class="hidden">
+          <label for="management-promo-quantity-value">Discount value</label>
+          <input id="management-promo-quantity-value" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Promo unit price or amount off each">
+        </div>
+        <div id="management-promo-application-rule-field" class="hidden">
+          <label for="management-promo-application-rule">Application rule</label>
+          <select id="management-promo-application-rule">
+            <option value="ALL_QUALIFYING_UNITS">All qualifying units after threshold</option>
+            <option value="COMPLETE_GROUPS_ONLY">Complete groups only</option>
+          </select>
         </div>
         <div>
           <label for="management-promo-free-item-rule">Free item rule</label>
@@ -5755,7 +5774,7 @@
 
       <div class="management-section-title" style="margin-top:16px;">Eligible Canonical Products</div>
       <div id="management-promo-products" class="promo-product-list"></div>
-      <div class="hint">Stage 3A stores the promo definition and membership only. Shopping totals are not recalculated from promo groups yet.</div>
+      <div class="hint">Stage 3A.1 stores promo definitions and membership only, including quantity discounts. Shopping totals are not recalculated from promo groups yet.</div>
 
       <div class="management-editor-actions">
         <button class="management-cancel-button" type="button" onclick="cancelManagementPromoGroupEdit()">CANCEL</button>
@@ -5883,7 +5902,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3A — promo group definitions and membership management. Production remains index.html.
+    V6 Stage 3A.1 — quantity discount promo definitions. Production remains index.html.
   </div>
 
 </div>
@@ -9795,7 +9814,7 @@
         "UNFORMATTED_VALUE"
       ),
       sheetsGetValues(
-        `'${PROMO_GROUPS_SHEET}'!A2:Q`,
+        `'${PROMO_GROUPS_SHEET}'!A2:T`,
         "UNFORMATTED_VALUE"
       ),
       sheetsGetValues(
@@ -9859,7 +9878,10 @@
           active: row[13] === true || String(row[13] ?? "").trim().toUpperCase() === "TRUE",
           notes: String(row[14] ?? "").trim(),
           created: row[15] ?? "",
-          modified: row[16] ?? ""
+          modified: row[16] ?? "",
+          quantityDiscountMode: String(row[17] ?? "").trim(),
+          quantityDiscountValue: normalizeNumericValue(row[18]),
+          applicationRule: String(row[19] ?? "").trim()
         }))
         .filter(record => record.promoGroupId || record.promoName);
 
@@ -24589,7 +24611,7 @@
     box.innerHTML =
       '<div class="management-section-title">Promo Groups</div>' +
       '<div class="promo-group-summary">' +
-        escapeHtml(`${promoGroups.length} promo group${promoGroups.length === 1 ? "" : "s"} loaded • ${activeCount} active. Stage 3A manages definitions and canonical-product membership only; checkout calculation remains unchanged.`) +
+        escapeHtml(`${promoGroups.length} promo group${promoGroups.length === 1 ? "" : "s"} loaded • ${activeCount} active. Stage 3A.1 manages definitions and canonical-product membership only; checkout calculation remains unchanged.`) +
       '</div>' +
       '<button type="button" onclick="editManagementPromoGroup(null)" style="margin:0 0 12px;">＋ ADD PROMO GROUP</button>' +
       (promoGroups.length
@@ -24642,6 +24664,9 @@
     document.getElementById("management-promo-bundle-quantity").value = record?.bundleQuantity ?? "";
     document.getElementById("management-promo-bundle-price").value = record?.bundlePrice ?? "";
     document.getElementById("management-promo-percent-off").value = record?.percentOff ?? "";
+    document.getElementById("management-promo-quantity-mode").value = record?.quantityDiscountMode || "FIXED_UNIT_PRICE";
+    document.getElementById("management-promo-quantity-value").value = record?.quantityDiscountValue ?? "";
+    document.getElementById("management-promo-application-rule").value = record?.applicationRule || "ALL_QUALIFYING_UNITS";
     document.getElementById("management-promo-mix-match").checked = record ? record.mixAndMatch === true : true;
     document.getElementById("management-promo-free-item-rule").value = record?.freeItemRule || "Cheapest eligible item free";
     document.getElementById("management-promo-store-id").value = record?.storeId || "";
@@ -24675,8 +24700,11 @@
     const bundleQty = document.getElementById("management-promo-bundle-quantity-field");
     const bundlePrice = document.getElementById("management-promo-bundle-price-field");
     const percent = document.getElementById("management-promo-percent-field");
+    const quantityMode = document.getElementById("management-promo-quantity-mode-field");
+    const quantityValue = document.getElementById("management-promo-quantity-value-field");
+    const applicationRule = document.getElementById("management-promo-application-rule-field");
 
-    [buy, free, bundleQty, bundlePrice, percent].forEach(el => el?.classList.add("hidden"));
+    [buy, free, bundleQty, bundlePrice, percent, quantityMode, quantityValue, applicationRule].forEach(el => el?.classList.add("hidden"));
     if (type === "BUY_X_GET_Y") {
       buy?.classList.remove("hidden");
       free?.classList.remove("hidden");
@@ -24685,6 +24713,11 @@
       bundlePrice?.classList.remove("hidden");
     } else if (type === "PERCENT") {
       percent?.classList.remove("hidden");
+    } else if (type === "QUANTITY_DISCOUNT") {
+      buy?.classList.remove("hidden");
+      quantityMode?.classList.remove("hidden");
+      quantityValue?.classList.remove("hidden");
+      applicationRule?.classList.remove("hidden");
     }
   }
 
@@ -24746,6 +24779,9 @@
     const bundleQuantity = normalizeNumericValue(document.getElementById("management-promo-bundle-quantity").value);
     const bundlePrice = normalizeNumericValue(document.getElementById("management-promo-bundle-price").value);
     const percentOff = normalizeNumericValue(document.getElementById("management-promo-percent-off").value);
+    const quantityDiscountMode = String(document.getElementById("management-promo-quantity-mode").value || "").trim();
+    const quantityDiscountValue = normalizeNumericValue(document.getElementById("management-promo-quantity-value").value);
+    const applicationRule = String(document.getElementById("management-promo-application-rule").value || "").trim();
     const mixAndMatch = document.getElementById("management-promo-mix-match").checked;
     const freeItemRule = String(document.getElementById("management-promo-free-item-rule").value || "").trim();
     const storeId = String(document.getElementById("management-promo-store-id").value || "").trim();
@@ -24770,6 +24806,22 @@
     }
     if (promoType === "PERCENT" && (!isUsableNumber(percentOff) || Number(percentOff) <= 0 || Number(percentOff) > 100)) {
       showErrorToast("Discount required", "Percentage discounts must be greater than 0 and no more than 100.");
+      return;
+    }
+    if (promoType === "QUANTITY_DISCOUNT" && (!isUsableNumber(buyQuantity) || Number(buyQuantity) < 1)) {
+      showErrorToast("Threshold required", "Quantity discounts need a Buy Quantity / threshold of at least 1.");
+      return;
+    }
+    if (promoType === "QUANTITY_DISCOUNT" && !["FIXED_UNIT_PRICE", "AMOUNT_OFF_EACH"].includes(quantityDiscountMode)) {
+      showErrorToast("Discount mode required", "Choose whether the promotion sets a fixed unit price or subtracts an amount from each qualifying unit.");
+      return;
+    }
+    if (promoType === "QUANTITY_DISCOUNT" && (!isUsableNumber(quantityDiscountValue) || Number(quantityDiscountValue) < 0)) {
+      showErrorToast("Discount value required", "Enter a valid promo unit price or amount off each qualifying unit.");
+      return;
+    }
+    if (promoType === "QUANTITY_DISCOUNT" && !["ALL_QUALIFYING_UNITS", "COMPLETE_GROUPS_ONLY"].includes(applicationRule)) {
+      showErrorToast("Application rule required", "Choose whether all qualifying units or only complete groups receive the discount.");
       return;
     }
     if (startDate && endDate && endDate < startDate) {
@@ -24802,7 +24854,7 @@
         record.promoGroupId,
         promoName,
         promoType,
-        promoType === "BUY_X_GET_Y" ? buyQuantity : "",
+        (promoType === "BUY_X_GET_Y" || promoType === "QUANTITY_DISCOUNT") ? buyQuantity : "",
         promoType === "BUY_X_GET_Y" ? freeQuantity : "",
         promoType === "BUNDLE_PRICE" ? bundleQuantity : "",
         promoType === "BUNDLE_PRICE" ? bundlePrice : "",
@@ -24815,22 +24867,28 @@
         active,
         notes,
         record.created || now,
-        now
+        now,
+        promoType === "QUANTITY_DISCOUNT" ? quantityDiscountMode : "",
+        promoType === "QUANTITY_DISCOUNT" ? quantityDiscountValue : "",
+        promoType === "QUANTITY_DISCOUNT" ? applicationRule : ""
       ]];
 
       await sheetsValuesBatchUpdate([{
-        range: `'${PROMO_GROUPS_SHEET}'!A${record.sheetRow}:Q${record.sheetRow}`,
+        range: `'${PROMO_GROUPS_SHEET}'!A${record.sheetRow}:T${record.sheetRow}`,
         values
       }], "RAW");
 
       Object.assign(record, {
         promoName,
         promoType,
-        buyQuantity: promoType === "BUY_X_GET_Y" ? buyQuantity : "",
+        buyQuantity: (promoType === "BUY_X_GET_Y" || promoType === "QUANTITY_DISCOUNT") ? buyQuantity : "",
         freeQuantity: promoType === "BUY_X_GET_Y" ? freeQuantity : "",
         bundleQuantity: promoType === "BUNDLE_PRICE" ? bundleQuantity : "",
         bundlePrice: promoType === "BUNDLE_PRICE" ? bundlePrice : "",
         percentOff: promoType === "PERCENT" ? percentOff : "",
+        quantityDiscountMode: promoType === "QUANTITY_DISCOUNT" ? quantityDiscountMode : "",
+        quantityDiscountValue: promoType === "QUANTITY_DISCOUNT" ? quantityDiscountValue : "",
+        applicationRule: promoType === "QUANTITY_DISCOUNT" ? applicationRule : "",
         mixAndMatch,
         freeItemRule,
         storeId,
