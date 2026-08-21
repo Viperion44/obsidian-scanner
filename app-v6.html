@@ -3736,7 +3736,7 @@
     @media(max-width:520px){ .promo-lab-grid{grid-template-columns:1fr;} .promo-lab-grid .wide{grid-column:auto;} .promo-lab-item{grid-template-columns:1fr 1fr;} .promo-lab-item button{grid-column:1/-1;width:100%;} }
 
 
-    /* V6 Stage 3D — user-triggered online product search foundation */
+    /* V6 Stage 3E — real user-triggered online product search */
     .online-product-search-card {
       margin-top: 12px;
       padding: 12px;
@@ -3888,7 +3888,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3D — online product search foundation
+    V6 Stage 3E — real online product search
   </div>
 
   <button
@@ -5675,7 +5675,7 @@
       >
         <span class="management-action-icon">🌐</span>
         <span class="management-action-title">Online Search Preview</span>
-        <span class="management-action-desc">Preview the shopper-facing retailer search flow without network requests or Sheet writes.</span>
+        <span class="management-action-desc">Search the retailer catalog through the Cloudflare Worker without writing shopping data.</span>
       </button>
 
       <button
@@ -6025,7 +6025,7 @@
 
     <div id="management-online-search-preview" class="management-editor-card hidden">
       <div class="management-editor-title">Online Product Search Preview</div>
-      <div class="promo-group-summary">Stage 3D foundation only. This preview makes no retailer request and writes nothing to Google Sheets. It uses the same result overlay the normal shopping screen will use.</div>
+      <div class="promo-group-summary">Stage 3E live search. This preview uses the same Cloudflare Worker and retailer-search flow as the shopping screen. It does not write anything to Google Sheets.</div>
       <div class="online-search-preview-grid">
         <div>
           <label for="online-preview-store">Shopping location / retailer</label>
@@ -6193,7 +6193,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3D — online product search foundation. Production remains index.html.
+    V6 Stage 3E — real online product search. Production remains index.html.
   </div>
 
 </div>
@@ -6399,7 +6399,7 @@
 >
   <div class="online-search-card">
     <div id="online-product-search-title" class="product-search-title">LOOK FOR THIS PRODUCT ONLINE</div>
-    <div id="online-product-search-preview-note" class="online-search-preview-note">Stage 3D preview: result cards are simulated so we can validate the flow before connecting a live retailer adapter.</div>
+    <div id="online-product-search-preview-note" class="online-search-preview-note">Stage 3E live search: results come from the Cloudflare retailer-search Worker. Selecting a result does not add an item until you confirm it in the normal product form.</div>
     <div id="online-product-search-source-box" class="online-search-source-box">—</div>
     <div class="online-search-query-row">
       <input id="online-product-search-query" type="search" autocomplete="off" placeholder="Product keywords">
@@ -6765,9 +6765,13 @@
 
 <script>
 
-  // V6 Stage 3D — user-triggered retailer catalog search foundation.
-  // No network requests are made in this stage. The adapter/source resolution and
-  // shopper-facing result flow are real; result cards are deliberately simulated.
+  // V6 Stage 3E — real user-triggered retailer catalog search.
+  // Retailer search requests now go through the deployed Cloudflare Worker.
+  // All existing shopping, scanner, pricing, history, management, and Sheets behavior
+  // remains unchanged; only the Stage 3D simulated result provider is replaced.
+  const ONLINE_PRODUCT_SEARCH_WORKER_URL =
+    "https://obsidian-shopping-search.viperion444.workers.dev";
+
   const PRODUCT_SEARCH_SOURCE_DEFINITIONS = [
     {id:"WALMART_MX", retailerName:"Walmart México", websiteUrl:"https://www.walmart.com.mx/", domains:["walmart.com.mx"], storeKeywords:["walmart"]},
     {id:"SORIANA_MX", retailerName:"Soriana", websiteUrl:"https://www.soriana.com/", domains:["soriana.com"], storeKeywords:["soriana"]},
@@ -6872,7 +6876,7 @@
     const panel = document.getElementById("management-online-search-preview");
     panel?.classList.remove("hidden");
     const content = document.getElementById("management-content");
-    if (content) content.innerHTML = '<div class="management-section-title">Online Search Preview</div><div class="management-empty">No retailer request and no Sheet write occurs in Stage 3D. This validates the shopper-facing flow and source architecture only.</div>' ;
+    if (content) content.innerHTML = '<div class="management-section-title">Online Search Preview</div><div class="management-empty">Stage 3E sends a live request through the Cloudflare Worker. This preview does not write shopping data to Google Sheets.</div>' ;
     setTimeout(() => panel?.scrollIntoView({behavior:"smooth", block:"start"}), 80);
   }
 
@@ -6896,44 +6900,131 @@
     document.getElementById("online-product-search-query").value = query;
     document.getElementById("online-product-search-source-box").innerHTML =
       `<strong>${escapeHtml(source.retailerName)}</strong><br>${escapeHtml(source.websiteUrl)}<br><span class="muted">Source adapter: ${escapeHtml(source.id)}</span>`;
-    document.getElementById("online-product-search-results").textContent = "Ready to search. Stage 3D will simulate the retailer response.";
+    document.getElementById("online-product-search-results").textContent = "Ready to search the live retailer catalog.";
     document.getElementById("online-product-search-overlay").classList.remove("hidden");
     setTimeout(() => document.getElementById("online-product-search-query")?.focus(), 50);
   }
 
-  function buildSimulatedRetailerResults(query, source) {
-    const cleaned = String(query || "").trim().replace(/\s+/g, " ");
-    const title = cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "Product";
-    const alreadyHasMeasure = /\b\d+(?:[.,]\d+)?\s*(?:kg|g|gr|grs|ml|l|lt|lts)\b/i.test(cleaned);
-    return [
-      {title, detail:"Simulated closest retailer title"},
-      {title: alreadyHasMeasure ? `${title} — alternate listing` : `${title} 280 g`, detail:"Simulated package-size variant"},
-      {title: `${title} Light`, detail:"Simulated product variant"}
-    ].map((result, index) => ({...result, index, sourceId:source.id}));
+  function formatOnlineSearchPrice(result) {
+    const numeric = Number(result?.price);
+    if (Number.isFinite(numeric) && numeric >= 0) return formatMoney(numeric);
+    const raw = String(result?.price ?? "").trim();
+    return raw || "Price unavailable";
   }
 
-  function runOnlineProductSearchPreview() {
+  function renderOnlineProductSearchResults() {
+    const host = document.getElementById("online-product-search-results");
+    if (!host) return;
+
+    if (!onlineProductSearchPreviewResults.length) {
+      host.innerHTML = '<div class="management-empty">No matching products were returned for this search.</div>';
+      return;
+    }
+
+    host.innerHTML = onlineProductSearchPreviewResults.map((result, index) => {
+      const sourceName = String(result.source || onlineProductSearchSource?.retailerName || "Retailer").trim();
+      const priceText = formatOnlineSearchPrice(result);
+      const oldNumeric = Number(result.oldPrice);
+      const oldPriceText = Number.isFinite(oldNumeric) && oldNumeric > Number(result.price)
+        ? ` • Was ${formatMoney(oldNumeric)}`
+        : "";
+      const deliveryText = String(result.delivery || "").trim();
+      const ratingNumeric = Number(result.rating);
+      const reviewsNumeric = Number(result.reviews);
+      const ratingText = Number.isFinite(ratingNumeric) && ratingNumeric > 0
+        ? ` • ★ ${ratingNumeric}${Number.isFinite(reviewsNumeric) && reviewsNumeric > 0 ? ` (${reviewsNumeric})` : ""}`
+        : "";
+      const imageHtml = result.image
+        ? `<img src="${escapeHtml(result.image)}" alt="" loading="lazy" style="width:72px;height:72px;object-fit:contain;border-radius:9px;background:#fff;flex:0 0 72px;">`
+        : "";
+
+      return (
+        `<div class="online-search-result">` +
+          `<div style="display:flex;gap:11px;align-items:flex-start;">` +
+            imageHtml +
+            `<div style="min-width:0;flex:1;">` +
+              `<div class="online-search-result-name">${escapeHtml(result.title)}</div>` +
+              `<div class="online-search-result-meta"><strong>${escapeHtml(priceText)}</strong>${escapeHtml(oldPriceText)} • ${escapeHtml(sourceName)}${escapeHtml(ratingText)}${deliveryText ? ` • ${escapeHtml(deliveryText)}` : ""}</div>` +
+            `</div>` +
+          `</div>` +
+          `<button type="button" onclick="useOnlineProductSearchResult(${index})">USE THIS PRODUCT</button>` +
+        `</div>`
+      );
+    }).join("");
+  }
+
+  async function runOnlineProductSearchPreview() {
     const query = String(document.getElementById("online-product-search-query")?.value || "").trim();
     const host = document.getElementById("online-product-search-results");
     const button = document.getElementById("online-product-search-run-button");
-    if (!query || !onlineProductSearchSource || !host) return;
+    if (!query || !onlineProductSearchSource || !host || !button) return;
+
+    if (!onlineProductSearchSource.id || onlineProductSearchSource.id === "GENERIC_RETAILER") {
+      host.innerHTML = '<div class="management-empty">This retailer does not have a live search adapter yet. You can keep entering the product manually.</div>';
+      return;
+    }
 
     button.disabled = true;
     button.textContent = "SEARCHING…";
-    host.innerHTML = '<div class="management-empty">Searching retailer catalog preview…</div>' ;
+    host.innerHTML = `<div class="management-empty">Searching ${escapeHtml(onlineProductSearchSource.retailerName)}…</div>`;
+    onlineProductSearchPreviewResults = [];
 
-    setTimeout(function() {
-      onlineProductSearchPreviewResults = buildSimulatedRetailerResults(query, onlineProductSearchSource);
-      host.innerHTML = onlineProductSearchPreviewResults.map((result, index) =>
-        `<div class="online-search-result">` +
-          `<div class="online-search-result-name">${escapeHtml(result.title)}</div>` +
-          `<div class="online-search-result-meta">${escapeHtml(result.detail)} • ${escapeHtml(onlineProductSearchSource.retailerName)} • PREVIEW ONLY</div>` +
-          `<button type="button" onclick="useOnlineProductSearchResult(${index})">USE THIS PRODUCT</button>` +
-        `</div>`
-      ).join("");
+    try {
+      const url = new URL("/search", ONLINE_PRODUCT_SEARCH_WORKER_URL);
+      url.searchParams.set("source", onlineProductSearchSource.id);
+      url.searchParams.set("q", query);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {"Accept": "application/json"},
+        cache: "no-store"
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        throw new Error(`Search service returned HTTP ${response.status} without valid JSON.`);
+      }
+
+      if (!response.ok || !data?.ok) {
+        const message = String(data?.providerMessage || data?.message || data?.error || `HTTP ${response.status}`).trim();
+        throw new Error(message || "The retailer search service returned an error.");
+      }
+
+      const returnedProducts = Array.isArray(data.products) ? data.products : [];
+      onlineProductSearchPreviewResults = returnedProducts.map((product, index) => ({
+        index,
+        title: String(product?.name || "").trim(),
+        source: String(product?.source || data?.retailer?.name || onlineProductSearchSource.retailerName || "").trim(),
+        price: product?.price ?? "",
+        oldPrice: product?.oldPrice ?? "",
+        currency: String(product?.currency || "MXN").trim(),
+        productId: String(product?.productId || "").trim(),
+        url: String(product?.url || "").trim(),
+        image: String(product?.image || "").trim(),
+        rating: product?.rating ?? "",
+        reviews: product?.reviews ?? "",
+        delivery: String(product?.delivery || "").trim(),
+        snippet: String(product?.snippet || "").trim(),
+        retailerMatch: Boolean(product?.retailerMatch),
+        sourceId: onlineProductSearchSource.id
+      })).filter(result => result.title);
+
+      renderOnlineProductSearchResults();
+
+      if (!onlineProductSearchPreviewResults.length) {
+        showErrorToast("No online matches", `No ${onlineProductSearchSource.retailerName} results were returned for “${query}”.`);
+      }
+    } catch (error) {
+      const message = String(error?.message || error || "Online retailer search failed.");
+      host.innerHTML =
+        `<div class="management-empty"><strong>Online search failed.</strong><br>${escapeHtml(message)}<br><br>You can keep entering the product manually.</div>`;
+      showErrorToast("Online search unavailable", message);
+    } finally {
       button.disabled = false;
       button.textContent = "SEARCH AGAIN";
-    }, 650);
+    }
   }
 
   function useOnlineProductSearchResult(index) {
@@ -6945,13 +7036,14 @@
       input.value = result.title;
       productNameChanged();
       closeOnlineProductSearch(false);
-      showSuccessToast("Online suggestion selected", "Preview result copied to Product. Confirm the product name before adding the item.");
+      const priceText = formatOnlineSearchPrice(result);
+      showSuccessToast("Online product selected", `${result.title} • ${priceText}. Confirm the product name and enter the shelf price normally before adding the item.`);
       return;
     }
 
     document.getElementById("online-preview-query").value = result.title;
     closeOnlineProductSearch(false);
-    showSuccessToast("Preview selection works", "The selected result was returned to the preview form. No shopping data was written.");
+    showSuccessToast("Live search selection works", "The selected retailer result was returned to the preview form. No shopping data was written.");
   }
 
   function closeOnlineProductSearch(keepManual) {
@@ -7051,7 +7143,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3D — online product search foundation. In-memory only; no Sheets writes.
+  // V6 Stage 3E — real online product search. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
