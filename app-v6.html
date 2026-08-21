@@ -3987,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3F.3 — Product-entry button wiring fix
+    V6 Stage 3F.4 — Retailer normalization scope fix
   </div>
 
   <button
@@ -6367,7 +6367,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3F.3 — Product-entry button wiring fix. Production remains index.html.
+    V6 Stage 3F.4 — Retailer normalization scope fix. Production remains index.html.
   </div>
 
 </div>
@@ -6939,11 +6939,11 @@
 
 <script>
 
-  // V6 Stage 3F.3 — product-entry button wiring fix.
-  // Preserves Stage 3F.1 mode-aware camera behavior and Stage 3F.2 retailer
-  // source resolution. The new FIND PRODUCT and ENTER PRODUCT MANUALLY controls
-  // are explicitly bound after DOMContentLoaded and whenever Active Trip is
-  // configured, with visible error handling instead of silent no-op failures.
+  // V6 Stage 3F.4 — retailer normalization scope fix.
+  // Preserves Stage 3F.1 mode-aware camera behavior, Stage 3F.2 retailer
+  // source resolution, and Stage 3F.3 explicit product-entry button wiring.
+  // The retailer matcher now uses its own self-contained text normalizer
+  // instead of depending on an unavailable normalizeText() helper.
   // Existing pricing, promotions, history, management, reports, and Sheets behavior remain.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
@@ -6994,7 +6994,16 @@
   }
 
   function normalizeRetailerSourceMatchText(value) {
-    return normalizeText(value)
+    return String(
+      value || ""
+    )
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .replace(/[/?#].*$/, "")
+      .replace(/[^a-z0-9.\s-]/g, " ")
       .replace(/\b(?:sucursal|suc|tienda|store|club|supermercado|hipermercado)\b/g, " ")
       .replace(/\b(?:portal|centro|plaza|express|market|supercenter|wholesale)\b/g, " ")
       .replace(/\b(?:cdmx|ciudad de mexico|mexico city|mexico|mx)\b/g, " ")
@@ -8095,7 +8104,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3F.3 — Product-entry button wiring fix. In-memory only; no Sheets writes.
+  // V6 Stage 3F.4 — Retailer normalization scope fix. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
