@@ -3987,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3E.2 — web-fed e-commerce picker
+    V6 Stage 3E.3 — merchant-level Mexico e-commerce search
   </div>
 
   <button
@@ -6124,7 +6124,7 @@
 
     <div id="management-online-search-preview" class="management-editor-card hidden">
       <div class="management-editor-title">Online Product Search Preview</div>
-      <div class="promo-group-summary">Stage 3E.2 live search. Type a retailer keyword and choose an e-commerce site from saved merchants or live Google business results. The website is filled automatically. Nothing here is written to Google Sheets.</div>
+      <div class="promo-group-summary">Stage 3E.3 live search. Type a retailer keyword and choose a merchant-level Mexican e-commerce site. Physical branches sharing the same merchant website are collapsed into one root homepage. Nothing here is written to Google Sheets.</div>
 
       <div class="field">
         <label for="online-preview-retailer-search">E-commerce site</label>
@@ -6326,7 +6326,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3E.2 — web-fed e-commerce picker. Production remains index.html.
+    V6 Stage 3E.3 — merchant-level Mexico e-commerce search. Production remains index.html.
   </div>
 
 </div>
@@ -7092,7 +7092,7 @@
     if (query.length >= 2 && onlinePreviewSearchingWeb && options.length) {
       html += '<div class="online-discovery-note">Searching Google business data for more merchant websites…</div>';
     } else if (query.length >= 2 && onlinePreviewInternetResults.length) {
-      html += '<div class="online-discovery-note">Web results are discovered from Google business data, filtered for retail/shop-type businesses, and reduced to clean merchant home-domain URLs.</div>';
+      html += '<div class="online-discovery-note">Web results are discovered from Google business data, restricted to Mexico, grouped by merchant domain, and reduced to one clean root homepage per retailer.</div>';
     }
 
     host.innerHTML = html;
@@ -7149,11 +7149,212 @@
     scheduleOnlinePreviewMerchantDiscovery(query);
   }
 
+  function onlinePreviewAddressLooksMexican(address) {
+    const value = normalizeStoreSearchText(address || "");
+    if (!value) return false;
+
+    return (
+      /\bmexico\b/.test(value) ||
+      /\bcdmx\b/.test(value) ||
+      /\bciudad de mexico\b/.test(value) ||
+      /\bedomex\b/.test(value) ||
+      /\bestado de mexico\b/.test(value) ||
+      /\bjalisco\b/.test(value) ||
+      /\bnuevo leon\b/.test(value) ||
+      /\bpuebla\b/.test(value) ||
+      /\bqueretaro\b/.test(value) ||
+      /\bguanajuato\b/.test(value) ||
+      /\byucatan\b/.test(value) ||
+      /\bquintana roo\b/.test(value) ||
+      /\bveracruz\b/.test(value) ||
+      /\bchihuahua\b/.test(value) ||
+      /\bcoahuila\b/.test(value) ||
+      /\bsonora\b/.test(value) ||
+      /\bsinaloa\b/.test(value) ||
+      /\bmorelos\b/.test(value) ||
+      /\bhidalgo\b/.test(value) ||
+      /\boaxaca\b/.test(value) ||
+      /\bchiapas\b/.test(value) ||
+      /\btabasco\b/.test(value) ||
+      /\btamaulipas\b/.test(value) ||
+      /\bguerrero\b/.test(value) ||
+      /\bmichoacan\b/.test(value) ||
+      /\bsan luis potosi\b/.test(value) ||
+      /\baguascalientes\b/.test(value) ||
+      /\bzacatecas\b/.test(value) ||
+      /\bdurango\b/.test(value) ||
+      /\bnayarit\b/.test(value) ||
+      /\bcolima\b/.test(value) ||
+      /\btlaxcala\b/.test(value) ||
+      /\bcampeche\b/.test(value) ||
+      /\bbaja california\b/.test(value)
+    );
+  }
+
+  function onlinePreviewDomainLooksMexican(domain) {
+    const host = String(domain || "").toLowerCase().replace(/^www\./, "");
+    if (!host) return false;
+
+    // .mx / .com.mx / .org.mx / etc. are unambiguously Mexico-focused.
+    if (host === "mx" || host.endsWith(".mx")) return true;
+
+    // A few large Mexican retailers legitimately use a generic .com domain.
+    // These are identity aliases only; availability still comes from live search.
+    const knownGenericMexicoRetailDomains = new Set([
+      "soriana.com"
+    ]);
+
+    return knownGenericMexicoRetailDomains.has(host);
+  }
+
+  function onlinePreviewMerchantLooksMexican(place, websiteUrl) {
+    const domain = normalizedWebsiteKey(websiteUrl);
+    if (onlinePreviewDomainLooksMexican(domain)) return true;
+    return onlinePreviewAddressLooksMexican(place?.formattedAddress || "");
+  }
+
+  function onlinePreviewMerchantDisplayName(domain, rawName, query) {
+    const host = String(domain || "").toLowerCase().replace(/^www\./, "");
+
+    // Display aliases fix brand punctuation/spacing only. They do not create
+    // merchant results and therefore do not turn this into a hard-coded list.
+    const displayAliases = {
+      "sams.com.mx": "Sam's Club",
+      "costco.com.mx": "Costco",
+      "citymarket.com.mx": "City Market",
+      "walmart.com.mx": "Walmart México",
+      "chedraui.com.mx": "Chedraui",
+      "soriana.com": "Soriana",
+      "liverpool.com.mx": "Liverpool",
+      "petco.com.mx": "Petco",
+      "amazon.com.mx": "Amazon México"
+    };
+
+    if (displayAliases[host]) return displayAliases[host];
+
+    const raw = String(rawName || "").trim();
+    const cleanedQuery = String(query || "").trim();
+
+    // If Google returned a branch such as "Brand Plaza X", prefer the user's
+    // retailer query when it clearly begins the returned business name.
+    const normalizedRaw = normalizeStoreSearchText(raw);
+    const normalizedQuery = normalizeStoreSearchText(cleanedQuery);
+
+    if (
+      normalizedQuery.length >= 3 &&
+      normalizedRaw &&
+      (
+        normalizedRaw === normalizedQuery ||
+        normalizedRaw.startsWith(normalizedQuery + " ") ||
+        normalizedRaw.startsWith(normalizedQuery)
+      )
+    ) {
+      return cleanedQuery;
+    }
+
+    // Fall back to a readable root-domain label rather than a branch address.
+    let label = host
+      .replace(/\.com\.mx$/i, "")
+      .replace(/\.com$/i, "")
+      .replace(/\.mx$/i, "")
+      .replace(/\.(net|org)$/i, "")
+      .replace(/[-_]+/g, " ")
+      .trim();
+
+    if (label) {
+      return label
+        .split(/\s+/)
+        .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1) : "")
+        .join(" ");
+    }
+
+    return raw || cleanedQuery || "Online merchant";
+  }
+
+  function onlinePreviewCollapsePlacesToMerchants(places, query) {
+    const byDomain = new Map();
+
+    for (const place of places || []) {
+      if (!onlineMerchantPlaceLooksRetail(place)) continue;
+
+      const websiteUrl = canonicalOnlineWebsiteUrl(place?.websiteURI);
+      if (!websiteUrl || !onlineMerchantDomainLooksUsable(websiteUrl)) continue;
+      if (!onlinePreviewMerchantLooksMexican(place, websiteUrl)) continue;
+
+      const domain = normalizedWebsiteKey(websiteUrl);
+      if (!domain) continue;
+
+      const candidate = {
+        id: String(place?.id || ""),
+        name: onlinePreviewMerchantDisplayName(
+          domain,
+          String(place?.displayName || "").trim(),
+          query
+        ),
+        websiteUrl,
+        googleMapsUrl: String(place?.googleMapsURI || "").trim(),
+        businessStatus: readableBusinessStatus(place?.businessStatus),
+        primaryType: String(place?.primaryType || "").trim(),
+        formattedAddress: String(place?.formattedAddress || "").trim(),
+        source: "online-google-web"
+      };
+
+      // Google often returns several physical branches with the exact same
+      // merchant website. Keep only one merchant-level identity per domain.
+      const existing = byDomain.get(domain);
+
+      if (!existing) {
+        byDomain.set(domain, candidate);
+        continue;
+      }
+
+      // Prefer the shorter, more brand-like display name if one candidate is
+      // cleaner than another. The URL remains the same root homepage.
+      if (
+        String(candidate.name || "").length <
+        String(existing.name || "").length
+      ) {
+        byDomain.set(domain, candidate);
+      }
+    }
+
+    return [...byDomain.values()];
+  }
+
+  async function onlinePreviewPlacesTextSearch(Place, textQuery) {
+    const request = {
+      textQuery,
+      fields: [
+        "id",
+        "displayName",
+        "websiteURI",
+        "googleMapsURI",
+        "businessStatus",
+        "formattedAddress",
+        "primaryTypeDisplayName",
+        "primaryType"
+      ],
+      language: "es-MX",
+      region: "mx",
+      maxResultCount: 20
+    };
+
+    try {
+      return await Place.searchByText(request);
+    } catch (firstError) {
+      // A single automatic retry avoids forcing the user to retype/re-run
+      // the same search when Google Places is momentarily not ready.
+      await new Promise(resolve => setTimeout(resolve, 700));
+      return await Place.searchByText(request);
+    }
+  }
+
   async function searchOnlinePreviewMerchantWebCandidates(query) {
     const requestId = ++newestOnlinePreviewInternetRequestId;
 
     try {
       const ready = await ensureGooglePlacesReady(true);
+
       if (!ready) {
         if (requestId !== newestOnlinePreviewInternetRequestId) return;
         onlinePreviewSearchingWeb = false;
@@ -7162,58 +7363,54 @@
       }
 
       const { Place } = await google.maps.importLibrary("places");
+      const cleanQuery = String(query || "").trim();
 
-      const request = {
-        textQuery: query + " tienda compras",
-        fields: [
-          "id",
-          "displayName",
-          "websiteURI",
-          "googleMapsURI",
-          "businessStatus",
-          "formattedAddress",
-          "primaryTypeDisplayName",
-          "primaryType"
-        ],
-        language: "es-MX",
-        region: "mx",
-        maxResultCount: 20
-      };
-
-      let response;
-      try {
-        response = await Place.searchByText(request);
-      } catch (firstError) {
-        await new Promise(resolve => setTimeout(resolve, 650));
-        response = await Place.searchByText(request);
-      }
+      // First ask explicitly for the Mexican official/online merchant presence.
+      // If Google returns little or nothing, automatically try a broader Mexican
+      // retailer search during the SAME user action.
+      const primaryResponse = await onlinePreviewPlacesTextSearch(
+        Place,
+        `${cleanQuery} México tienda en línea sitio oficial`
+      );
 
       if (requestId !== newestOnlinePreviewInternetRequestId) return;
 
-      const seenDomains = new Set();
+      let combinedPlaces = [...(primaryResponse?.places || [])];
+
+      let collapsed = onlinePreviewCollapsePlacesToMerchants(
+        combinedPlaces,
+        cleanQuery
+      );
+
+      if (collapsed.length < 3) {
+        const fallbackResponse = await onlinePreviewPlacesTextSearch(
+          Place,
+          `${cleanQuery} México tienda compras`
+        );
+
+        if (requestId !== newestOnlinePreviewInternetRequestId) return;
+
+        combinedPlaces = [
+          ...combinedPlaces,
+          ...(fallbackResponse?.places || [])
+        ];
+
+        collapsed = onlinePreviewCollapsePlacesToMerchants(
+          combinedPlaces,
+          cleanQuery
+        );
+      }
+
       const alreadyKnown = new Set(
         [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS]
           .map(item => normalizedWebsiteKey(item.websiteUrl))
           .filter(Boolean)
       );
 
-      onlinePreviewInternetResults = (response?.places || [])
-        .filter(place => onlineMerchantPlaceLooksRetail(place))
-        .map(place => ({
-          id: String(place.id || ""),
-          name: String(place.displayName || "").trim() || "Online merchant",
-          websiteUrl: canonicalOnlineWebsiteUrl(place.websiteURI),
-          googleMapsUrl: String(place.googleMapsURI || "").trim(),
-          businessStatus: readableBusinessStatus(place.businessStatus),
-          primaryType: String(place.primaryType || "").trim(),
-          source: "online-google-web"
-        }))
+      onlinePreviewInternetResults = collapsed
         .filter(item => {
-          if (!item.websiteUrl || !onlineMerchantDomainLooksUsable(item.websiteUrl)) return false;
           const domain = normalizedWebsiteKey(item.websiteUrl);
-          if (!domain || alreadyKnown.has(domain) || seenDomains.has(domain)) return false;
-          seenDomains.add(domain);
-          return true;
+          return domain && !alreadyKnown.has(domain);
         })
         .slice(0, 10);
 
@@ -7230,7 +7427,7 @@
 
       showErrorToast(
         "Web merchant search unavailable",
-        "Saved/known online stores still work. Check the Google Places key on this device if web discovery does not return results."
+        "The app tried the Mexico e-commerce search automatically. Saved/known online stores still work; check the Google Places key only if this keeps happening."
       );
     }
   }
@@ -7284,7 +7481,7 @@
     const selectedSummary = document.getElementById("online-preview-selected-source");
     if (selectedSummary) {
       selectedSummary.textContent =
-        "Type a retailer keyword. Saved merchants appear immediately and web results are added automatically.";
+        "Type a retailer keyword. Saved merchants appear immediately; live results are restricted to Mexican merchant websites and collapsed to one root homepage per retailer.";
     }
 
     closeOnlinePreviewRetailerDropdown();
@@ -7293,7 +7490,7 @@
     if (content) {
       content.innerHTML =
         '<div class="management-section-title">Online Search Preview</div>' +
-        '<div class="management-empty">Search e-commerce sites by retailer name. The app discovers merchant websites from the web and fills the URL automatically.</div>';
+        '<div class="management-empty">Search e-commerce sites by retailer name. The app discovers Mexican merchant websites from the web, collapses physical branches to one merchant-level result, and fills the root homepage automatically.</div>';
     }
 
     setTimeout(() => panel?.scrollIntoView({behavior:"smooth", block:"start"}), 80);
@@ -7571,7 +7768,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3E.2 — web-fed e-commerce picker. In-memory only; no Sheets writes.
+  // V6 Stage 3E.3 — merchant-level Mexico e-commerce search. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
