@@ -3987,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3F.1 — Mode-aware product entry
+    V6 Stage 3F.2 — Retailer source resolution fix
   </div>
 
   <button
@@ -6370,7 +6370,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3F.1 — Mode-aware product entry. Production remains index.html.
+    V6 Stage 3F.2 — Retailer source resolution fix. Production remains index.html.
   </div>
 
 </div>
@@ -6942,10 +6942,11 @@
 
 <script>
 
-  // V6 Stage 3F.1 — mode-aware product entry.
-  // NEAR keeps barcode scanning as the primary path and gains optional web/name entry.
-  // REMOTE and ONLINE never start the camera; they use retailer-fed product search
-  // with manual fallback. Known products keep an already-known barcode when resolvable.
+  // V6 Stage 3F.2 — retailer source resolution fix.
+  // Preserves Stage 3F.1 mode-aware camera behavior.
+  // Repairs the shared bridge from selected trip/store identity to supported
+  // retailer product-search source definitions, including branch labels and
+  // saved online merchant names/URLs. Manual fallback remains available.
   // Existing pricing, promotions, history, management, reports, and Sheets behavior remain.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
@@ -6995,23 +6996,222 @@
     return null;
   }
 
-  function resolveProductSearchSourceForActiveTrip() {
-    const storeName = String(activeTrip?.store || document.getElementById("form-store")?.textContent || "").trim();
-    let websiteUrl = String(activeTrip?.websiteUrl || selectedStartGoogleStore?.websiteUrl || "").trim();
+  function normalizeRetailerSourceMatchText(value) {
+    return normalizeText(value)
+      .replace(/\b(?:sucursal|suc|tienda|store|club|supermercado|hipermercado)\b/g, " ")
+      .replace(/\b(?:portal|centro|plaza|express|market|supercenter|wholesale)\b/g, " ")
+      .replace(/\b(?:cdmx|ciudad de mexico|mexico city|mexico|mx)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
-    if (!websiteUrl && storeName) {
-      const allStores = [...savedStoreDirectory, ...savedOnlineStoreDirectory, ...managementStores];
-      const storeKey = normalizeStore(storeName);
-      const saved = allStores.find(store => {
-        const title = [store.name, store.branchName].filter(Boolean).join(" — ");
-        const nameKey = normalizeStore(store.name || "");
-        const titleKey = normalizeStore(title);
-        return storeKey === titleKey || storeKey === nameKey || (nameKey && storeKey.includes(nameKey));
-      });
-      websiteUrl = String(saved?.websiteUrl || "").trim();
+
+  function productSourceDefinitionAliases(source) {
+    if (!source) return [];
+
+    const aliases = new Set();
+
+    const add = value => {
+      const normalized = normalizeRetailerSourceMatchText(value);
+      if (normalized) aliases.add(normalized);
+    };
+
+    add(source.id);
+    add(source.retailerName);
+    add(source.name);
+    add(source.label);
+    add(source.websiteUrl);
+    add(source.domain);
+
+    if (Array.isArray(source.aliases)) {
+      source.aliases.forEach(add);
     }
 
-    return sourceDefinitionFromStore(storeName, websiteUrl);
+    if (Array.isArray(source.searchTerms)) {
+      source.searchTerms.forEach(add);
+    }
+
+    // Stable aliases for current retailer source IDs.
+    const id = String(source.id || "").trim().toUpperCase();
+
+    if (id === "SORIANA_MX") {
+      [
+        "Soriana",
+        "Soriana Hiper",
+        "Soriana Mercado",
+        "Soriana Super",
+        "Soriana Express",
+        "soriana.com"
+      ].forEach(add);
+    }
+
+    if (id === "WALMART_MX") {
+      [
+        "Walmart",
+        "Walmart Mexico",
+        "Walmart México",
+        "Walmart Supercenter",
+        "walmart.com.mx"
+      ].forEach(add);
+    }
+
+    if (id === "CHEDRAUI_MX") {
+      [
+        "Chedraui",
+        "Selecto Chedraui",
+        "chedraui.com.mx"
+      ].forEach(add);
+    }
+
+    return [...aliases];
+  }
+
+
+  function activeTripRetailerIdentityCandidates() {
+    const candidates = new Set();
+
+    const add = value => {
+      const raw = String(value || "").trim();
+      if (!raw) return;
+
+      const normalized = normalizeRetailerSourceMatchText(raw);
+      if (normalized) candidates.add(normalized);
+
+      const websiteKey = normalizedWebsiteKey(raw);
+      if (websiteKey) {
+        const domainNormalized = normalizeRetailerSourceMatchText(websiteKey);
+        if (domainNormalized) candidates.add(domainNormalized);
+      }
+    };
+
+    add(activeTrip?.store);
+    add(activeTrip?.storeName);
+    add(activeTrip?.retailerName);
+    add(activeTrip?.websiteUrl);
+    add(activeTrip?.storeWebsiteUrl);
+
+    // If this trip was started from a saved online merchant, use that merchant's
+    // canonical name + URL as additional retailer identity evidence.
+    const activeStoreKey = normalizeStore(activeTrip?.store || "");
+
+    for (const merchant of [
+      ...savedOnlineStoreDirectory,
+      ...BUILT_IN_ONLINE_MERCHANTS
+    ]) {
+      const merchantNameKey = normalizeStore(merchant?.name || "");
+      const merchantCompositeKey = normalizeStore(
+        [merchant?.name, merchant?.websiteUrl].filter(Boolean).join(" — ")
+      );
+
+      if (
+        activeStoreKey &&
+        (
+          activeStoreKey === merchantNameKey ||
+          activeStoreKey === merchantCompositeKey ||
+          activeStoreKey.includes(merchantNameKey) ||
+          merchantCompositeKey.includes(activeStoreKey)
+        )
+      ) {
+        add(merchant?.name);
+        add(merchant?.websiteUrl);
+      }
+    }
+
+    return [...candidates];
+  }
+
+
+  function sourceMatchesTripRetailer(source, tripCandidates) {
+    const aliases = productSourceDefinitionAliases(source);
+    if (!aliases.length || !tripCandidates.length) return false;
+
+    for (const tripValue of tripCandidates) {
+      for (const alias of aliases) {
+        if (!tripValue || !alias) continue;
+
+        if (
+          tripValue === alias ||
+          tripValue.includes(alias) ||
+          alias.includes(tripValue)
+        ) {
+          return true;
+        }
+
+        // Token overlap fallback for labels such as:
+        // "Soriana Hiper Universidad" vs "Soriana"
+        const tripTokens = tripValue.split(/\s+/).filter(Boolean);
+        const aliasTokens = alias.split(/\s+/).filter(Boolean);
+
+        if (
+          aliasTokens.length &&
+          aliasTokens.every(token => tripTokens.includes(token))
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+
+  function resolveProductSearchSourceForActiveTrip() {
+    const definitions = Object.values(
+      PRODUCT_SEARCH_SOURCE_DEFINITIONS || {}
+    );
+
+    if (!definitions.length || !activeTrip) return null;
+
+    const tripCandidates = activeTripRetailerIdentityCandidates();
+
+    // First choice: retailer/site identity derived from the current trip.
+    const direct = definitions.find(source =>
+      sourceMatchesTripRetailer(source, tripCandidates)
+    );
+
+    if (direct) return direct;
+
+    // Second choice: if the selected store is a known online merchant, compare
+    // its canonical website domain against source aliases.
+    const activeStoreKey = normalizeStore(activeTrip.store || "");
+
+    const merchantMatch = [
+      ...savedOnlineStoreDirectory,
+      ...BUILT_IN_ONLINE_MERCHANTS
+    ].find(merchant => {
+      const nameKey = normalizeStore(merchant?.name || "");
+      const compositeKey = normalizeStore(
+        [merchant?.name, merchant?.websiteUrl].filter(Boolean).join(" — ")
+      );
+
+      return (
+        activeStoreKey &&
+        (
+          activeStoreKey === nameKey ||
+          activeStoreKey === compositeKey ||
+          activeStoreKey.includes(nameKey) ||
+          compositeKey.includes(activeStoreKey)
+        )
+      );
+    });
+
+    if (merchantMatch) {
+      const merchantCandidates = [
+        normalizeRetailerSourceMatchText(merchantMatch.name),
+        normalizeRetailerSourceMatchText(merchantMatch.websiteUrl),
+        normalizeRetailerSourceMatchText(
+          normalizedWebsiteKey(merchantMatch.websiteUrl)
+        )
+      ].filter(Boolean);
+
+      const byMerchant = definitions.find(source =>
+        sourceMatchesTripRetailer(source, merchantCandidates)
+      );
+
+      if (byMerchant) return byMerchant;
+    }
+
+    return null;
   }
 
   function updateOnlineProductSearchAvailability() {
@@ -7141,6 +7341,31 @@
   }
 
 
+  function normalizedResolvedProductSearchSource(source) {
+    if (!source) return null;
+
+    const id = String(
+      source.id ||
+      source.sourceId ||
+      source.source ||
+      ""
+    ).trim().toUpperCase();
+
+    if (!id) return source;
+
+    const canonical =
+      PRODUCT_SEARCH_SOURCE_DEFINITIONS?.[id] ||
+      source;
+
+    return {
+      ...source,
+      ...canonical,
+      id,
+      sourceId: id
+    };
+  }
+
+
   function openTripProductPicker() {
     const query = String(
       document.getElementById("trip-product-search-query")?.value || ""
@@ -7152,13 +7377,32 @@
       return;
     }
 
-    const source = resolveProductSearchSourceForActiveTrip();
+    const source = normalizedResolvedProductSearchSource(
+      resolveProductSearchSourceForActiveTrip()
+    );
 
     if (!source) {
+      const storeName = String(activeTrip?.store || "this store").trim();
+
       showErrorToast(
-        "No online catalog configured",
-        "This shopping location does not have an e-commerce website configured yet. Use ENTER PRODUCT MANUALLY instead."
+        "No supported online catalog",
+        `${storeName} is not currently mapped to one of the live product-search retailers. Manual product entry remains available.`
       );
+
+      console.warn(
+        "No product-search source resolved for active trip",
+        {
+          mode: getActiveTripMode(),
+          store: activeTrip?.store || "",
+          candidates: activeTripRetailerIdentityCandidates(),
+          supportedSources: Object.values(PRODUCT_SEARCH_SOURCE_DEFINITIONS || {}).map(source => ({
+            id: source?.id || "",
+            retailerName: source?.retailerName || source?.name || "",
+            aliases: productSourceDefinitionAliases(source)
+          }))
+        }
+      );
+
       return;
     }
 
@@ -7769,7 +8013,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3F.1 — Mode-aware product entry. In-memory only; no Sheets writes.
+  // V6 Stage 3F.2 — Retailer source resolution fix. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
