@@ -3987,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3F.2 — Retailer source resolution fix
+    V6 Stage 3F.3 — Product-entry button wiring fix
   </div>
 
   <button
@@ -4380,13 +4380,11 @@
           type="search"
           autocomplete="off"
           placeholder="Example: leche, yogurt, detergente"
-          onkeydown="tripProductSearchKeyDown(event)"
         >
 
         <button
           id="trip-product-search-button"
           type="button"
-          onclick="openTripProductPicker()"
         >
           FIND PRODUCT
         </button>
@@ -4398,7 +4396,6 @@
         class="store-secondary-button"
         style="margin-top:10px;width:100%;"
         type="button"
-        onclick="beginManualProductEntry()"
       >
         ✍️ ENTER PRODUCT MANUALLY
       </button>
@@ -6370,7 +6367,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3F.2 — Retailer source resolution fix. Production remains index.html.
+    V6 Stage 3F.3 — Product-entry button wiring fix. Production remains index.html.
   </div>
 
 </div>
@@ -6942,11 +6939,11 @@
 
 <script>
 
-  // V6 Stage 3F.2 — retailer source resolution fix.
-  // Preserves Stage 3F.1 mode-aware camera behavior.
-  // Repairs the shared bridge from selected trip/store identity to supported
-  // retailer product-search source definitions, including branch labels and
-  // saved online merchant names/URLs. Manual fallback remains available.
+  // V6 Stage 3F.3 — product-entry button wiring fix.
+  // Preserves Stage 3F.1 mode-aware camera behavior and Stage 3F.2 retailer
+  // source resolution. The new FIND PRODUCT and ENTER PRODUCT MANUALLY controls
+  // are explicitly bound after DOMContentLoaded and whenever Active Trip is
+  // configured, with visible error handling instead of silent no-op failures.
   // Existing pricing, promotions, history, management, reports, and Sheets behavior remain.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
@@ -7303,36 +7300,121 @@
   }
 
 
-  function prepareModeAwareProductForm(productName = "", barcode = "", sourceLabel = "Product picker") {
-    currentBarcode = String(barcode || "").trim();
-    processing = true;
+  function prepareModeAwareProductForm(
+    productName = "",
+    barcode = "",
+    sourceLabel = "Product picker"
+  ) {
 
-    prepareProductForm(
-      currentBarcode,
-      sourceLabel
+    currentBarcode =
+      String(
+        barcode || ""
+      ).trim();
+
+    processing =
+      true;
+
+
+    // Switch panels first so this action can never appear to be a dead tap.
+    hide(
+      "active-trip-panel"
     );
 
-    const productInput = document.getElementById("product-name");
-    if (productInput && productName) {
-      productInput.value = productName;
-      productNameChanged();
+    show(
+      "item-panel"
+    );
+
+
+    try {
+
+      prepareProductForm(
+        currentBarcode,
+        sourceLabel
+      );
+
+
+      const productInput =
+        document.getElementById(
+          "product-name"
+        );
+
+
+      if (
+        productInput &&
+        productName
+      ) {
+
+        productInput.value =
+          productName;
+
+        productNameChanged();
+      }
+
+
+      document.getElementById(
+        "item-panel"
+      )?.scrollIntoView({
+        behavior:
+          "smooth",
+
+        block:
+          "start"
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "Mode-aware product form preparation failed:",
+        error
+      );
+
+
+      showErrorToast(
+        "Product form opened with an error",
+        String(
+          error?.message ||
+          error ||
+          "Part of the product form could not be prepared."
+        )
+      );
+
+
+      document.getElementById(
+        "item-panel"
+      )?.scrollIntoView({
+        behavior:
+          "smooth",
+
+        block:
+          "start"
+      });
     }
-
-    hide("active-trip-panel");
-    show("item-panel");
-
-    document.getElementById("item-panel")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
   }
 
 
   function beginManualProductEntry() {
-    prepareModeAwareProductForm("", "", "Manual product entry");
 
-    const input = document.getElementById("product-name");
-    setTimeout(() => input?.focus(), 60);
+    prepareModeAwareProductForm(
+      "",
+      "",
+      "Manual product entry"
+    );
+
+
+    const input =
+      document.getElementById(
+        "product-name"
+      );
+
+
+    setTimeout(
+      () =>
+        input?.focus(),
+
+      60
+    );
+
 
     showSuccessToast(
       "Manual product entry",
@@ -8013,7 +8095,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3F.2 — Retailer source resolution fix. In-memory only; no Sheets writes.
+  // V6 Stage 3F.3 — Product-entry button wiring fix. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
@@ -8355,7 +8437,147 @@
   });
 
 
+  function bindModeAwareProductEntryControls() {
+    const findButton =
+      document.getElementById("trip-product-search-button");
+
+    const manualButton =
+      document.getElementById("trip-manual-product-button");
+
+    const queryInput =
+      document.getElementById("trip-product-search-query");
+
+
+    if (
+      findButton &&
+      findButton.dataset.boundStage3f3 !== "true"
+    ) {
+
+      findButton.dataset.boundStage3f3 =
+        "true";
+
+      findButton.addEventListener(
+        "click",
+        function(event) {
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          try {
+
+            openTripProductPicker();
+
+          } catch (error) {
+
+            console.error(
+              "Stage 3F product picker button failed:",
+              error
+            );
+
+            showErrorToast(
+              "Product search could not open",
+              String(
+                error?.message ||
+                error ||
+                "An unexpected product-search error occurred."
+              )
+            );
+          }
+        }
+      );
+    }
+
+
+    if (
+      manualButton &&
+      manualButton.dataset.boundStage3f3 !== "true"
+    ) {
+
+      manualButton.dataset.boundStage3f3 =
+        "true";
+
+      manualButton.addEventListener(
+        "click",
+        function(event) {
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          try {
+
+            beginManualProductEntry();
+
+          } catch (error) {
+
+            console.error(
+              "Stage 3F manual product-entry button failed:",
+              error
+            );
+
+            showErrorToast(
+              "Manual product entry could not open",
+              String(
+                error?.message ||
+                error ||
+                "An unexpected manual-entry error occurred."
+              )
+            );
+          }
+        }
+      );
+    }
+
+
+    if (
+      queryInput &&
+      queryInput.dataset.boundStage3f3 !== "true"
+    ) {
+
+      queryInput.dataset.boundStage3f3 =
+        "true";
+
+      queryInput.addEventListener(
+        "keydown",
+        function(event) {
+
+          if (
+            event.key !== "Enter"
+          ) {
+
+            return;
+          }
+
+          event.preventDefault();
+
+          try {
+
+            openTripProductPicker();
+
+          } catch (error) {
+
+            console.error(
+              "Stage 3F product picker Enter-key failed:",
+              error
+            );
+
+            showErrorToast(
+              "Product search could not open",
+              String(
+                error?.message ||
+                error ||
+                "An unexpected product-search error occurred."
+              )
+            );
+          }
+        }
+      );
+    }
+  }
+
+
   function initializePage() {
+
+    bindModeAwareProductEntryControls();
 
     if (!SPREADSHEET_ID) {
 
@@ -8949,6 +9171,9 @@
 
 
   function configureActiveTripEntryMode() {
+
+    bindModeAwareProductEntryControls();
+
     const mode = getActiveTripMode();
     const physical = document.getElementById("physical-barcode-entry");
     const picker = document.getElementById("trip-product-picker-card");
