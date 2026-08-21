@@ -3987,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3F.4 — Retailer normalization scope fix
+    V6 Stage 3F.6 — Enriched web-result item form
   </div>
 
   <button
@@ -4426,6 +4426,65 @@
         id="barcode-summary"
         class="barcode-summary"
       ></div>
+
+
+      <div
+        id="online-product-enrichment"
+        class="hidden"
+        style="
+          margin:0 0 15px;
+          padding:12px;
+          border:1px solid rgba(139,92,246,.35);
+          border-radius:14px;
+          background:rgba(139,92,246,.08);
+        "
+      >
+
+        <div
+          style="
+            display:flex;
+            gap:12px;
+            align-items:flex-start;
+          "
+        >
+
+          <img
+            id="online-product-image"
+            alt="Fetched product"
+            class="hidden"
+            style="
+              width:88px;
+              height:88px;
+              object-fit:contain;
+              border-radius:12px;
+              background:#fff;
+              flex:0 0 88px;
+            "
+          >
+
+          <div style="min-width:0;flex:1;">
+
+            <div
+              id="online-product-source-label"
+              style="
+                font-weight:700;
+                margin-bottom:5px;
+              "
+            >
+              Online product reference
+            </div>
+
+            <div
+              id="online-product-price-note"
+              class="hint"
+              style="margin:0;"
+            ></div>
+
+          </div>
+
+        </div>
+
+      </div>
 
       <div
         id="reuse-warning"
@@ -6367,7 +6426,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3F.4 — Retailer normalization scope fix. Production remains index.html.
+    V6 Stage 3F.6 — Enriched web-result item form. Production remains index.html.
   </div>
 
 </div>
@@ -6939,12 +6998,13 @@
 
 <script>
 
-  // V6 Stage 3F.4 — retailer normalization scope fix.
-  // Preserves Stage 3F.1 mode-aware camera behavior, Stage 3F.2 retailer
-  // source resolution, and Stage 3F.3 explicit product-entry button wiring.
-  // The retailer matcher now uses its own self-contained text normalizer
-  // instead of depending on an unavailable normalizeText() helper.
-  // Existing pricing, promotions, history, management, reports, and Sheets behavior remain.
+  // V6 Stage 3F.6 — enriched web-result item form.
+  // Preserves mode-aware camera behavior, retailer source resolution,
+  // explicit product-entry button wiring, and live Cloudflare retailer search.
+  // Selecting a live web result now carries its name, image, and fetched price
+  // into the normal item-confirmation form. Price remains editable and existing
+  // promotions, quantity, notes, barcode, history, reports, and Sheets behavior remain.
+  // Product-image persistence is intentionally deferred to a later isolated step.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -6957,6 +7017,10 @@
   let onlineProductSearchContext = "";
   let onlineProductSearchSource = null;
   let onlineProductSearchPreviewResults = [];
+
+  // Stage 3F.6 transient web-result metadata.
+  // Intentionally not persisted to Sheets yet.
+  let selectedOnlineProductResult = null;
 
   // V6 Stage 3E.2 — Management preview retailer picker state.
   // This has its own request/timer state so Management preview never hijacks
@@ -7263,6 +7327,197 @@
     if (event.key === "Enter") {
       event.preventDefault();
       openTripProductPicker();
+    }
+  }
+
+
+  function clearSelectedOnlineProductResult() {
+    selectedOnlineProductResult = null;
+
+    const box =
+      document.getElementById("online-product-enrichment");
+
+    const image =
+      document.getElementById("online-product-image");
+
+    const sourceLabel =
+      document.getElementById("online-product-source-label");
+
+    const priceNote =
+      document.getElementById("online-product-price-note");
+
+
+    if (box) {
+      box.classList.add("hidden");
+    }
+
+    if (image) {
+      image.classList.add("hidden");
+      image.removeAttribute("src");
+      image.alt = "Fetched product";
+      image.onerror = null;
+    }
+
+    if (sourceLabel) {
+      sourceLabel.textContent =
+        "Online product reference";
+    }
+
+    if (priceNote) {
+      priceNote.textContent = "";
+    }
+  }
+
+
+  function normalizedOnlineResultPrice(result) {
+    const raw =
+      result?.price;
+
+    if (
+      raw === null ||
+      raw === undefined ||
+      raw === ""
+    ) {
+      return null;
+    }
+
+    const numeric =
+      Number(
+        String(raw)
+          .replace(/,/g, "")
+          .replace(/[^0-9.-]/g, "")
+      );
+
+    return (
+      Number.isFinite(numeric) &&
+      numeric >= 0
+    )
+      ? numeric
+      : null;
+  }
+
+
+  function onlinePriceVerificationMessage(
+    mode = getActiveTripMode()
+  ) {
+    if (mode === "ONLINE") {
+      return "Online listed price — edit it if your actual checkout price differs.";
+    }
+
+    if (mode === "REMOTE") {
+      return "Online listed price — confirm the actual price paid at the remote store.";
+    }
+
+    return "Online listed price — verify the shelf price before adding the item.";
+  }
+
+
+  function applySelectedOnlineProductEnrichment(
+    result
+  ) {
+    selectedOnlineProductResult =
+      result
+        ? { ...result }
+        : null;
+
+    if (!selectedOnlineProductResult) {
+      clearSelectedOnlineProductResult();
+      return;
+    }
+
+
+    const box =
+      document.getElementById("online-product-enrichment");
+
+    const image =
+      document.getElementById("online-product-image");
+
+    const sourceLabel =
+      document.getElementById("online-product-source-label");
+
+    const priceNote =
+      document.getElementById("online-product-price-note");
+
+    const priceInput =
+      document.getElementById("shelf-price");
+
+
+    const imageUrl =
+      String(
+        selectedOnlineProductResult.image ||
+        ""
+      ).trim();
+
+    const resultPrice =
+      normalizedOnlineResultPrice(
+        selectedOnlineProductResult
+      );
+
+    const sourceName =
+      String(
+        selectedOnlineProductResult.source ||
+        onlineProductSearchSource?.retailerName ||
+        "Online retailer"
+      ).trim();
+
+
+    if (box) {
+      box.classList.remove("hidden");
+    }
+
+
+    if (sourceLabel) {
+      sourceLabel.textContent =
+        `${sourceName} online reference`;
+    }
+
+
+    if (image) {
+      if (imageUrl) {
+        image.src = imageUrl;
+        image.alt =
+          String(
+            selectedOnlineProductResult.title ||
+            "Fetched product"
+          ).trim();
+
+        image.classList.remove("hidden");
+
+        image.onerror = function() {
+          image.classList.add("hidden");
+          image.removeAttribute("src");
+        };
+      } else {
+        image.classList.add("hidden");
+        image.removeAttribute("src");
+      }
+    }
+
+
+    if (
+      priceInput &&
+      resultPrice !== null
+    ) {
+      priceInput.value =
+        String(resultPrice);
+
+      fieldChanged(
+        priceInput
+      );
+
+      updatePricing();
+    }
+
+
+    if (priceNote) {
+      const pricePrefix =
+        resultPrice !== null
+          ? `${formatMoney(resultPrice)}. `
+          : "Price unavailable. ";
+
+      priceNote.textContent =
+        pricePrefix +
+        onlinePriceVerificationMessage();
     }
   }
 
@@ -7965,11 +8220,24 @@
 
     if (onlineProductSearchContext === "item") {
       const input = document.getElementById("product-name");
+
       input.value = result.title;
       productNameChanged();
+
       closeOnlineProductSearch(false);
-      const priceText = formatOnlineSearchPrice(result);
-      showSuccessToast("Online product selected", `${result.title} • ${priceText}. Confirm the product name and enter the shelf price normally before adding the item.`);
+
+      applySelectedOnlineProductEnrichment(
+        result
+      );
+
+      const priceText =
+        formatOnlineSearchPrice(result);
+
+      showSuccessToast(
+        "Online product selected",
+        `${result.title} • ${priceText}. The fetched price is prefilled but remains editable. Verify the actual price and any promotion before adding the item.`
+      );
+
       return;
     }
 
@@ -7979,18 +8247,24 @@
       const priceText = formatOnlineSearchPrice(result);
 
       closeOnlineProductSearch(false);
+
       prepareModeAwareProductForm(
         title,
         knownBarcode,
         "Online catalog"
       );
 
+      applySelectedOnlineProductEnrichment(
+        result
+      );
+
       showSuccessToast(
         knownBarcode ? "Known product selected" : "Online product selected",
         knownBarcode
-          ? `${title} • ${priceText}. Existing barcode ${knownBarcode} stayed linked. Enter/confirm the actual price and any promotion.`
-          : `${title} • ${priceText}. No known barcode was linked yet. Enter/confirm the actual price and any promotion.`
+          ? `${title} • ${priceText}. Existing barcode ${knownBarcode} stayed linked. The fetched price is prefilled but remains editable; verify promos before adding.`
+          : `${title} • ${priceText}. The fetched price is prefilled but remains editable. No known barcode is linked yet; verify promos before adding.`
       );
+
       return;
     }
 
@@ -8010,6 +8284,7 @@
       onlineProductSearchSource = null;
       onlineProductSearchPreviewResults = [];
       prepareModeAwareProductForm(typed, preferredKnownBarcodeForProduct(typed), "Manual product entry");
+      clearSelectedOnlineProductResult();
       showSuccessToast("Manual entry opened", "Keep or correct the product name, then enter the actual price and any promotion.");
       return;
     }
@@ -8104,7 +8379,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3F.4 — Retailer normalization scope fix. In-memory only; no Sheets writes.
+  // V6 Stage 3F.6 — Enriched web-result item form. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
@@ -13139,6 +13414,9 @@
     source
   ) {
 
+
+    clearSelectedOnlineProductResult();
+
     const cleanBarcode =
       String(barcode || "").trim();
 
@@ -15253,6 +15531,9 @@
 
 
   function resetCurrentItem() {
+
+
+    clearSelectedOnlineProductResult();
 
     currentBarcode =
       "";
