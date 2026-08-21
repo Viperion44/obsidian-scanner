@@ -3000,6 +3000,61 @@
       box-shadow:0 0 0 1px rgba(156,85,232,.25) inset;
     }
 
+    /* V6 Stage 3G.2 — compact home shopping-mode selector */
+    #new-trip-card .shopping-mode-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 8px 0 12px;
+    }
+
+    #new-trip-card .shopping-mode-choice {
+      position: relative;
+      min-width: 0;
+    }
+
+    #new-trip-card .shopping-mode-button {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      min-height: 0;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    #new-trip-card .shopping-mode-button .shopping-mode-icon {
+      display: block;
+      transform: translateY(1px);
+    }
+
+    #new-trip-card .shopping-mode-info {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      min-height: 22px;
+      margin: 0;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid #777f90;
+      background: rgba(20, 23, 30, .92);
+      color: #e8eaf0;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 20px;
+      text-align: center;
+      z-index: 2;
+      box-shadow: 0 1px 5px rgba(0,0,0,.28);
+    }
+
+    #new-trip-card .shopping-mode-info:active {
+      transform: scale(.94);
+    }
+
     .store-mode-note {
       margin:8px 0 12px;
       padding:11px 12px;
@@ -3986,10 +4041,6 @@
 
   <h1>🛒 Obsidian Shopping</h1>
 
-  <div class="subtitle">
-    V6 Stage 3G.1 — Google Places configuration removed from UX
-  </div>
-
   <button
     id="connect-button"
     type="button"
@@ -4110,9 +4161,59 @@
         <label>How are you shopping?</label>
 
         <div class="shopping-mode-grid">
-          <button id="start-mode-near" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('NEAR')">📍 NEAR ME</button>
-          <button id="start-mode-remote" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('REMOTE')">🔎 REMOTE SHOPPING</button>
-          <button id="start-mode-online" class="shopping-mode-button" type="button" onclick="setStartShoppingMode('ONLINE')">🛒 ONLINE STORE</button>
+          <div class="shopping-mode-choice">
+            <button
+              id="start-mode-near"
+              class="shopping-mode-button"
+              type="button"
+              onclick="setStartShoppingMode('NEAR')"
+              aria-label="Near Me"
+              title="Near Me"
+            ><span class="shopping-mode-icon" aria-hidden="true">📡</span></button>
+            <button
+              class="shopping-mode-info"
+              type="button"
+              onclick="showShoppingModeInfo('NEAR')"
+              aria-label="What is Near Me?"
+              title="What is Near Me?"
+            >i</button>
+          </div>
+
+          <div class="shopping-mode-choice">
+            <button
+              id="start-mode-remote"
+              class="shopping-mode-button"
+              type="button"
+              onclick="setStartShoppingMode('REMOTE')"
+              aria-label="Remote Shopping"
+              title="Remote Shopping"
+            ><span class="shopping-mode-icon" aria-hidden="true">📱</span></button>
+            <button
+              class="shopping-mode-info"
+              type="button"
+              onclick="showShoppingModeInfo('REMOTE')"
+              aria-label="What is Remote Shopping?"
+              title="What is Remote Shopping?"
+            >i</button>
+          </div>
+
+          <div class="shopping-mode-choice">
+            <button
+              id="start-mode-online"
+              class="shopping-mode-button"
+              type="button"
+              onclick="setStartShoppingMode('ONLINE')"
+              aria-label="Online Store"
+              title="Online Store"
+            ><span class="shopping-mode-icon" aria-hidden="true">🖥️</span></button>
+            <button
+              class="shopping-mode-info"
+              type="button"
+              onclick="showShoppingModeInfo('ONLINE')"
+              aria-label="What is Online Store?"
+              title="What is Online Store?"
+            >i</button>
+          </div>
         </div>
 
         <div id="start-mode-note" class="store-mode-note">
@@ -6425,7 +6526,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3G.1 — Google Places configuration removed from UX. Production remains index.html.
+    V6 Stage 3G.2 — Home viewport polish. Production remains index.html.
   </div>
 
 </div>
@@ -6983,11 +7084,12 @@
 
 <script>
 
-  // V6 Stage 3G.1 — Google Places configuration removed from user-facing UX.
-  // Existing Google Places runtime/storage behavior is preserved so the already
-  // configured development device continues to use Near Me normally.
-  // API-key entry/edit controls are no longer part of the shopping interface.
-  // Stage 3F.6 web-result enrichment and all existing shopping behavior remain.
+  // V6 Stage 3G.2 — home viewport polish.
+  // Home shopping modes are compact icon tiles with independent info controls.
+  // Mode selection uses the existing fading toast instead of a redundant fixed
+  // "Shopping is selected" status box. The stale Nearby-unavailable placeholder
+  // remains hidden unless Places is genuinely unavailable.
+  // All Stage 3G.1, Stage 3F.6, trip, search, Sheets, and management behavior remains.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -8362,7 +8464,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3G.1 — Google Places configuration removed from UX. In-memory only; no Sheets writes.
+  // V6 Stage 3G.2 — home viewport polish. In-memory promo lab only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
@@ -9901,10 +10003,57 @@
     });
   }
 
+  function showShoppingModeInfo(mode) {
+    const info = {
+      NEAR: {
+        title: "Near Me",
+        detail: "Uses your current location to show nearby physical stores. You can also search by store name or add one manually."
+      },
+      REMOTE: {
+        title: "Remote Shopping",
+        detail: "For shopping at a physical store somewhere else. Your current location is not used; search for the branch or choose it on the map."
+      },
+      ONLINE: {
+        title: "Online Store",
+        detail: "For purchases from an online merchant or website. Physical-store location is not required."
+      }
+    }[mode];
+
+    if (!info) return;
+
+    showSuccessToast(
+      info.title,
+      info.detail
+    );
+  }
+
+
   async function setStartShoppingMode(mode) {
     startShoppingMode = mode;
     updateStartModeButtons();
     closeStartStoreDropdown();
+
+    const selectedMessage = {
+      NEAR: {
+        title: "Near Me selected",
+        detail: "Choose your store from the nearby map or the search box."
+      },
+      REMOTE: {
+        title: "Remote Shopping selected",
+        detail: "Search for the physical store or choose its location on the map."
+      },
+      ONLINE: {
+        title: "Online Store selected",
+        detail: "Search for the online merchant or add its website manually."
+      }
+    }[mode];
+
+    if (selectedMessage) {
+      showSuccessToast(
+        selectedMessage.title,
+        selectedMessage.detail
+      );
+    }
 
     const storeInput = document.getElementById("start-store");
     const toggle = document.getElementById("start-store-toggle");
@@ -9917,7 +10066,7 @@
     toggle.disabled = false;
     manualButton.classList.remove("hidden");
     remoteMapButton?.classList.add("hidden");
-    googleNote.classList.remove("hidden");
+    googleNote.classList.add("hidden");
 
     if (mode !== "ONLINE") manualButton.textContent = "＋ ADD MANUALLY";
 
@@ -19698,6 +19847,9 @@
 
     box.className =
       "";
+    box.classList.remove(
+      "hidden"
+    );
 
     if (
       type
@@ -19711,6 +19863,20 @@
 
     box.innerHTML =
       message;
+  }
+
+
+  function hideStatus() {
+    const box =
+      document.getElementById(
+        "status"
+      );
+
+    if (box) {
+      box.classList.add(
+        "hidden"
+      );
+    }
   }
 
 
@@ -28559,12 +28725,16 @@
       resumeScanner();
     }
 
-    setStatus(
+    if (
       hasOpenActiveTrip()
-        ? "Shopping is active."
-        : "Shopping is selected.",
-      "success"
-    );
+    ) {
+      setStatus(
+        "Shopping is active.",
+        "success"
+      );
+    } else {
+      hideStatus();
+    }
   }
 
 
@@ -28642,12 +28812,16 @@
     }
 
 
-    setStatus(
+    if (
       hasOpenActiveTrip()
-        ? "Shopping is active."
-        : "Shopping is selected.",
-      "success"
-    );
+    ) {
+      setStatus(
+        "Shopping is active.",
+        "success"
+      );
+    } else {
+      hideStatus();
+    }
   }
 
 
