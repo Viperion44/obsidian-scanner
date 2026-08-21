@@ -3987,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3E.4 — Worker-fed e-commerce picker
+    V6 Stage 3F.1 — Mode-aware product entry
   </div>
 
   <button
@@ -4331,33 +4331,77 @@
 
     </div>
 
-    <div id="reader"></div>
+    <div id="physical-barcode-entry">
+      <div id="reader"></div>
 
-    <div class="manual-card">
+      <div class="manual-card">
 
-      <div class="manual-title">
-        ⌨️ Enter barcode manually
+        <div class="manual-title">
+          ⌨️ Enter barcode manually
+        </div>
+
+        <div class="manual-row">
+
+          <input
+            id="manual-barcode"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="Enter barcode"
+            onkeydown="manualBarcodeKeyDown(event)"
+          >
+
+          <button
+            type="button"
+            onclick="submitManualBarcode()"
+          >
+            LOOK UP
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+
+    <div id="trip-product-picker-card" class="manual-card">
+
+      <div id="trip-product-picker-title" class="manual-title">
+        🔎 Find product by name
+      </div>
+
+      <div id="trip-product-picker-note" class="hint" style="margin-bottom:10px;">
+        Search the selected store's online catalog when available, or enter the product manually.
       </div>
 
       <div class="manual-row">
 
         <input
-          id="manual-barcode"
-          type="text"
-          inputmode="numeric"
+          id="trip-product-search-query"
+          type="search"
           autocomplete="off"
-          placeholder="Enter barcode"
-          onkeydown="manualBarcodeKeyDown(event)"
+          placeholder="Example: leche, yogurt, detergente"
+          onkeydown="tripProductSearchKeyDown(event)"
         >
 
         <button
+          id="trip-product-search-button"
           type="button"
-          onclick="submitManualBarcode()"
+          onclick="openTripProductPicker()"
         >
-          LOOK UP
+          FIND PRODUCT
         </button>
 
       </div>
+
+      <button
+        id="trip-manual-product-button"
+        class="store-secondary-button"
+        style="margin-top:10px;width:100%;"
+        type="button"
+        onclick="beginManualProductEntry()"
+      >
+        ✍️ ENTER PRODUCT MANUALLY
+      </button>
 
     </div>
 
@@ -4418,7 +4462,7 @@
 
           <label for="confirm-name">
             I confirm that this product name matches
-            the item I am holding.
+            the item I am adding.
           </label>
 
         </div>
@@ -6326,7 +6370,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3E.4 — Worker-fed e-commerce picker. Production remains index.html.
+    V6 Stage 3F.1 — Mode-aware product entry. Production remains index.html.
   </div>
 
 </div>
@@ -6898,10 +6942,11 @@
 
 <script>
 
-  // V6 Stage 3E — real user-triggered retailer catalog search.
-  // Retailer search requests now go through the deployed Cloudflare Worker.
-  // All existing shopping, scanner, pricing, history, management, and Sheets behavior
-  // remains unchanged; only the Stage 3D simulated result provider is replaced.
+  // V6 Stage 3F.1 — mode-aware product entry.
+  // NEAR keeps barcode scanning as the primary path and gains optional web/name entry.
+  // REMOTE and ONLINE never start the camera; they use retailer-fed product search
+  // with manual fallback. Known products keep an already-known barcode when resolvable.
+  // Existing pricing, promotions, history, management, reports, and Sheets behavior remain.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -7004,6 +7049,120 @@
     }
 
     onlineProductSearchContext = "item";
+    openOnlineProductSearchOverlay(source, query);
+  }
+
+
+  function tripProductSearchKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      openTripProductPicker();
+    }
+  }
+
+
+  function preferredKnownBarcodeForProduct(productName) {
+    const normalized = normalizeProductIdentity(productName);
+    if (!normalized) return "";
+
+    const storeKey = normalizeStore(activeTrip?.store || "");
+
+    const sameStore = productDatabase.find(record =>
+      String(record.barcode || "").trim() &&
+      normalizeProductIdentity(record.product) === normalized &&
+      normalizeStore(record.store) === storeKey
+    );
+
+    if (sameStore) return String(sameStore.barcode || "").trim();
+
+    const exactKnown = productDatabase.find(record =>
+      String(record.barcode || "").trim() &&
+      normalizeProductIdentity(record.product) === normalized
+    );
+
+    if (exactKnown) return String(exactKnown.barcode || "").trim();
+
+    const canonical = findCanonicalProductByExactName(productName);
+    if (!canonical?.productId) return "";
+
+    const storeId = currentCanonicalStoreId();
+
+    const barcodeAliases = productAliases.filter(record =>
+      record.confirmed === true &&
+      String(record.productId || "").trim() === String(canonical.productId || "").trim() &&
+      String(record.aliasType || "").trim().toUpperCase() === "BARCODE" &&
+      String(record.barcode || "").trim()
+    );
+
+    const storeScoped = barcodeAliases.find(record =>
+      storeId &&
+      String(record.storeId || "").trim() === storeId
+    );
+
+    return String(storeScoped?.barcode || barcodeAliases[0]?.barcode || "").trim();
+  }
+
+
+  function prepareModeAwareProductForm(productName = "", barcode = "", sourceLabel = "Product picker") {
+    currentBarcode = String(barcode || "").trim();
+    processing = true;
+
+    prepareProductForm(
+      currentBarcode,
+      sourceLabel
+    );
+
+    const productInput = document.getElementById("product-name");
+    if (productInput && productName) {
+      productInput.value = productName;
+      productNameChanged();
+    }
+
+    hide("active-trip-panel");
+    show("item-panel");
+
+    document.getElementById("item-panel")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+
+  function beginManualProductEntry() {
+    prepareModeAwareProductForm("", "", "Manual product entry");
+
+    const input = document.getElementById("product-name");
+    setTimeout(() => input?.focus(), 60);
+
+    showSuccessToast(
+      "Manual product entry",
+      "Enter the product name, amount, actual price, and any promotion. Barcode is optional unless one is already known."
+    );
+  }
+
+
+  function openTripProductPicker() {
+    const query = String(
+      document.getElementById("trip-product-search-query")?.value || ""
+    ).trim();
+
+    if (!query) {
+      showErrorToast("Enter product keywords", "Type a product name or description first.");
+      document.getElementById("trip-product-search-query")?.focus();
+      return;
+    }
+
+    const source = resolveProductSearchSourceForActiveTrip();
+
+    if (!source) {
+      showErrorToast(
+        "No online catalog configured",
+        "This shopping location does not have an e-commerce website configured yet. Use ENTER PRODUCT MANUALLY instead."
+      );
+      return;
+    }
+
+    onlineProductSearchContext = "trip-entry";
     openOnlineProductSearchOverlay(source, query);
   }
 
@@ -7479,6 +7638,27 @@
       return;
     }
 
+    if (onlineProductSearchContext === "trip-entry") {
+      const title = result.title;
+      const knownBarcode = preferredKnownBarcodeForProduct(title);
+      const priceText = formatOnlineSearchPrice(result);
+
+      closeOnlineProductSearch(false);
+      prepareModeAwareProductForm(
+        title,
+        knownBarcode,
+        "Online catalog"
+      );
+
+      showSuccessToast(
+        knownBarcode ? "Known product selected" : "Online product selected",
+        knownBarcode
+          ? `${title} • ${priceText}. Existing barcode ${knownBarcode} stayed linked. Enter/confirm the actual price and any promotion.`
+          : `${title} • ${priceText}. No known barcode was linked yet. Enter/confirm the actual price and any promotion.`
+      );
+      return;
+    }
+
     document.getElementById("online-preview-query").value = result.title;
     closeOnlineProductSearch(false);
     showSuccessToast("Live search selection works", "The selected retailer result was returned to the preview form. No shopping data was written.");
@@ -7489,6 +7669,14 @@
     if (keepManual && onlineProductSearchContext === "item") {
       document.getElementById("product-name")?.focus();
       showSuccessToast("Manual entry kept", "Continue typing or correcting the product name yourself.");
+    } else if (keepManual && onlineProductSearchContext === "trip-entry") {
+      const typed = String(document.getElementById("online-product-search-query")?.value || "").trim();
+      onlineProductSearchContext = "";
+      onlineProductSearchSource = null;
+      onlineProductSearchPreviewResults = [];
+      prepareModeAwareProductForm(typed, preferredKnownBarcodeForProduct(typed), "Manual product entry");
+      showSuccessToast("Manual entry opened", "Keep or correct the product name, then enter the actual price and any promotion.");
+      return;
     }
     onlineProductSearchContext = "";
     onlineProductSearchSource = null;
@@ -7581,7 +7769,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3E.4 — Worker-fed e-commerce picker. In-memory only; no Sheets writes.
+  // V6 Stage 3F.1 — Mode-aware product entry. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
@@ -8318,6 +8506,9 @@
         itemCount:
           "",
 
+        mode:
+          startShoppingMode,
+
         sheetRow:
           null
       };
@@ -8376,7 +8567,7 @@
       [
         {
           range:
-            `'${TRIPS_SHEET}'!A${row}:H${row}`,
+            `'${TRIPS_SHEET}'!A${row}:I${row}`,
 
           values:
             [[
@@ -8387,7 +8578,8 @@
               trip.status,
               trip.budget,
               trip.finalTotal,
-              trip.itemCount
+              trip.itemCount,
+              trip.mode || ""
             ]]
         }
       ],
@@ -8443,6 +8635,15 @@
     activeTrip =
       openTripCandidate;
 
+    startShoppingMode =
+      normalizeTripMode(
+        activeTrip.mode,
+        activeTrip.store
+      );
+
+    activeTrip.mode =
+      startShoppingMode;
+
     budgetWarningAcknowledged =
       false;
 
@@ -8457,6 +8658,111 @@
     } catch (error) {
 
       handleApiError(error);
+    }
+  }
+
+
+  function normalizeTripMode(value, storeName = "") {
+    const mode = String(value || "").trim().toUpperCase();
+    if (["NEAR", "REMOTE", "ONLINE"].includes(mode)) return mode;
+
+    // Backward-compatible inference for trips created before Stage 3F.
+    // Online stores are safely recognizable from the saved Online directory.
+    const storeKey = normalizeStore(storeName);
+    if (storeKey) {
+      const onlineMatch = savedOnlineStoreDirectory.some(store => {
+        const candidates = [
+          store.name,
+          [store.name, store.websiteUrl].filter(Boolean).join(" — ")
+        ].map(normalizeStore).filter(Boolean);
+        return candidates.includes(storeKey) || candidates.some(candidate => candidate && storeKey.includes(candidate));
+      });
+      if (onlineMatch) return "ONLINE";
+    }
+
+    // Old physical trips cannot reliably distinguish NEAR from REMOTE,
+    // so NEAR is the safest scanner-compatible legacy default.
+    return "NEAR";
+  }
+
+
+  function getActiveTripMode() {
+    const mode = normalizeTripMode(
+      activeTrip?.mode || startShoppingMode,
+      activeTrip?.store || ""
+    );
+
+    if (activeTrip) activeTrip.mode = mode;
+    return mode;
+  }
+
+
+  function activeTripModeLabel(mode = getActiveTripMode()) {
+    if (mode === "ONLINE") return "Online Store";
+    if (mode === "REMOTE") return "Remote Shopping";
+    return "Near Me";
+  }
+
+
+  function configureActiveTripEntryMode() {
+    const mode = getActiveTripMode();
+    const physical = document.getElementById("physical-barcode-entry");
+    const picker = document.getElementById("trip-product-picker-card");
+    const title = document.getElementById("trip-product-picker-title");
+    const note = document.getElementById("trip-product-picker-note");
+    const searchButton = document.getElementById("trip-product-search-button");
+
+    if (physical) {
+      physical.classList.toggle("hidden", mode !== "NEAR");
+    }
+
+    if (picker) {
+      picker.classList.remove("hidden");
+    }
+
+    const source = resolveProductSearchSourceForActiveTrip();
+
+    if (mode === "ONLINE") {
+      if (title) title.textContent = "🛒 Find a product in this online store";
+      if (note) {
+        note.textContent = source
+          ? `Primary entry method: search ${source.retailerName}'s online catalog. Manual product entry remains available.`
+          : "Primary entry method: search by product name when an online catalog is available. Manual product entry remains available.";
+      }
+      if (searchButton) searchButton.textContent = "FIND PRODUCT";
+    } else if (mode === "REMOTE") {
+      if (title) title.textContent = "🔎 Find a product at this remote store";
+      if (note) {
+        note.textContent = source
+          ? `Search ${source.retailerName}'s online catalog when available. No camera is started for a remote trip.`
+          : "No camera is started for a remote trip. Search by name when an online catalog is available, or enter the product manually.";
+      }
+      if (searchButton) searchButton.textContent = "FIND PRODUCT";
+    } else {
+      if (title) title.textContent = "🌐 Optional: find product by name";
+      if (note) {
+        note.textContent = source
+          ? `Barcode scanning remains primary. You can optionally search ${source.retailerName}'s online catalog to fill product information faster.`
+          : "Barcode scanning remains primary. Manual product entry is still available, and web lookup appears when this store has a supported online catalog.";
+      }
+      if (searchButton) searchButton.textContent = "FIND ONLINE";
+    }
+  }
+
+
+  async function restoreActiveTripEntryAfterItem() {
+    configureActiveTripEntryMode();
+
+    if (getActiveTripMode() === "NEAR") {
+      if (!scannerStarted) {
+        try {
+          await startRearCamera();
+        } catch (error) {
+          console.warn("Camera could not restart", error);
+        }
+      } else {
+        resumeScanner();
+      }
     }
   }
 
@@ -8507,24 +8813,46 @@
 
     await refreshTripSummary();
 
-    if (!scannerStarted) {
+    configureActiveTripEntryMode();
+
+    const mode = getActiveTripMode();
+
+    if (mode === "NEAR") {
+
+      if (!scannerStarted) {
+
+        setStatus(
+          "Starting rear camera...",
+          "working"
+        );
+
+        await startRearCamera();
+
+      } else {
+
+        resumeScanner();
+      }
 
       setStatus(
-        "Starting rear camera...",
-        "working"
+        "Trip active. Scan a barcode, enter one manually, or optionally find a product by name.",
+        "success"
       );
-
-      await startRearCamera();
 
     } else {
 
-      resumeScanner();
-    }
+      // REMOTE and ONLINE trips do not have a physical barcode in the user's hand.
+      // Never start the camera for these modes.
+      if (scannerStarted) {
+        await stopScanner();
+      }
 
-    setStatus(
-      "Trip active. Scan a barcode or enter one manually.",
-      "success"
-    );
+      setStatus(
+        mode === "ONLINE"
+          ? "Online trip active. Find a product from this store's catalog or enter it manually."
+          : "Remote trip active. Find a product by name or enter it manually.",
+        "success"
+      );
+    }
   }
 
 
@@ -8532,7 +8860,7 @@
 
     const result =
       await sheetsGetValues(
-        `'${TRIPS_SHEET}'!A2:H`,
+        `'${TRIPS_SHEET}'!A2:I`,
         "UNFORMATTED_VALUE"
       );
 
@@ -8595,6 +8923,12 @@
           itemCount:
             normalizeNumericValue(
               row[7]
+            ),
+
+          mode:
+            normalizeTripMode(
+              row[8],
+              String(row[1] ?? "").trim()
             ),
 
           sheetRow:
@@ -12327,12 +12661,17 @@
     source
   ) {
 
+    const cleanBarcode =
+      String(barcode || "").trim();
+
     barcodeMatches =
-      productDatabase.filter(
-        record =>
-          record.barcode ===
-          barcode
-      );
+      cleanBarcode
+        ? productDatabase.filter(
+            record =>
+              record.barcode ===
+              cleanBarcode
+          )
+        : [];
 
     exactStoreMatch =
       barcodeMatches.find(
@@ -12419,6 +12758,14 @@
       badgeClass =
         "warning-badge";
 
+    } else if (!cleanBarcode) {
+
+      badgeText =
+        "PRODUCT ENTRY";
+
+      badgeClass =
+        "new-badge";
+
     } else {
 
       badgeText =
@@ -12439,20 +12786,25 @@
     badge.className =
       badgeClass;
 
+    const entrySource =
+      source === "camera"
+        ? "Camera"
+        : source === "manual"
+          ? "Manual barcode entry"
+          : String(source || "Product entry");
+
     document.getElementById(
       "barcode-summary"
     ).innerHTML =
 
       "<b>Entered by:</b> " +
       escapeHtml(
-        source === "camera"
-          ? "Camera"
-          : "Manual entry"
+        entrySource
       ) +
 
       "<br><b>Barcode:</b> " +
       escapeHtml(
-        barcode
+        cleanBarcode || "Not assigned"
       ) +
 
       "<br><b>Store:</b> " +
@@ -12463,7 +12815,7 @@
     document.getElementById(
       "form-barcode"
     ).textContent =
-      barcode;
+      cleanBarcode || "Not assigned";
 
     document.getElementById(
       "form-store"
@@ -12506,7 +12858,9 @@
         ? formatMoney(
             previousPriceAtStore
           )
-        : "No previous price for this barcode at this store";
+        : cleanBarcode
+          ? "No previous price for this barcode at this store"
+          : "No previous price linked yet for this product at this store";
 
     clearValidationStyles();
 
@@ -14072,7 +14426,7 @@
 
         '<span class="success-label">Barcode:</span> ' +
         escapeHtml(
-          currentBarcode
+          currentBarcode || "Not assigned"
         ) +
         "<br>" +
 
@@ -14391,7 +14745,7 @@
       "active-trip-panel"
     );
 
-    resumeScanner();
+    restoreActiveTripEntryAfterItem();
 
     document.getElementById(
       "active-trip-panel"
@@ -14416,7 +14770,7 @@
       "active-trip-panel"
     );
 
-    resumeScanner();
+    restoreActiveTripEntryAfterItem();
   }
 
 
@@ -15617,10 +15971,12 @@
       "active-trip-panel"
     );
 
-    resumeScanner();
+    restoreActiveTripEntryAfterItem();
 
     setStatus(
-      "Trip active. Scan or enter another item.",
+      getActiveTripMode() === "NEAR"
+        ? "Trip active. Scan, enter a barcode, or find another product by name."
+        : "Trip active. Find another product by name or enter it manually.",
       "success"
     );
 
@@ -15653,10 +16009,12 @@
       "active-trip-panel"
     );
 
-    resumeScanner();
+    restoreActiveTripEntryAfterItem();
 
     setStatus(
-      "Trip active. Continue shopping.",
+      getActiveTripMode() === "NEAR"
+        ? "Trip active. Continue shopping."
+        : "Trip active. Continue with product search or manual entry.",
       "success"
     );
   }
