@@ -3736,6 +3736,105 @@
     @media(max-width:520px){ .promo-lab-grid{grid-template-columns:1fr;} .promo-lab-grid .wide{grid-column:auto;} .promo-lab-item{grid-template-columns:1fr 1fr;} .promo-lab-item button{grid-column:1/-1;width:100%;} }
 
 
+
+    /* V6 Stage 3E.1 — friendly e-commerce retailer picker in Online Search Preview */
+    .online-preview-retailer-picker {
+      position: relative;
+    }
+
+    .online-preview-retailer-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .online-preview-retailer-row input {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+    }
+
+    .online-preview-retailer-toggle {
+      flex: 0 0 48px;
+      width: 48px;
+      min-width: 48px;
+      margin: 0;
+      padding: 11px 0;
+      border-radius: 10px;
+      background: #4a3a61;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .online-preview-retailer-dropdown {
+      margin-top: 8px;
+      overflow: hidden;
+      border: 1px solid #4b5260;
+      border-radius: 11px;
+      background: #1d2129;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.30);
+    }
+
+    .online-preview-retailer-list {
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .online-preview-retailer-option {
+      width: 100%;
+      margin: 0;
+      padding: 11px 13px;
+      border: 0;
+      border-bottom: 1px solid #3b414d;
+      border-radius: 0;
+      background: transparent;
+      color: #ffffff;
+      text-align: left;
+    }
+
+    .online-preview-retailer-option:last-child {
+      border-bottom: none;
+    }
+
+    .online-preview-retailer-option:active {
+      background: #2d323e;
+    }
+
+    .online-preview-retailer-option-name {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+
+    .online-preview-retailer-option-meta {
+      display: block;
+      margin-top: 3px;
+      color: #9fa6b1;
+      font-size: 11px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .online-preview-retailer-empty {
+      padding: 13px;
+      color: #9fa6b1;
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .online-preview-selected-source {
+      margin-top: 8px;
+      padding: 10px 11px;
+      border-radius: 10px;
+      background: #191d25;
+      color: #cfd4dd;
+      font-size: 12px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
     /* V6 Stage 3E — real user-triggered online product search */
     .online-product-search-card {
       margin-top: 12px;
@@ -3888,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3E — real online product search
+    V6 Stage 3E.1 — friendly online retailer picker
   </div>
 
   <button
@@ -6025,21 +6124,55 @@
 
     <div id="management-online-search-preview" class="management-editor-card hidden">
       <div class="management-editor-title">Online Product Search Preview</div>
-      <div class="promo-group-summary">Stage 3E live search. This preview uses the same Cloudflare Worker and retailer-search flow as the shopping screen. It does not write anything to Google Sheets.</div>
-      <div class="online-search-preview-grid">
-        <div>
-          <label for="online-preview-store">Shopping location / retailer</label>
-          <input id="online-preview-store" type="text" value="Walmart México" autocomplete="off">
+      <div class="promo-group-summary">Stage 3E.1 live search. Choose an e-commerce site from the searchable picker, then search its catalog through the same Cloudflare Worker used by the shopping screen. Nothing here is written to Google Sheets.</div>
+
+      <div class="field">
+        <label for="online-preview-retailer-search">E-commerce site</label>
+
+        <div class="online-preview-retailer-picker">
+          <div class="online-preview-retailer-row">
+            <input
+              id="online-preview-retailer-search"
+              type="search"
+              autocomplete="off"
+              placeholder="Type a retailer, e.g. Soriana"
+              oninput="onlinePreviewRetailerSearchChanged()"
+              onfocus="openOnlinePreviewRetailerDropdown()"
+            >
+
+            <button
+              id="online-preview-retailer-toggle"
+              class="online-preview-retailer-toggle"
+              type="button"
+              onclick="toggleOnlinePreviewRetailerDropdown()"
+              aria-label="Show e-commerce sites"
+              title="Show e-commerce sites"
+            >
+              ▾
+            </button>
+          </div>
+
+          <div
+            id="online-preview-retailer-dropdown"
+            class="online-preview-retailer-dropdown hidden"
+          >
+            <div
+              id="online-preview-retailer-list"
+              class="online-preview-retailer-list"
+            ></div>
+          </div>
         </div>
-        <div>
-          <label for="online-preview-website">E-commerce website</label>
-          <input id="online-preview-website" type="url" value="https://www.walmart.com.mx/" autocomplete="off">
-        </div>
-        <div class="wide">
-          <label for="online-preview-query">Product keywords</label>
-          <input id="online-preview-query" type="text" value="Lyncott queso cottage" autocomplete="off">
+
+        <div id="online-preview-selected-source" class="online-preview-selected-source">
+          No e-commerce site selected yet.
         </div>
       </div>
+
+      <div class="field">
+        <label for="online-preview-query">Product keywords</label>
+        <input id="online-preview-query" type="text" value="Lyncott queso cottage" autocomplete="off">
+      </div>
+
       <button type="button" onclick="openOnlineProductSearchPreview()">PREVIEW ONLINE PRODUCT SEARCH</button>
     </div>
 
@@ -6193,7 +6326,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3E — real online product search. Production remains index.html.
+    V6 Stage 3E.1 — friendly online retailer picker. Production remains index.html.
   </div>
 
 </div>
@@ -6782,6 +6915,10 @@
   let onlineProductSearchSource = null;
   let onlineProductSearchPreviewResults = [];
 
+  // V6 Stage 3E.1 — Management preview retailer picker state.
+  let onlinePreviewSelectedSource = null;
+  let onlinePreviewRetailerOptions = [];
+
   function safeHostname(url) {
     try { return new URL(String(url || "").trim()).hostname.toLowerCase().replace(/^www\./, ""); }
     catch (_) { return ""; }
@@ -6864,6 +7001,116 @@
     openOnlineProductSearchOverlay(source, query);
   }
 
+  function buildOnlinePreviewRetailerOptions() {
+    const merged = [];
+    const seen = new Set();
+
+    const addOption = function(store) {
+      const name = String(store?.retailerName || store?.name || "").trim();
+      const websiteUrl = String(store?.websiteUrl || "").trim();
+      if (!name || !websiteUrl) return;
+
+      const source = sourceDefinitionFromStore(name, websiteUrl);
+      if (!source) return;
+
+      const key = `${source.id}|${safeHostname(source.websiteUrl)}|${normalizeStore(name)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      merged.push({
+        ...source,
+        retailerName: name || source.retailerName,
+        websiteUrl: websiteUrl || source.websiteUrl,
+        saved: store?.source === "saved" || Boolean(store?.storeId)
+      });
+    };
+
+    PRODUCT_SEARCH_SOURCE_DEFINITIONS.forEach(addOption);
+
+    try {
+      [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS].forEach(addOption);
+    } catch (_) {}
+
+    onlinePreviewRetailerOptions = merged;
+    return merged;
+  }
+
+  function renderOnlinePreviewRetailerOptions() {
+    const host = document.getElementById("online-preview-retailer-list");
+    if (!host) return;
+
+    const query = normalizeStoreSearchText(
+      document.getElementById("online-preview-retailer-search")?.value || ""
+    );
+
+    const options = buildOnlinePreviewRetailerOptions().filter(option => {
+      if (!query) return true;
+      const haystack = normalizeStoreSearchText(
+        [option.retailerName, option.websiteUrl].filter(Boolean).join(" ")
+      );
+      return query.split(/\s+/).filter(Boolean).every(token => haystack.includes(token));
+    });
+
+    if (!options.length) {
+      host.innerHTML =
+        '<div class="online-preview-retailer-empty">No known e-commerce site matches that search.</div>';
+      window.currentOnlinePreviewRetailerResults = [];
+      return;
+    }
+
+    window.currentOnlinePreviewRetailerResults = options;
+
+    host.innerHTML = options.map((option, index) =>
+      `<button class="online-preview-retailer-option" type="button" onclick="selectOnlinePreviewRetailer(${index})">` +
+        `<span class="online-preview-retailer-option-name">${escapeHtml(option.retailerName)}</span>` +
+        `<span class="online-preview-retailer-option-meta">${escapeHtml(option.websiteUrl)} • adapter ${escapeHtml(option.id)}</span>` +
+      `</button>`
+    ).join("");
+  }
+
+  function openOnlinePreviewRetailerDropdown() {
+    document.getElementById("online-preview-retailer-dropdown")?.classList.remove("hidden");
+    renderOnlinePreviewRetailerOptions();
+  }
+
+  function closeOnlinePreviewRetailerDropdown() {
+    document.getElementById("online-preview-retailer-dropdown")?.classList.add("hidden");
+  }
+
+  function toggleOnlinePreviewRetailerDropdown() {
+    const dropdown = document.getElementById("online-preview-retailer-dropdown");
+    if (!dropdown) return;
+    if (dropdown.classList.contains("hidden")) openOnlinePreviewRetailerDropdown();
+    else closeOnlinePreviewRetailerDropdown();
+  }
+
+  function onlinePreviewRetailerSearchChanged() {
+    onlinePreviewSelectedSource = null;
+    const summary = document.getElementById("online-preview-selected-source");
+    if (summary) summary.textContent = "Choose an e-commerce site from the dropdown.";
+    openOnlinePreviewRetailerDropdown();
+  }
+
+  function selectOnlinePreviewRetailer(index) {
+    const result = window.currentOnlinePreviewRetailerResults?.[index];
+    if (!result) return;
+
+    onlinePreviewSelectedSource = {...result};
+
+    const input = document.getElementById("online-preview-retailer-search");
+    if (input) input.value = result.retailerName;
+
+    const summary = document.getElementById("online-preview-selected-source");
+    if (summary) {
+      summary.innerHTML =
+        `<strong>${escapeHtml(result.retailerName)}</strong><br>` +
+        `${escapeHtml(result.websiteUrl)}<br>` +
+        `<span class="muted">Source adapter: ${escapeHtml(result.id)}</span>`;
+    }
+
+    closeOnlinePreviewRetailerDropdown();
+  }
+
   function showManagementOnlineSearchPreview() {
     hide("management-matcher-lab");
     hide("management-promo-lab");
@@ -6875,23 +7122,47 @@
 
     const panel = document.getElementById("management-online-search-preview");
     panel?.classList.remove("hidden");
+
+    onlinePreviewSelectedSource = null;
+    const retailerInput = document.getElementById("online-preview-retailer-search");
+    if (retailerInput) retailerInput.value = "";
+
+    const selectedSummary = document.getElementById("online-preview-selected-source");
+    if (selectedSummary) selectedSummary.textContent = "No e-commerce site selected yet.";
+
+    closeOnlinePreviewRetailerDropdown();
+
     const content = document.getElementById("management-content");
-    if (content) content.innerHTML = '<div class="management-section-title">Online Search Preview</div><div class="management-empty">Stage 3E sends a live request through the Cloudflare Worker. This preview does not write shopping data to Google Sheets.</div>' ;
+    if (content) {
+      content.innerHTML =
+        '<div class="management-section-title">Online Search Preview</div>' +
+        '<div class="management-empty">Choose the retailer from the searchable e-commerce picker. The app supplies the website and adapter automatically.</div>';
+    }
+
     setTimeout(() => panel?.scrollIntoView({behavior:"smooth", block:"start"}), 80);
   }
 
   function openOnlineProductSearchPreview() {
-    const storeName = String(document.getElementById("online-preview-store")?.value || "").trim();
-    const websiteUrl = String(document.getElementById("online-preview-website")?.value || "").trim();
     const query = String(document.getElementById("online-preview-query")?.value || "").trim();
-    if (!storeName || !websiteUrl || !query) {
-      showErrorToast("Preview incomplete", "Enter a retailer, e-commerce website, and product query.");
+
+    if (!onlinePreviewSelectedSource) {
+      showErrorToast(
+        "Choose an e-commerce site",
+        "Type a retailer keyword and select the store from the dropdown first."
+      );
+      openOnlinePreviewRetailerDropdown();
+      document.getElementById("online-preview-retailer-search")?.focus();
       return;
     }
-    const source = sourceDefinitionFromStore(storeName, websiteUrl);
-    if (!source) return;
+
+    if (!query) {
+      showErrorToast("Preview incomplete", "Enter product keywords to search.");
+      document.getElementById("online-preview-query")?.focus();
+      return;
+    }
+
     onlineProductSearchContext = "preview";
-    openOnlineProductSearchOverlay(source, query);
+    openOnlineProductSearchOverlay(onlinePreviewSelectedSource, query);
   }
 
   function openOnlineProductSearchOverlay(source, query) {
@@ -7143,7 +7414,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3E — real online product search. In-memory only; no Sheets writes.
+  // V6 Stage 3E.1 — friendly online retailer picker. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
