@@ -3987,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3E.1 — friendly online retailer picker
+    V6 Stage 3E.2 — web-fed e-commerce picker
   </div>
 
   <button
@@ -6124,7 +6124,7 @@
 
     <div id="management-online-search-preview" class="management-editor-card hidden">
       <div class="management-editor-title">Online Product Search Preview</div>
-      <div class="promo-group-summary">Stage 3E.1 live search. Choose an e-commerce site from the searchable picker, then search its catalog through the same Cloudflare Worker used by the shopping screen. Nothing here is written to Google Sheets.</div>
+      <div class="promo-group-summary">Stage 3E.2 live search. Type a retailer keyword and choose an e-commerce site from saved merchants or live Google business results. The website is filled automatically. Nothing here is written to Google Sheets.</div>
 
       <div class="field">
         <label for="online-preview-retailer-search">E-commerce site</label>
@@ -6326,7 +6326,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3E.1 — friendly online retailer picker. Production remains index.html.
+    V6 Stage 3E.2 — web-fed e-commerce picker. Production remains index.html.
   </div>
 
 </div>
@@ -6915,9 +6915,15 @@
   let onlineProductSearchSource = null;
   let onlineProductSearchPreviewResults = [];
 
-  // V6 Stage 3E.1 — Management preview retailer picker state.
+  // V6 Stage 3E.2 — Management preview retailer picker state.
+  // This has its own request/timer state so Management preview never hijacks
+  // the real Online Store trip-start discovery flow.
   let onlinePreviewSelectedSource = null;
   let onlinePreviewRetailerOptions = [];
+  let onlinePreviewInternetResults = [];
+  let onlinePreviewSearchTimer = null;
+  let newestOnlinePreviewInternetRequestId = 0;
+  let onlinePreviewSearchingWeb = false;
 
   function safeHostname(url) {
     try { return new URL(String(url || "").trim()).hostname.toLowerCase().replace(/^www\./, ""); }
@@ -7005,43 +7011,56 @@
     const merged = [];
     const seen = new Set();
 
-    const addOption = function(store) {
+    const addOption = function(store, origin) {
       const name = String(store?.retailerName || store?.name || "").trim();
-      const websiteUrl = String(store?.websiteUrl || "").trim();
+      const websiteUrl = canonicalOnlineWebsiteUrl(store?.websiteUrl || "");
       if (!name || !websiteUrl) return;
+
+      const domain = normalizedWebsiteKey(websiteUrl);
+      if (!domain || seen.has(domain)) return;
+      seen.add(domain);
 
       const source = sourceDefinitionFromStore(name, websiteUrl);
       if (!source) return;
 
-      const key = `${source.id}|${safeHostname(source.websiteUrl)}|${normalizeStore(name)}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-
       merged.push({
         ...source,
         retailerName: name || source.retailerName,
-        websiteUrl: websiteUrl || source.websiteUrl,
-        saved: store?.source === "saved" || Boolean(store?.storeId)
+        websiteUrl,
+        origin: origin || store?.source || "known"
       });
     };
 
-    PRODUCT_SEARCH_SOURCE_DEFINITIONS.forEach(addOption);
-
+    // Previously saved Online stores remain useful and appear first.
     try {
-      [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS].forEach(addOption);
+      savedOnlineStoreDirectory.forEach(store => addOption(store, "saved"));
     } catch (_) {}
+
+    // Keep the three known adapters as fallback examples, not as the universe
+    // of available merchants.
+    BUILT_IN_ONLINE_MERCHANTS.forEach(store => addOption(store, "built-in"));
+
+    // Live web-fed merchant candidates discovered from Google Places.
+    onlinePreviewInternetResults.forEach(store => addOption(store, "web"));
 
     onlinePreviewRetailerOptions = merged;
     return merged;
+  }
+
+  function onlinePreviewOriginLabel(option) {
+    if (option?.origin === "web") return "Web result";
+    if (option?.origin === "saved") return "Saved online store";
+    return "Known retailer";
   }
 
   function renderOnlinePreviewRetailerOptions() {
     const host = document.getElementById("online-preview-retailer-list");
     if (!host) return;
 
-    const query = normalizeStoreSearchText(
+    const rawQuery = String(
       document.getElementById("online-preview-retailer-search")?.value || ""
-    );
+    ).trim();
+    const query = normalizeStoreSearchText(rawQuery);
 
     const options = buildOnlinePreviewRetailerOptions().filter(option => {
       if (!query) return true;
@@ -7051,21 +7070,32 @@
       return query.split(/\s+/).filter(Boolean).every(token => haystack.includes(token));
     });
 
-    if (!options.length) {
-      host.innerHTML =
-        '<div class="online-preview-retailer-empty">No known e-commerce site matches that search.</div>';
-      window.currentOnlinePreviewRetailerResults = [];
-      return;
-    }
-
     window.currentOnlinePreviewRetailerResults = options;
 
-    host.innerHTML = options.map((option, index) =>
-      `<button class="online-preview-retailer-option" type="button" onclick="selectOnlinePreviewRetailer(${index})">` +
-        `<span class="online-preview-retailer-option-name">${escapeHtml(option.retailerName)}</span>` +
-        `<span class="online-preview-retailer-option-meta">${escapeHtml(option.websiteUrl)} • adapter ${escapeHtml(option.id)}</span>` +
-      `</button>`
-    ).join("");
+    let html = "";
+
+    if (options.length) {
+      html += options.map((option, index) =>
+        `<button class="online-preview-retailer-option" type="button" onclick="selectOnlinePreviewRetailer(${index})">` +
+          `<span class="online-preview-retailer-option-name">${escapeHtml(option.retailerName)}</span>` +
+          `<span class="online-preview-retailer-option-meta">${escapeHtml(option.websiteUrl)} • ${escapeHtml(onlinePreviewOriginLabel(option))}</span>` +
+        `</button>`
+      ).join("");
+    } else if (!query) {
+      html += '<div class="online-preview-retailer-empty">Type at least 2 characters to search e-commerce sites on the web.</div>';
+    } else if (onlinePreviewSearchingWeb) {
+      html += '<div class="online-preview-retailer-empty">Searching the web for merchant websites…</div>';
+    } else {
+      html += '<div class="online-preview-retailer-empty">No matching e-commerce site found yet. Try a broader retailer name.</div>';
+    }
+
+    if (query.length >= 2 && onlinePreviewSearchingWeb && options.length) {
+      html += '<div class="online-discovery-note">Searching Google business data for more merchant websites…</div>';
+    } else if (query.length >= 2 && onlinePreviewInternetResults.length) {
+      html += '<div class="online-discovery-note">Web results are discovered from Google business data, filtered for retail/shop-type businesses, and reduced to clean merchant home-domain URLs.</div>';
+    }
+
+    host.innerHTML = html;
   }
 
   function openOnlinePreviewRetailerDropdown() {
@@ -7084,11 +7114,125 @@
     else closeOnlinePreviewRetailerDropdown();
   }
 
+  function scheduleOnlinePreviewMerchantDiscovery(value, delay = 520) {
+    clearTimeout(onlinePreviewSearchTimer);
+
+    const query = String(value || "").trim();
+    if (query.length < 2) {
+      onlinePreviewInternetResults = [];
+      onlinePreviewSearchingWeb = false;
+      renderOnlinePreviewRetailerOptions();
+      return;
+    }
+
+    onlinePreviewSearchingWeb = true;
+    renderOnlinePreviewRetailerOptions();
+
+    onlinePreviewSearchTimer = setTimeout(
+      () => searchOnlinePreviewMerchantWebCandidates(query),
+      Math.max(420, Number(delay) || 520)
+    );
+  }
+
   function onlinePreviewRetailerSearchChanged() {
     onlinePreviewSelectedSource = null;
+
     const summary = document.getElementById("online-preview-selected-source");
     if (summary) summary.textContent = "Choose an e-commerce site from the dropdown.";
+
     openOnlinePreviewRetailerDropdown();
+
+    const query = String(
+      document.getElementById("online-preview-retailer-search")?.value || ""
+    ).trim();
+
+    scheduleOnlinePreviewMerchantDiscovery(query);
+  }
+
+  async function searchOnlinePreviewMerchantWebCandidates(query) {
+    const requestId = ++newestOnlinePreviewInternetRequestId;
+
+    try {
+      const ready = await ensureGooglePlacesReady(true);
+      if (!ready) {
+        if (requestId !== newestOnlinePreviewInternetRequestId) return;
+        onlinePreviewSearchingWeb = false;
+        renderOnlinePreviewRetailerOptions();
+        return;
+      }
+
+      const { Place } = await google.maps.importLibrary("places");
+
+      const request = {
+        textQuery: query + " tienda compras",
+        fields: [
+          "id",
+          "displayName",
+          "websiteURI",
+          "googleMapsURI",
+          "businessStatus",
+          "formattedAddress",
+          "primaryTypeDisplayName",
+          "primaryType"
+        ],
+        language: "es-MX",
+        region: "mx",
+        maxResultCount: 20
+      };
+
+      let response;
+      try {
+        response = await Place.searchByText(request);
+      } catch (firstError) {
+        await new Promise(resolve => setTimeout(resolve, 650));
+        response = await Place.searchByText(request);
+      }
+
+      if (requestId !== newestOnlinePreviewInternetRequestId) return;
+
+      const seenDomains = new Set();
+      const alreadyKnown = new Set(
+        [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS]
+          .map(item => normalizedWebsiteKey(item.websiteUrl))
+          .filter(Boolean)
+      );
+
+      onlinePreviewInternetResults = (response?.places || [])
+        .filter(place => onlineMerchantPlaceLooksRetail(place))
+        .map(place => ({
+          id: String(place.id || ""),
+          name: String(place.displayName || "").trim() || "Online merchant",
+          websiteUrl: canonicalOnlineWebsiteUrl(place.websiteURI),
+          googleMapsUrl: String(place.googleMapsURI || "").trim(),
+          businessStatus: readableBusinessStatus(place.businessStatus),
+          primaryType: String(place.primaryType || "").trim(),
+          source: "online-google-web"
+        }))
+        .filter(item => {
+          if (!item.websiteUrl || !onlineMerchantDomainLooksUsable(item.websiteUrl)) return false;
+          const domain = normalizedWebsiteKey(item.websiteUrl);
+          if (!domain || alreadyKnown.has(domain) || seenDomains.has(domain)) return false;
+          seenDomains.add(domain);
+          return true;
+        })
+        .slice(0, 10);
+
+      onlinePreviewSearchingWeb = false;
+      renderOnlinePreviewRetailerOptions();
+
+    } catch (error) {
+      if (requestId !== newestOnlinePreviewInternetRequestId) return;
+
+      console.warn("Online preview merchant discovery failed", error);
+      onlinePreviewInternetResults = [];
+      onlinePreviewSearchingWeb = false;
+      renderOnlinePreviewRetailerOptions();
+
+      showErrorToast(
+        "Web merchant search unavailable",
+        "Saved/known online stores still work. Check the Google Places key on this device if web discovery does not return results."
+      );
+    }
   }
 
   function selectOnlinePreviewRetailer(index) {
@@ -7102,10 +7246,15 @@
 
     const summary = document.getElementById("online-preview-selected-source");
     if (summary) {
+      const adapterNote =
+        result.id === "GENERIC_RETAILER"
+          ? "No live product-search adapter is enabled for this merchant yet."
+          : `Source adapter: ${result.id}`;
+
       summary.innerHTML =
         `<strong>${escapeHtml(result.retailerName)}</strong><br>` +
         `${escapeHtml(result.websiteUrl)}<br>` +
-        `<span class="muted">Source adapter: ${escapeHtml(result.id)}</span>`;
+        `<span class="muted">${escapeHtml(onlinePreviewOriginLabel(result))} • ${escapeHtml(adapterNote)}</span>`;
     }
 
     closeOnlinePreviewRetailerDropdown();
@@ -7123,12 +7272,20 @@
     const panel = document.getElementById("management-online-search-preview");
     panel?.classList.remove("hidden");
 
+    clearTimeout(onlinePreviewSearchTimer);
+    newestOnlinePreviewInternetRequestId += 1;
     onlinePreviewSelectedSource = null;
+    onlinePreviewInternetResults = [];
+    onlinePreviewSearchingWeb = false;
+
     const retailerInput = document.getElementById("online-preview-retailer-search");
     if (retailerInput) retailerInput.value = "";
 
     const selectedSummary = document.getElementById("online-preview-selected-source");
-    if (selectedSummary) selectedSummary.textContent = "No e-commerce site selected yet.";
+    if (selectedSummary) {
+      selectedSummary.textContent =
+        "Type a retailer keyword. Saved merchants appear immediately and web results are added automatically.";
+    }
 
     closeOnlinePreviewRetailerDropdown();
 
@@ -7136,7 +7293,7 @@
     if (content) {
       content.innerHTML =
         '<div class="management-section-title">Online Search Preview</div>' +
-        '<div class="management-empty">Choose the retailer from the searchable e-commerce picker. The app supplies the website and adapter automatically.</div>';
+        '<div class="management-empty">Search e-commerce sites by retailer name. The app discovers merchant websites from the web and fills the URL automatically.</div>';
     }
 
     setTimeout(() => panel?.scrollIntoView({behavior:"smooth", block:"start"}), 80);
@@ -7148,7 +7305,7 @@
     if (!onlinePreviewSelectedSource) {
       showErrorToast(
         "Choose an e-commerce site",
-        "Type a retailer keyword and select the store from the dropdown first."
+        "Type a retailer keyword and select one of the dropdown results first."
       );
       openOnlinePreviewRetailerDropdown();
       document.getElementById("online-preview-retailer-search")?.focus();
@@ -7414,7 +7571,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3E.1 — friendly online retailer picker. In-memory only; no Sheets writes.
+  // V6 Stage 3E.2 — web-fed e-commerce picker. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
