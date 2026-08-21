@@ -3987,7 +3987,7 @@
   <h1>🛒 Obsidian Shopping</h1>
 
   <div class="subtitle">
-    V6 Stage 3F.6 — Enriched web-result item form
+    V6 Stage 3G.1 — Google Places configuration removed from UX
   </div>
 
   <button
@@ -4186,8 +4186,7 @@
         </div>
 
         <div id="start-google-placeholder" class="store-google-placeholder hidden">
-          Google Places search is available in this V5 test build. Enter the demo key once on this device; it is stored locally in this browser and is not committed to GitHub.
-          <button type="button" class="store-secondary-button" style="margin-top:10px;width:100%;" onclick="openMapsDemoKeySetup()">⚙️ GOOGLE PLACES KEY</button>
+          Nearby store discovery is temporarily unavailable. Saved stores and manual store entry are still available.
         </div>
 
         <div class="store-search-actions single-action">
@@ -6426,7 +6425,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3F.6 — Enriched web-result item form. Production remains index.html.
+    V6 Stage 3G.1 — Google Places configuration removed from UX. Production remains index.html.
   </div>
 
 </div>
@@ -6940,20 +6939,6 @@
   </div>
 </div>
 
-<div id="maps-key-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="maps-key-title">
-  <div class="change-card">
-    <div id="maps-key-title" class="change-title">GOOGLE PLACES DEMO KEY</div>
-    <div class="change-body">Paste the Maps Demo Key you created. It is saved only in this browser/device local storage and is not written to Google Sheets or GitHub.</div>
-    <label for="maps-demo-key-input">Demo key</label>
-    <input id="maps-demo-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste demo key here">
-    <div id="maps-key-status" class="store-mode-note" style="margin-top:12px;">The demo key is for V5 prototyping only.</div>
-    <div class="change-actions">
-      <button class="change-cancel" type="button" onclick="closeMapsDemoKeySetup()">CANCEL</button>
-      <button class="change-history" type="button" onclick="saveMapsDemoKeySetup()">SAVE &amp; CONNECT</button>
-    </div>
-  </div>
-</div>
-
 <div id="pdf-export-stage"></div>
 
 <nav
@@ -6998,13 +6983,11 @@
 
 <script>
 
-  // V6 Stage 3F.6 — enriched web-result item form.
-  // Preserves mode-aware camera behavior, retailer source resolution,
-  // explicit product-entry button wiring, and live Cloudflare retailer search.
-  // Selecting a live web result now carries its name, image, and fetched price
-  // into the normal item-confirmation form. Price remains editable and existing
-  // promotions, quantity, notes, barcode, history, reports, and Sheets behavior remain.
-  // Product-image persistence is intentionally deferred to a later isolated step.
+  // V6 Stage 3G.1 — Google Places configuration removed from user-facing UX.
+  // Existing Google Places runtime/storage behavior is preserved so the already
+  // configured development device continues to use Near Me normally.
+  // API-key entry/edit controls are no longer part of the shopping interface.
+  // Stage 3F.6 web-result enrichment and all existing shopping behavior remain.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -8379,7 +8362,7 @@
       `<div class="matcher-lab-detail"><strong>Canonical compact:</strong> ${escapeHtml(canonicalCompact)}</div>`;
   }
 
-  // V6 Stage 3F.6 — Enriched web-result item form. In-memory only; no Sheets writes.
+  // V6 Stage 3G.1 — Google Places configuration removed from UX. In-memory only; no Sheets writes.
   let promoLabItems = [
     {name:"Test item A", qty:1, price:60},
     {name:"Test item B", qty:1, price:60}
@@ -10303,19 +10286,16 @@
   }
 
   function openMapsDemoKeySetup() {
-    const input = document.getElementById("maps-demo-key-input");
-    input.value = getMapsDemoKey();
-    const status = document.getElementById("maps-key-status");
-    status.textContent = getMapsDemoKey()
-      ? "A demo key is already stored on this device. Saving a new one will replace it."
-      : "Paste the demo key you created on Google Maps Platform.";
-    status.className = "store-mode-note";
-    show("maps-key-overlay");
-    setTimeout(() => input.focus(), 80);
+    showErrorToast(
+      "Google Places configuration",
+      "Google Places is application infrastructure and is no longer configured from the shopping interface."
+    );
   }
 
+
   function closeMapsDemoKeySetup() {
-    hide("maps-key-overlay");
+    const overlay = document.getElementById("maps-key-overlay");
+    if (overlay) hide("maps-key-overlay");
   }
 
   async function saveMapsDemoKeySetup() {
@@ -10352,7 +10332,14 @@
     if (googlePlacesReady && window.google?.maps?.importLibrary) return true;
     const key = getMapsDemoKey();
     if (!key) {
-      if (promptIfMissing) openMapsDemoKeySetup();
+      if (promptIfMissing) {
+        const placeholder = document.getElementById("start-google-placeholder");
+        if (placeholder) {
+          placeholder.classList.remove("hidden");
+          placeholder.textContent =
+            "Nearby store discovery is temporarily unavailable. Saved stores and manual store entry are still available.";
+        }
+      }
       return false;
     }
     if (!googleMapsLoadPromise) {
