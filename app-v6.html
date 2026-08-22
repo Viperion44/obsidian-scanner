@@ -6658,7 +6658,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3I.1 — Product image/source metadata persistence. Production remains index.html.
+    V6 Stage 3I.2 — One-tap product search. Production remains index.html.
   </div>
 
 </div>
@@ -7255,9 +7255,9 @@
 
 <script>
 
-  // V6 Stage 3I.1 — product image/source metadata persistence.
-  // Web-selected product image/source metadata is now stored on the canonical
-  // Product Catalog record after a confirmed item write. Matching behavior is unchanged.
+  // V6 Stage 3I.2 — one-tap product search.
+  // Product-search launchers now open the overlay and immediately run the
+  // keywords already entered. SEARCH remains available only for refinements.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -7565,18 +7565,27 @@
 
   function openOnlineProductSearchFromItem() {
     const query = String(document.getElementById("product-name")?.value || "").trim();
-    if (!query) { showFormError("Enter some product keywords before searching online.", "product-name"); return; }
+    if (!query) {
+      showFormError("Enter some product keywords before searching online.", "product-name");
+      return;
+    }
 
     const source = resolveProductSearchSourceForActiveTrip();
     if (!source) {
-      showErrorToast("No online catalog configured", "This store needs an e-commerce website before online product lookup can be used.");
+      showErrorToast(
+        "No online catalog configured",
+        "This store needs an e-commerce website before online product lookup can be used."
+      );
       return;
     }
 
     onlineProductSearchContext = "item";
     openOnlineProductSearchOverlay(source, query);
-  }
 
+    // Stage 3I.2: the launch button itself performs the first search.
+    // The SEARCH button inside the overlay remains for user refinements.
+    runOnlineProductSearchPreview();
+  }
 
   function tripProductSearchKeyDown(event) {
     if (event.key === "Enter") {
@@ -8009,6 +8018,9 @@
 
     onlineProductSearchContext = "trip-entry";
     openOnlineProductSearchOverlay(source, query);
+
+    // Stage 3I.2: immediately run the query already entered.
+    runOnlineProductSearchPreview();
   }
 
   function buildOnlinePreviewRetailerOptions() {
