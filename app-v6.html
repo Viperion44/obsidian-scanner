@@ -6635,7 +6635,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3H.1 — Cancel Trip safeguards. Production remains index.html.
+    V6 Stage 3H.2 — Known barcode store-match regression fix. Production remains index.html.
   </div>
 
 </div>
@@ -7232,10 +7232,10 @@
 
 <script>
 
-  // V6 Stage 3H.1 — Cancel Trip safeguards.
-  // Adds a destructive, confirmed cancellation path that records CANCELLED
-  // in Trips, clears only the active shopping session, excludes cancellations
-  // from normal History/Reports, and exposes cancellation counts in History Audit.
+  // V6 Stage 3H.2 — known-barcode store-match regression fix.
+  // Preserves Stage 3H.1 cancellation behavior while allowing branch-style
+  // store names (for example Walmart Supercenter ...) to match their saved
+  // retailer-level Product records for barcode/name/previous-price lookup.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -13719,10 +13719,8 @@
     exactStoreMatch =
       barcodeMatches.find(
         record =>
-          normalizeStore(
-            record.store
-          ) ===
-          normalizeStore(
+          storesMatchForKnownProduct(
+            record.store,
             activeTrip.store
           )
       ) || null;
@@ -13873,7 +13871,10 @@
     document.getElementById(
       "confirm-name"
     ).checked =
-      false;
+      Boolean(
+        exactStoreMatch &&
+        suggestedProduct
+      );
 
     document.getElementById(
       "amount"
@@ -13931,10 +13932,8 @@
     const otherMatches =
       barcodeMatches.filter(
         record =>
-          normalizeStore(
-            record.store
-          ) !==
-          normalizeStore(
+          !storesMatchForKnownProduct(
+            record.store,
             activeTrip.store
           )
       );
@@ -20055,6 +20054,100 @@
     )
       .trim()
       .toLowerCase();
+  }
+
+
+  function retailerFamilyForStoreName(
+    value
+  ) {
+
+    const normalized =
+      normalizeStoreSearchText(
+        value
+      );
+
+    if (!normalized) {
+      return "";
+    }
+
+    const padded =
+      ` ${normalized} `;
+
+    const source =
+      Object.values(
+        PRODUCT_SEARCH_SOURCE_DEFINITIONS || {}
+      ).find(
+        definition =>
+          (
+            definition?.storeKeywords ||
+            []
+          ).some(
+            keyword => {
+              const token =
+                normalizeStoreSearchText(
+                  keyword
+                );
+
+              return (
+                token &&
+                padded.includes(
+                  ` ${token} `
+                )
+              );
+            }
+          )
+      );
+
+    return String(
+      source?.id || ""
+    ).trim();
+  }
+
+
+  function storesMatchForKnownProduct(
+    savedStore,
+    currentStore = activeTrip?.store || ""
+  ) {
+
+    const saved =
+      normalizeStore(
+        savedStore
+      );
+
+    const current =
+      normalizeStore(
+        currentStore
+      );
+
+    if (
+      !saved ||
+      !current
+    ) {
+      return false;
+    }
+
+    if (
+      saved === current
+    ) {
+      return true;
+    }
+
+    const savedFamily =
+      retailerFamilyForStoreName(
+        savedStore
+      );
+
+    const currentFamily =
+      retailerFamilyForStoreName(
+        currentStore
+      );
+
+    return Boolean(
+      savedFamily &&
+      currentFamily &&
+      savedFamily ===
+        currentFamily
+    );
   }
 
 
