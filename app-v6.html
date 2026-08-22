@@ -357,6 +357,38 @@
       line-height: 1.45;
     }
 
+    .barcode-edit-actions {
+      margin-top: 8px;
+    }
+
+    .barcode-edit-button {
+      margin: 0;
+      background: #4a3a61;
+    }
+
+    .barcode-edit-box {
+      margin-top: 9px;
+      padding: 10px;
+      border: 1px solid #4b5260;
+      border-radius: 10px;
+      background: #1b1f28;
+    }
+
+    .barcode-edit-box.hidden {
+      display: none;
+    }
+
+    .barcode-edit-box input {
+      margin: 0;
+    }
+
+    .barcode-edit-hint {
+      margin-top: 7px;
+      color: #aeb4c0;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
     .large-price {
       font-size: 20px;
       font-weight: bold;
@@ -4047,9 +4079,17 @@
     }
 
     .known-product-suggestions {
+      position: relative;
+      z-index: 30;
       display: grid;
       gap: 8px;
       margin-top: 9px;
+      padding: 9px;
+      border: 1px solid #4b5260;
+      border-radius: 12px;
+      background: #171b22;
+      box-shadow: 0 12px 28px rgba(0,0,0,.42);
+      isolation: isolate;
     }
 
     .known-product-suggestions.hidden {
@@ -4066,6 +4106,7 @@
       border: 1px solid #444b58;
       border-radius: 10px;
       background: #20242d;
+      opacity: 1;
       color: #ffffff;
       text-align: left;
     }
@@ -4909,6 +4950,39 @@
           class="readonly"
         >
           —
+        </div>
+
+        <div
+          id="barcode-edit-actions"
+          class="barcode-edit-actions hidden"
+        >
+          <button
+            id="barcode-edit-button"
+            class="barcode-edit-button"
+            type="button"
+            onclick="enableNearMeBarcodeEntry()"
+          >
+            ADD / CHANGE BARCODE
+          </button>
+
+          <div
+            id="barcode-edit-box"
+            class="barcode-edit-box hidden"
+          >
+            <input
+              id="editable-barcode"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="Enter barcode"
+              oninput="nearMeBarcodeInputChanged()"
+              onchange="validateNearMeBarcodeAssignment()"
+            >
+
+            <div class="barcode-edit-hint">
+              Near Me only. Use this when a product learned without a barcode later becomes available in its physical package.
+            </div>
+          </div>
         </div>
 
       </div>
@@ -6731,7 +6805,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3I.3 — Known-product typeahead with saved images. Production remains index.html.
+    V6 Stage 3I.4 — Typeahead readability + Near Me barcode assignment. Production remains index.html.
   </div>
 
 </div>
@@ -7328,9 +7402,9 @@
 
 <script>
 
-  // V6 Stage 3I.3 — known-product typeahead with saved images.
-  // Typing a product name now surfaces local canonical/product-history matches
-  // in every trip mode. Persisted canonical images are shown when available.
+  // V6 Stage 3I.4 — typeahead readability + Near Me barcode assignment.
+  // Known-product suggestions now sit on an opaque surface. Near Me product
+  // review can explicitly unlock and assign/change a barcode before item save.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -14072,6 +14146,270 @@
   }
 
 
+  function configureBarcodeAssignmentControl() {
+
+    const actions =
+      document.getElementById(
+        "barcode-edit-actions"
+      );
+
+    const box =
+      document.getElementById(
+        "barcode-edit-box"
+      );
+
+    const input =
+      document.getElementById(
+        "editable-barcode"
+      );
+
+    if (
+      !actions ||
+      !box ||
+      !input
+    ) {
+      return;
+    }
+
+    const nearMe =
+      getActiveTripMode() ===
+        "NEAR";
+
+    actions.classList.toggle(
+      "hidden",
+      !nearMe
+    );
+
+    if (!nearMe) {
+      box.classList.add(
+        "hidden"
+      );
+      input.value =
+        "";
+      return;
+    }
+
+    input.value =
+      currentBarcode || "";
+  }
+
+
+  function enableNearMeBarcodeEntry() {
+
+    if (
+      getActiveTripMode() !==
+        "NEAR"
+    ) {
+      return;
+    }
+
+    const box =
+      document.getElementById(
+        "barcode-edit-box"
+      );
+
+    const input =
+      document.getElementById(
+        "editable-barcode"
+      );
+
+    if (
+      !box ||
+      !input
+    ) {
+      return;
+    }
+
+    box.classList.remove(
+      "hidden"
+    );
+
+    input.value =
+      currentBarcode || "";
+
+    input.focus();
+
+    if (
+      input.value
+    ) {
+      input.select();
+    }
+  }
+
+
+  function refreshBarcodeReviewDisplay() {
+
+    const display =
+      document.getElementById(
+        "form-barcode"
+      );
+
+    if (display) {
+      display.textContent =
+        currentBarcode ||
+        "Not assigned";
+    }
+
+    const summary =
+      document.getElementById(
+        "barcode-summary"
+      );
+
+    if (summary) {
+      const enteredBy =
+        currentBarcode
+          ? "Near Me barcode assignment"
+          : "Product entry";
+
+      summary.innerHTML =
+        "<b>Entered by:</b> " +
+        escapeHtml(
+          enteredBy
+        ) +
+        "<br><b>Barcode:</b> " +
+        escapeHtml(
+          currentBarcode ||
+          "Not assigned"
+        ) +
+        "<br><b>Store:</b> " +
+        escapeHtml(
+          activeTrip?.store ||
+          ""
+        );
+    }
+  }
+
+
+  function nearMeBarcodeInputChanged() {
+
+    if (
+      getActiveTripMode() !==
+        "NEAR"
+    ) {
+      return;
+    }
+
+    const input =
+      document.getElementById(
+        "editable-barcode"
+      );
+
+    currentBarcode =
+      String(
+        input?.value || ""
+      )
+      .replace(/\s+/g, "")
+      .trim();
+
+    if (
+      input &&
+      input.value !==
+        currentBarcode
+    ) {
+      input.value =
+        currentBarcode;
+    }
+
+    refreshBarcodeReviewDisplay();
+  }
+
+
+  function validateNearMeBarcodeAssignment() {
+
+    if (
+      getActiveTripMode() !==
+        "NEAR"
+    ) {
+      return true;
+    }
+
+    const product =
+      String(
+        document.getElementById(
+          "product-name"
+        )?.value || ""
+      ).trim();
+
+    if (!currentBarcode) {
+      barcodeMatches =
+        [];
+      exactStoreMatch =
+        null;
+      return true;
+    }
+
+    barcodeMatches =
+      productDatabase.filter(
+        record =>
+          String(
+            record.barcode || ""
+          ).trim() ===
+            currentBarcode
+      );
+
+    const conflictingCurrentStore =
+      barcodeMatches.find(
+        record =>
+          storesMatchForKnownProduct(
+            record.store,
+            activeTrip?.store || ""
+          ) &&
+          normalizeProductIdentity(
+            record.product
+          ) !==
+            normalizeProductIdentity(
+              product
+            )
+      );
+
+    if (
+      conflictingCurrentStore
+    ) {
+      showErrorToast(
+        "Barcode already belongs to another product",
+        `${currentBarcode} is already linked to ${conflictingCurrentStore.product} at ${conflictingCurrentStore.store}.`
+      );
+
+      currentBarcode =
+        "";
+
+      const input =
+        document.getElementById(
+          "editable-barcode"
+        );
+
+      if (input) {
+        input.value =
+          "";
+        input.focus();
+      }
+
+      refreshBarcodeReviewDisplay();
+      return false;
+    }
+
+    exactStoreMatch =
+      barcodeMatches.find(
+        record =>
+          storesMatchForKnownProduct(
+            record.store,
+            activeTrip?.store || ""
+          )
+      ) || null;
+
+    renderBarcodeReuseWarning();
+
+    showSuccessToast(
+      "Barcode assigned",
+      currentBarcode
+        ? `Barcode ${currentBarcode} will be linked when this item is added.`
+        : "No barcode is assigned to this item."
+    );
+
+    return true;
+  }
+
+
   function prepareProductForm(
     barcode,
     source
@@ -14238,6 +14576,8 @@
       "form-store"
     ).textContent =
       activeTrip.store;
+
+    configureBarcodeAssignmentControl();
 
     document.getElementById(
       "product-name"
@@ -16049,6 +16389,15 @@
 
 
     if (
+      getActiveTripMode() ===
+        "NEAR" &&
+      !validateNearMeBarcodeAssignment()
+    ) {
+      return;
+    }
+
+
+    if (
       amount === null
     ) {
 
@@ -16641,6 +16990,22 @@
       "manual-barcode"
     ).value =
       "";
+
+    const editableBarcode =
+      document.getElementById(
+        "editable-barcode"
+      );
+
+    if (editableBarcode) {
+      editableBarcode.value =
+        "";
+    }
+
+    document.getElementById(
+      "barcode-edit-box"
+    )?.classList.add(
+      "hidden"
+    );
   }
 
 
