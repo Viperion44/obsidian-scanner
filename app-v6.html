@@ -130,6 +130,33 @@
       background: #702a34;
     }
 
+    .cancel-trip-button {
+      margin-top: 10px;
+      background: #702a34;
+    }
+
+    .cancel-trip-card {
+      border-color: #8f3039;
+    }
+
+    .cancel-trip-title {
+      color: #ff8d96;
+    }
+
+    .cancel-trip-summary {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #191d25;
+      color: #d8dce3;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .cancel-trip-confirm {
+      background: #8f3039 !important;
+    }
+
     button:disabled {
       opacity: 0.55;
       cursor: default;
@@ -4499,6 +4526,14 @@
         REVIEW &amp; FINISH TRIP
       </button>
 
+      <button
+        class="danger cancel-trip-button"
+        type="button"
+        onclick="openCancelTripDialog()"
+      >
+        CANCEL TRIP
+      </button>
+
     </div>
 
     <div id="physical-barcode-entry">
@@ -5397,6 +5432,14 @@
       onclick="confirmFinishTrip()"
     >
       CONFIRM &amp; FINISH TRIP
+    </button>
+
+    <button
+      class="danger cancel-trip-button"
+      type="button"
+      onclick="openCancelTripDialog()"
+    >
+      CANCEL TRIP
     </button>
 
 
@@ -6592,7 +6635,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3G.6 — Back control unification. Production remains index.html.
+    V6 Stage 3H.1 — Cancel Trip safeguards. Production remains index.html.
   </div>
 
 </div>
@@ -6970,6 +7013,45 @@
 </div>
 
 
+<div
+  id="cancel-trip-overlay"
+  class="change-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="cancel-trip-title"
+>
+  <div class="change-card cancel-trip-card">
+    <div id="cancel-trip-title" class="change-title cancel-trip-title">
+      CANCEL THIS TRIP?
+    </div>
+
+    <div id="cancel-trip-body" class="change-body">
+      Are you sure you want to cancel this trip?
+    </div>
+
+    <div id="cancel-trip-summary" class="cancel-trip-summary"></div>
+
+    <div class="change-actions">
+      <button
+        class="change-cancel"
+        type="button"
+        onclick="keepCurrentTrip()"
+      >
+        KEEP SHOPPING
+      </button>
+
+      <button
+        id="cancel-trip-confirm-button"
+        class="change-history cancel-trip-confirm"
+        type="button"
+        onclick="confirmCancelTrip()"
+      >
+        CANCEL TRIP
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="app-exit-overlay" class="change-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="app-exit-title">
   <div class="change-card app-exit-card">
     <div id="app-exit-title" class="change-title app-exit-title">EXIT OBSIDIAN SHOPPING?</div>
@@ -7150,9 +7232,10 @@
 
 <script>
 
-  // V6 Stage 3G.6 — back control unification.
-  // Reuses the exact store-card back-arrow artwork for section-level
-  // Back to Shopping / Back to History controls without changing navigation logic.
+  // V6 Stage 3H.1 — Cancel Trip safeguards.
+  // Adds a destructive, confirmed cancellation path that records CANCELLED
+  // in Trips, clears only the active shopping session, excludes cancellations
+  // from normal History/Reports, and exposes cancellation counts in History Audit.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -8730,6 +8813,7 @@
   let managementReturnPanelId = "home-panel";
   let managementProducts = [];
   let managementTrips = [];
+  let managementCancelledTrips = [];
   let managementHistoryRows = [];
   let managementPaymentMethods = [];
   let managementStores = [];
@@ -18055,6 +18139,283 @@
   }
 
 
+  async function openCancelTripDialog() {
+
+    if (!activeTrip) {
+      showErrorToast(
+        "No active trip",
+        "There is no shopping trip to cancel."
+      );
+      return;
+    }
+
+    try {
+      pauseScanner();
+
+      const items =
+        await loadCurrentShoppingItems();
+
+      const totals =
+        calculateTripTotals(
+          items
+        );
+
+      const itemCount =
+        items.length;
+
+      document.getElementById(
+        "cancel-trip-body"
+      ).textContent =
+        "Are you sure you want to cancel the trip? " +
+        "If you only want to change or remove some products, use Review & Finish instead.";
+
+      document.getElementById(
+        "cancel-trip-summary"
+      ).textContent =
+        `${activeTrip.store || "Current trip"} • ` +
+        `${itemCount} product${itemCount === 1 ? "" : "s"} • ` +
+        `${formatMoney(totals.actualTotal || 0)}`;
+
+      show(
+        "cancel-trip-overlay"
+      );
+
+    } catch (error) {
+      if (
+        !document.getElementById(
+          "active-trip-panel"
+        ).classList.contains(
+          "hidden"
+        ) &&
+        getActiveTripMode() === "NEAR"
+      ) {
+        resumeScanner();
+      }
+
+      showErrorToast(
+        "Could not prepare cancellation",
+        error?.message || String(error || "Please try again.")
+      );
+    }
+  }
+
+
+  function keepCurrentTrip() {
+
+    hide(
+      "cancel-trip-overlay"
+    );
+
+    if (
+      activeTrip &&
+      !document.getElementById(
+        "active-trip-panel"
+      ).classList.contains(
+        "hidden"
+      ) &&
+      getActiveTripMode() === "NEAR"
+    ) {
+      resumeScanner();
+    }
+
+    showSuccessToast(
+      "Trip kept",
+      "Continue shopping when ready."
+    );
+  }
+
+
+  async function updateCancelledTripRow(
+    cancelIso,
+    itemCount
+  ) {
+
+    if (
+      !activeTrip?.sheetRow
+    ) {
+      throw new Error(
+        "The Trips row for this active trip is unknown."
+      );
+    }
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${TRIPS_SHEET}'!D${activeTrip.sheetRow}:H${activeTrip.sheetRow}`,
+
+          values:
+            [[
+              cancelIso,
+              "CANCELLED",
+              activeTrip.budget,
+              "",
+              itemCount
+            ]]
+        }
+      ],
+      "RAW"
+    );
+  }
+
+
+  async function confirmCancelTrip() {
+
+    if (!activeTrip) {
+      hide(
+        "cancel-trip-overlay"
+      );
+      showErrorToast(
+        "No active trip",
+        "There is no shopping trip to cancel."
+      );
+      return;
+    }
+
+    const button =
+      document.getElementById(
+        "cancel-trip-confirm-button"
+      );
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "CANCELLING...";
+
+    try {
+
+      const items =
+        await loadCurrentShoppingItems();
+
+      const cancelIso =
+        localIsoWithOffset(
+          new Date()
+        );
+
+      await updateCancelledTripRow(
+        cancelIso,
+        items.length
+      );
+
+      await clearActiveShoppingList();
+
+      await stopScanner();
+
+      activeTrip.end =
+        cancelIso;
+
+      activeTrip.status =
+        "CANCELLED";
+
+      activeTrip.finalTotal =
+        "";
+
+      activeTrip.itemCount =
+        items.length;
+
+      hide(
+        "cancel-trip-overlay"
+      );
+
+      hide(
+        "active-trip-panel"
+      );
+
+      hide(
+        "item-panel"
+      );
+
+      hide(
+        "success-panel"
+      );
+
+      hide(
+        "finish-review-panel"
+      );
+
+      hide(
+        "payment-panel"
+      );
+
+      finishReviewItems =
+        [];
+
+      finishReviewTotals =
+        null;
+
+      reviewEditingItemIndex =
+        null;
+
+      paymentMode =
+        "SINGLE";
+
+      paymentAllocations =
+        [];
+
+      selectedPaymentDraftId =
+        "";
+
+      cashEditingAllocationId =
+        "";
+
+      budgetWarningAcknowledged =
+        false;
+
+      resetCurrentItem();
+
+      activeTrip =
+        null;
+
+      openTripCandidate =
+        null;
+
+      selectedStartGoogleStore =
+        null;
+
+      startGooglePredictions =
+        [];
+
+      visitedStoresLoadedFromTrips =
+        false;
+
+      document.getElementById(
+        "start-store"
+      ).value =
+        "";
+
+      document.getElementById(
+        "start-budget"
+      ).value =
+        "";
+
+      showHome();
+
+      hideStatus();
+
+      showSuccessToast(
+        "Trip cancelled",
+        "The cancelled trip was closed and will not appear in shopping history or reports."
+      );
+
+    } catch (error) {
+
+      showErrorToast(
+        "Cancellation failed",
+        error?.message || String(error || "The trip is still open.")
+      );
+
+    } finally {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "CANCEL TRIP";
+    }
+  }
+
+
   async function confirmFinishTrip() {
 
     if (
@@ -19528,6 +19889,7 @@
 
   function hasVisibleAppSubflow() {
     return [
+      "cancel-trip-overlay",
       "online-product-search-overlay",
       "canonical-match-overlay",
       "nearby-map-overlay",
@@ -19636,6 +19998,11 @@
   }
 
   function appNavigateBackDirect() {
+    if (appLayerVisible("cancel-trip-overlay")) {
+      keepCurrentTrip();
+      return;
+    }
+
     if (appLayerVisible("online-product-search-overlay")) {
       closeOnlineProductSearch(false);
       return;
@@ -26550,6 +26917,61 @@
         historyDatesResult.values || [],
         tripsFormattedResult.values || []
       );
+
+    managementCancelledTrips =
+      (tripsResult.values || [])
+        .map(
+          (row, index) => {
+            const status =
+              String(
+                row[4] ?? ""
+              )
+              .trim()
+              .toUpperCase();
+
+            if (
+              status !== "CANCELLED"
+            ) {
+              return null;
+            }
+
+            return {
+              tripId:
+                String(
+                  row[0] ?? ""
+                ).trim(),
+
+              store:
+                String(
+                  row[1] ?? ""
+                ).trim(),
+
+              start:
+                String(
+                  tripsFormattedResult.values?.[index]?.[2] ??
+                  row[2] ??
+                  ""
+                ).trim(),
+
+              cancelled:
+                String(
+                  tripsFormattedResult.values?.[index]?.[3] ??
+                  row[3] ??
+                  ""
+                ).trim(),
+
+              itemCount:
+                isUsableNumber(
+                  row[7]
+                )
+                  ? Number(
+                      row[7]
+                    )
+                  : 0
+            };
+          }
+        )
+        .filter(Boolean);
   }
 
   function scrollManagementContentIntoView() {
@@ -28604,11 +29026,12 @@
       );
 
     if (
-      !managementTrips.length
+      !managementTrips.length &&
+      !managementCancelledTrips.length
     ) {
       box.innerHTML =
         '<div class="management-section-title">History Audit</div>' +
-        '<div class="management-empty">No finished trips are stored yet.</div>';
+        '<div class="management-empty">No finished or cancelled trips are stored yet.</div>';
       return;
     }
 
@@ -28642,6 +29065,14 @@
         '<div class="management-row-meta">' +
           escapeHtml(
             `${managementTrips.length} total`
+          ) +
+        "</div>" +
+      "</div>" +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Cancelled trips</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            `${managementCancelledTrips.length} total`
           ) +
         "</div>" +
       "</div>" +
