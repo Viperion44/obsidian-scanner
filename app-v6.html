@@ -888,6 +888,71 @@
       background: #3b414d;
     }
 
+    .section-back-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: auto;
+      min-width: 0;
+      margin: 0 0 14px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1;
+      box-shadow: none;
+    }
+
+    .section-back-control:hover,
+    .section-back-control:active {
+      background: transparent;
+    }
+
+    .section-back-control-arrow {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      border: 1px solid #555d70;
+      border-radius: 14px;
+      background: #262b36;
+      box-shadow: 0 7px 20px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .section-back-control-arrow::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 28px 28px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.8' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H6'/><path d='M11 7L6 12L11 17'/></svg>");
+    }
+
+    .section-back-control:active .section-back-control-arrow {
+      transform: scale(.95);
+      background: #303644;
+    }
+
+    .section-back-control:focus-visible {
+      outline: 2px solid #8e59d1;
+      outline-offset: 2px;
+    }
+
+    .section-back-control-label {
+      display: inline-block;
+      letter-spacing: .2px;
+    }
+
     /* V4 Reports */
     .reports-header-card {
       margin-bottom: 14px;
@@ -5683,11 +5748,13 @@
   >
 
     <button
-      class="history-back-button"
+      class="section-back-control"
       type="button"
       onclick="backToHistoryList()"
+      aria-label="Back to History"
     >
-      ← BACK TO HISTORY
+      <span class="section-back-control-arrow" aria-hidden="true"></span>
+      <span class="section-back-control-label">BACK TO HISTORY</span>
     </button>
 
     <div class="history-receipt-header">
@@ -5913,11 +5980,13 @@
   >
 
     <button
-      class="history-back-button"
+      class="section-back-control"
       type="button"
       onclick="closeManagementSection()"
+      aria-label="Back to Shopping"
     >
-      ← BACK TO SHOPPING
+      <span class="section-back-control-arrow" aria-hidden="true"></span>
+      <span class="section-back-control-label">BACK TO SHOPPING</span>
     </button>
 
     <div class="management-panel-card">
@@ -6523,7 +6592,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3G.5 — Status + copy cleanup. Production remains index.html.
+    V6 Stage 3G.6 — Back control unification. Production remains index.html.
   </div>
 
 </div>
@@ -7081,10 +7150,9 @@
 
 <script>
 
-  // V6 Stage 3G.5 — status + copy cleanup.
-  // Keeps successful idle/section states visually quiet, uses floating toasts
-  // for section failures/refresh confirmations, and removes implementation
-  // jargon from visible descriptions while preserving all underlying behavior.
+  // V6 Stage 3G.6 — back control unification.
+  // Reuses the exact store-card back-arrow artwork for section-level
+  // Back to Shopping / Back to History controls without changing navigation logic.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
