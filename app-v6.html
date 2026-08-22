@@ -779,6 +779,29 @@
       color: #ffffff;
     }
 
+    .history-trip-card.cancelled {
+      border-color: #7e3138;
+      background: #2a2024;
+    }
+
+    .history-cancelled-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 8px;
+      border: 1px solid #a84752;
+      border-radius: 999px;
+      background: #4a2026;
+      color: #ff9aa4;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .history-trip-total.cancelled-total {
+      color: #ff9aa4;
+    }
+
     .history-trip-date {
       margin-top: 5px;
       color: #c1c6cf;
@@ -6635,7 +6658,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3H.2 — Known barcode store-match regression fix. Production remains index.html.
+    V6 Stage 3H.3 — Cancelled trip history labeling. Production remains index.html.
   </div>
 
 </div>
@@ -7232,10 +7255,9 @@
 
 <script>
 
-  // V6 Stage 3H.2 — known-barcode store-match regression fix.
-  // Preserves Stage 3H.1 cancellation behavior while allowing branch-style
-  // store names (for example Walmart Supercenter ...) to match their saved
-  // retailer-level Product records for barcode/name/previous-price lookup.
+  // V6 Stage 3H.3 — cancelled trip history labeling.
+  // History now includes CANCELLED trip records with a clear red marker,
+  // while Reports remain FINISHED-only and cancelled trips contribute $0.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -24922,7 +24944,8 @@
         historyResult.values || [],
         historyDatesResult.values || [],
         tripsFormattedResult.values || [],
-        tripPaymentsResult.values || []
+        tripPaymentsResult.values || [],
+        true
       );
 
     renderHistoryTripList();
@@ -24934,7 +24957,8 @@
     historyRows,
     formattedDateRows,
     formattedTripRows = [],
-    paymentRows = []
+    paymentRows = [],
+    includeCancelled = false
   ) {
 
     const paymentGroups =
@@ -25192,6 +25216,27 @@
     const represented =
       new Set();
 
+    const cancelledTripIds =
+      new Set(
+        tripRows
+          .filter(
+            row =>
+              String(
+                row[4] ?? ""
+              )
+              .trim()
+              .toUpperCase() ===
+                "CANCELLED"
+          )
+          .map(
+            row =>
+              String(
+                row[0] ?? ""
+              ).trim()
+          )
+          .filter(Boolean)
+      );
+
 
     tripRows.forEach(
       function(row, tripIndex) {
@@ -25208,9 +25253,21 @@
           .trim()
           .toUpperCase();
 
+        const isFinished =
+          status === "FINISHED";
+
+        const isCancelled =
+          status === "CANCELLED";
+
         if (
           !tripId ||
-          status !== "FINISHED"
+          (
+            !isFinished &&
+            !(
+              includeCancelled &&
+              isCancelled
+            )
+          )
         ) {
 
           return;
@@ -25293,8 +25350,16 @@
                 row[5]
               ),
 
+            status:
+              status,
+
+            cancelled:
+              isCancelled,
+
             finalTotal:
-              finalTotal,
+              isCancelled
+                ? 0
+                : finalTotal,
 
             itemCount:
               isUsableNumber(
@@ -25306,18 +25371,28 @@
                 : items.length,
 
             savings:
-              savings,
+              isCancelled
+                ? 0
+                : savings,
 
             regularTotal:
-              regular,
+              isCancelled
+                ? 0
+                : regular,
 
             items:
-              items,
+              isCancelled
+                ? []
+                : items,
 
             payments:
-              paymentGroups.get(
-                tripId
-              ) || [],
+              isCancelled
+                ? []
+                : (
+                    paymentGroups.get(
+                      tripId
+                    ) || []
+                  ),
 
             hasTripRecord:
               true
@@ -25332,6 +25407,9 @@
 
         if (
           represented.has(
+            tripId
+          ) ||
+          cancelledTripIds.has(
             tripId
           )
         ) {
@@ -25517,8 +25595,24 @@
       );
 
 
+    const cancelledCount =
+      historyTrips.filter(
+        trip =>
+          trip.cancelled === true
+      ).length;
+
+    const finishedCount =
+      historyTrips.length -
+      cancelledCount;
+
     summary.textContent =
-      `${historyTrips.length} saved trip${historyTrips.length === 1 ? "" : "s"} • ${formatMoney(totalSpend)} spent` +
+      `${finishedCount} finished trip${finishedCount === 1 ? "" : "s"}` +
+      (
+        cancelledCount
+          ? ` • ${cancelledCount} cancelled`
+          : ""
+      ) +
+      ` • ${formatMoney(totalSpend)} spent` +
       (
         totalSavings > 0
           ? ` • ${formatMoney(totalSavings)} saved`
@@ -25547,9 +25641,19 @@
                   )
                 : "";
 
+            const cancelled =
+              trip.cancelled === true;
+
+            const cancelledBadgeHtml =
+              cancelled
+                ? '<span class="history-cancelled-badge">CANCELLED</span>'
+                : "";
+
             return (
 
-              '<button class="history-trip-card" type="button" onclick="openHistoryReceiptByIndex(' +
+              '<button class="history-trip-card' +
+              (cancelled ? ' cancelled' : '') +
+              '" type="button" onclick="openHistoryReceiptByIndex(' +
               index +
               ')">' +
 
@@ -25562,11 +25666,15 @@
                     ) +
                   "</div>" +
 
-                  '<div class="history-trip-total">' +
+                  '<div class="history-trip-total' +
+                    (cancelled ? ' cancelled-total' : '') +
+                  '">' +
                     escapeHtml(
-                      formatMoney(
-                        trip.finalTotal
-                      )
+                      cancelled
+                        ? "CANCELLED"
+                        : formatMoney(
+                            trip.finalTotal
+                          )
                     ) +
                   "</div>" +
 
@@ -25591,6 +25699,8 @@
                   savingsHtml +
 
                 "</div>" +
+
+                cancelledBadgeHtml +
 
               "</button>"
             );
@@ -25735,15 +25845,31 @@
     document.getElementById(
       "history-receipt-time"
     ).textContent =
-      formatHistoryTripDate(
-        trip
-      );
+      trip.cancelled === true
+        ? `${formatHistoryTripDate(trip)} • CANCELLED`
+        : formatHistoryTripDate(
+            trip
+          );
 
 
     const list =
       document.getElementById(
         "history-receipt-list"
       );
+
+
+    if (
+      trip.cancelled === true
+    ) {
+
+      list.innerHTML =
+        '<div class="history-receipt-item">' +
+          '<div class="history-cancelled-badge">CANCELLED</div>' +
+          '<div class="history-receipt-sub" style="margin-top:10px;">This trip was cancelled before checkout. No purchase total or payment was recorded.</div>' +
+        '</div>';
+
+      return;
+    }
 
 
     if (
