@@ -4054,7 +4054,7 @@
     id="connect-button"
     type="button"
     onclick="connectGoogle()"
-  >
+   class="hidden hidden">
     CONNECT GOOGLE SHEETS
   </button>
 
@@ -4150,22 +4150,7 @@
       class="card"
     >
 
-      <div class="small-label">
-        START NEW TRIP
-      </div>
-
-      <div
-        style="
-          margin-top:7px;
-          margin-bottom:14px;
-          font-size:21px;
-          font-weight:bold;
-        "
-      >
-        Where are you shopping?
-      </div>
-
-      <div class="field">
+<div class="field">
 
         <label>How are you shopping?</label>
 
@@ -4331,7 +4316,7 @@
         type="button"
         onclick="startNewTrip()"
       >
-        START TRIP
+        START NEW TRIP
       </button>
 
     </div>
@@ -5967,7 +5952,7 @@
       </button>
 
       <button
-        class="management-action"
+        class="management-action hidden"
         type="button"
         onclick="showManagementMatcherLab()"
       >
@@ -5997,7 +5982,7 @@
       </button>
 
       <button
-        class="management-action"
+        class="management-action hidden"
         type="button"
         onclick="showManagementPromoLab()"
       >
@@ -6535,7 +6520,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3G.3 — Custom home icons. Production remains index.html.
+    V6 Stage 3G.4 — Home + developer UI cleanup. Production remains index.html.
   </div>
 
 </div>
@@ -6945,7 +6930,7 @@
     <button class="app-modal-back" type="button" onclick="appRequestBack()" aria-label="Go back" title="Go back">←</button>
     <div id="nearby-stores-title" class="change-title">STORES NEAR YOU</div>
     <div id="nearby-stores-subtitle" class="change-body">Looking for stores around your current position…</div>
-    <details id="nearby-debug-details" class="nearby-debug-panel">
+    <details id="nearby-debug-details" class="nearby-debug-panel hidden">
       <summary>TECHNICAL DIAGNOSTICS</summary>
       <pre id="nearby-debug-log" class="nearby-debug-log">Waiting for Nearby Search…</pre>
     </details>
@@ -7093,11 +7078,11 @@
 
 <script>
 
-  // V6 Stage 3G.3 — custom home icons.
-  // Replaces temporary emoji mode icons with the project's SVG assets.
-  // Removes the persistent home-ready status box; success/error feedback uses
-  // the existing floating fading toast system.
-  // All Stage 3G.2, Stage 3G.1, Stage 3F.6, trip, search, Sheets, and management behavior remains.
+  // V6 Stage 3G.4 — home + developer UI cleanup.
+  // Removes redundant home copy, renames the primary trip action,
+  // hides Technical Diagnostics and prototype Labs from normal UI,
+  // while preserving their underlying code for troubleshooting.
+  // All Stage 3G.3, trip, search, Sheets, Places, and management behavior remains.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
