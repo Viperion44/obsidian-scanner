@@ -3030,6 +3030,15 @@
       transform: translateY(1px);
     }
 
+    #new-trip-card .shopping-mode-icon-image {
+      display: block;
+      width: 78%;
+      height: 78%;
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none;
+    }
+
     #new-trip-card .shopping-mode-info {
       position: absolute;
       top: 6px;
@@ -4169,7 +4178,7 @@
               onclick="setStartShoppingMode('NEAR')"
               aria-label="Near Me"
               title="Near Me"
-            ><span class="shopping-mode-icon" aria-hidden="true">📡</span></button>
+            ><img class="shopping-mode-icon-image" src="assets/icons/Near-Me(a).svg" alt="" aria-hidden="true"></button>
             <button
               class="shopping-mode-info"
               type="button"
@@ -4187,7 +4196,7 @@
               onclick="setStartShoppingMode('REMOTE')"
               aria-label="Remote Shopping"
               title="Remote Shopping"
-            ><span class="shopping-mode-icon" aria-hidden="true">📱</span></button>
+            ><img class="shopping-mode-icon-image" src="assets/icons/Remote.svg" alt="" aria-hidden="true"></button>
             <button
               class="shopping-mode-info"
               type="button"
@@ -4205,7 +4214,7 @@
               onclick="setStartShoppingMode('ONLINE')"
               aria-label="Online Store"
               title="Online Store"
-            ><span class="shopping-mode-icon" aria-hidden="true">🖥️</span></button>
+            ><img class="shopping-mode-icon-image" src="assets/icons/Online%20Shopping.svg" alt="" aria-hidden="true"></button>
             <button
               class="shopping-mode-info"
               type="button"
@@ -6526,7 +6535,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3G.2 — Home viewport polish. Production remains index.html.
+    V6 Stage 3G.3 — Custom home icons. Production remains index.html.
   </div>
 
 </div>
@@ -7084,12 +7093,11 @@
 
 <script>
 
-  // V6 Stage 3G.2 — home viewport polish.
-  // Home shopping modes are compact icon tiles with independent info controls.
-  // Mode selection uses the existing fading toast instead of a redundant fixed
-  // "Shopping is selected" status box. The stale Nearby-unavailable placeholder
-  // remains hidden unless Places is genuinely unavailable.
-  // All Stage 3G.1, Stage 3F.6, trip, search, Sheets, and management behavior remains.
+  // V6 Stage 3G.3 — custom home icons.
+  // Replaces temporary emoji mode icons with the project's SVG assets.
+  // Removes the persistent home-ready status box; success/error feedback uses
+  // the existing floating fading toast system.
+  // All Stage 3G.2, Stage 3G.1, Stage 3F.6, trip, search, Sheets, and management behavior remains.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -9109,12 +9117,16 @@
 
       showHome();
 
-      setStatus(
+      if (
         openTripCandidate
-          ? "Open trip found."
-          : "Ready to start a shopping trip.",
-        "success"
-      );
+      ) {
+        setStatus(
+          "Open trip found.",
+          "success"
+        );
+      } else {
+        hideStatus();
+      }
 
     } catch (error) {
 
