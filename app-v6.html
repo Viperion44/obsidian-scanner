@@ -4054,7 +4054,7 @@
     id="connect-button"
     type="button"
     onclick="connectGoogle()"
-   class="hidden hidden">
+  >
     CONNECT GOOGLE SHEETS
   </button>
 
@@ -4150,7 +4150,7 @@
       class="card"
     >
 
-<div class="field">
+      <div class="field">
 
         <label>How are you shopping?</label>
 
@@ -6520,7 +6520,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3G.4 — Home + developer UI cleanup. Production remains index.html.
+    V6 Stage 3G.4a — Home + developer UI cleanup regression fix. Production remains index.html.
   </div>
 
 </div>
@@ -7078,11 +7078,11 @@
 
 <script>
 
-  // V6 Stage 3G.4 — home + developer UI cleanup.
+  // V6 Stage 3G.4a — home + developer UI cleanup, regression-safe rebuild.
   // Removes redundant home copy, renames the primary trip action,
   // hides Technical Diagnostics and prototype Labs from normal UI,
   // while preserving their underlying code for troubleshooting.
-  // All Stage 3G.3, trip, search, Sheets, Places, and management behavior remains.
+  // Rebuilt from known-good Stage 3G.3 to preserve Google Sheets connection UI.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
