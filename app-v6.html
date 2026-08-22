@@ -4080,16 +4080,29 @@
 
     .known-product-suggestions {
       position: relative;
-      z-index: 30;
+      z-index: 300;
       display: grid;
       gap: 8px;
       margin-top: 9px;
       padding: 9px;
       border: 1px solid #4b5260;
       border-radius: 12px;
-      background: #171b22;
-      box-shadow: 0 12px 28px rgba(0,0,0,.42);
+      background: #171b22 !important;
+      background-color: #171b22 !important;
+      opacity: 1 !important;
+      box-shadow: 0 12px 28px rgba(0,0,0,.65);
       isolation: isolate;
+      overflow: hidden;
+    }
+
+    .known-product-suggestions::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: #171b22;
+      opacity: 1;
+      pointer-events: none;
     }
 
     .known-product-suggestions.hidden {
@@ -4105,8 +4118,11 @@
       gap: 10px;
       border: 1px solid #444b58;
       border-radius: 10px;
-      background: #20242d;
-      opacity: 1;
+      position: relative;
+      z-index: 1;
+      background: #20242d !important;
+      background-color: #20242d !important;
+      opacity: 1 !important;
       color: #ffffff;
       text-align: left;
     }
@@ -4553,16 +4569,6 @@
         START NEW TRIP
       </button>
 
-    </div>
-
-    <div class="management-launcher">
-      <button
-        class="management-launcher-button"
-        type="button"
-        onclick="openManagementSection()"
-      >
-        ⚙️ MANAGE PRODUCTS, STORES & DATA
-      </button>
     </div>
 
   </div>
@@ -6052,6 +6058,16 @@
     class="hidden"
   >
 
+    <button
+      class="section-back-control"
+      type="button"
+      onclick="closeReportsToManagement()"
+      aria-label="Back to Management"
+    >
+      <span class="section-back-control-arrow" aria-hidden="true"></span>
+      <span class="section-back-control-label">BACK TO MANAGEMENT</span>
+    </button>
+
     <div class="reports-header-card">
 
       <div class="reports-header-row">
@@ -6299,6 +6315,16 @@
       <button
         class="management-action"
         type="button"
+        onclick="openReportsFromManagement()"
+      >
+        <span class="management-action-icon">📊</span>
+        <span class="management-action-title">Reports</span>
+        <span class="management-action-desc">View spending, savings, stores, and product summaries.</span>
+      </button>
+
+      <button
+        class="management-action"
+        type="button"
         onclick="showManagementHistoryAudit()"
       >
         <span class="management-action-icon">🧾</span>
@@ -6327,7 +6353,7 @@
       </div>
 
       <div class="management-empty">
-        Products, canonical identities, payment methods, stores, and history auditing will appear here.
+        Products, canonical identities, payment methods, stores, reports, and history auditing are available here.
       </div>
     </div>
 
@@ -6805,7 +6831,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3I.4 — Typeahead readability + Near Me barcode assignment. Production remains index.html.
+    V6 Stage 3I.6 — Management bottom nav + Reports inside Management. Production remains index.html.
   </div>
 
 </div>
@@ -7389,22 +7415,22 @@
   </button>
 
   <button
-    id="nav-reports-button"
+    id="nav-management-button"
     class="bottom-nav-button"
     type="button"
-    onclick="openReportsSection()"
-    aria-label="Reports"
+    onclick="openManagementSection()"
+    aria-label="Management"
   >
-    <span class="bottom-nav-icon">📊</span>
-    Reports
+    <span class="bottom-nav-icon">⚙️</span>
+    Management
   </button>
 </nav>
 
 <script>
 
-  // V6 Stage 3I.4 — typeahead readability + Near Me barcode assignment.
-  // Known-product suggestions now sit on an opaque surface. Near Me product
-  // review can explicitly unlock and assign/change a barcode before item save.
+  // V6 Stage 3I.6 — Management bottom nav + Reports inside Management.
+  // The 3I.5 typeahead/confirmation cleanup is preserved. Management now owns
+  // the lower-right primary-nav slot, and Reports is launched from Management.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -16666,12 +16692,6 @@
           formatMoney(
             currentPricing.savings
           )
-        ) +
-        "<br>" +
-
-        '<span class="success-label">Shopping List row:</span> ' +
-        escapeHtml(
-          result.row
         );
 
 
@@ -25800,8 +25820,8 @@
         "nav-history-button",
       shopping:
         "nav-shopping-button",
-      reports:
-        "nav-reports-button"
+      management:
+        "nav-management-button"
     };
 
     Object.entries(ids)
@@ -27270,7 +27290,38 @@
   }
 
 
-  async function openReportsSection() {
+  async function openReportsFromManagement() {
+
+    reportsReturnPanelId =
+      "management-panel";
+
+    await openReportsSection(
+      "management"
+    );
+  }
+
+
+  function closeReportsToManagement() {
+
+    hide(
+      "reports-panel"
+    );
+
+    show(
+      "management-panel"
+    );
+
+    setActivePrimaryNav(
+      "management"
+    );
+
+    hideStatus();
+  }
+
+
+  async function openReportsSection(
+    origin = "shopping"
+  ) {
 
     if (
       !accessToken
@@ -27284,7 +27335,9 @@
     }
 
     reportsReturnPanelId =
-      getVisibleShoppingPanelId();
+      origin === "management"
+        ? "management-panel"
+        : getVisibleShoppingPanelId();
 
     pauseScanner();
 
@@ -27312,7 +27365,7 @@
     );
 
     setActivePrimaryNav(
-      "reports"
+      "management"
     );
 
     setStatus(
@@ -28059,7 +28112,7 @@
     );
 
     setActivePrimaryNav(
-      "shopping"
+      "management"
     );
 
     setStatus(
@@ -30595,6 +30648,10 @@
 
     hide(
       "management-panel"
+    );
+
+    setActivePrimaryNav(
+      "shopping"
     );
 
     const restoreId =
