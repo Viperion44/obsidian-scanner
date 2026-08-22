@@ -188,6 +188,17 @@
       text-align: center;
     }
 
+    #status.connect-note {
+      margin-top: 10px;
+      margin-bottom: 20px;
+      padding: 0 4px;
+      border-radius: 0;
+      background: transparent;
+      color: #aeb4c0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
     .status-working {
       background: #493c20 !important;
     }
@@ -4058,8 +4069,8 @@
     CONNECT GOOGLE SHEETS
   </button>
 
-  <div id="status">
-    Connect Google Sheets to begin.
+  <div id="status" class="connect-note">
+    Connect to begin.
   </div>
 
   <div
@@ -5911,20 +5922,12 @@
 
     <div class="management-panel-card">
 
-      <div class="small-label">
-        MAINTENANCE
-      </div>
-
       <div class="management-heading">
         Manage Data
       </div>
 
-      <div class="management-subtitle">
-        Review and correct backend records without opening Google Sheets.
-      </div>
-
       <div class="management-warning">
-        Products, canonical identities, and payment methods can be maintained here. Historical trip records remain protected from destructive edits.
+        Historical trip records are protected from destructive edits.
       </div>
 
     </div>
@@ -5968,7 +5971,7 @@
       >
         <span class="management-action-icon">🌐</span>
         <span class="management-action-title">Online Search Preview</span>
-        <span class="management-action-desc">Search the retailer catalog through the Cloudflare Worker without writing shopping data.</span>
+        <span class="management-action-desc">Preview retailer product search without changing shopping data.</span>
       </button>
 
       <button
@@ -6028,7 +6031,7 @@
       >
         <span class="management-action-icon">⚙️</span>
         <span class="management-action-title">App Data</span>
-        <span class="management-action-desc">Backend and connection information.</span>
+        <span class="management-action-desc">App information and settings.</span>
       </button>
 
     </div>
@@ -6318,7 +6321,7 @@
 
     <div id="management-online-search-preview" class="management-editor-card hidden">
       <div class="management-editor-title">Online Product Search Preview</div>
-      <div class="promo-group-summary">Stage 3E.4 live search. Type a retailer keyword and choose a Mexican e-commerce site discovered through the Cloudflare merchant-search service. Root merchant homepages are returned instead of physical branches. Nothing here is written to Google Sheets.</div>
+      <div class="promo-group-summary">Search for an online retailer and preview product results without adding anything to a trip.</div>
 
       <div class="field">
         <label for="online-preview-retailer-search">E-commerce site</label>
@@ -6441,7 +6444,7 @@
       <textarea id="management-payment-notes" rows="3" autocomplete="off"></textarea>
 
       <div class="management-editor-note">
-        Only the nickname and owner are exposed in exported trip PDFs. Saved backend details stay in Payment Methods.
+        Only the nickname and owner appear in exported trip PDFs. Other payment details remain private.
       </div>
 
       <div class="management-editor-actions">
@@ -6520,7 +6523,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3G.4a — Home + developer UI cleanup regression fix. Production remains index.html.
+    V6 Stage 3G.5 — Status + copy cleanup. Production remains index.html.
   </div>
 
 </div>
@@ -6726,7 +6729,7 @@
 >
   <div class="online-search-card">
     <div id="online-product-search-title" class="product-search-title">LOOK FOR THIS PRODUCT ONLINE</div>
-    <div id="online-product-search-preview-note" class="online-search-preview-note">Stage 3E live search: results come from the Cloudflare retailer-search Worker. Selecting a result does not add an item until you confirm it in the normal product form.</div>
+    <div id="online-product-search-preview-note" class="online-search-preview-note">Selecting a result only pre-fills the product form; nothing is added until you confirm.</div>
     <div id="online-product-search-source-box" class="online-search-source-box">—</div>
     <div class="online-search-query-row">
       <input id="online-product-search-query" type="search" autocomplete="off" placeholder="Product keywords">
@@ -7078,11 +7081,10 @@
 
 <script>
 
-  // V6 Stage 3G.4a — home + developer UI cleanup, regression-safe rebuild.
-  // Removes redundant home copy, renames the primary trip action,
-  // hides Technical Diagnostics and prototype Labs from normal UI,
-  // while preserving their underlying code for troubleshooting.
-  // Rebuilt from known-good Stage 3G.3 to preserve Google Sheets connection UI.
+  // V6 Stage 3G.5 — status + copy cleanup.
+  // Keeps successful idle/section states visually quiet, uses floating toasts
+  // for section failures/refresh confirmations, and removes implementation
+  // jargon from visible descriptions while preserving all underlying behavior.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -8997,8 +8999,8 @@
 
                 });
 
-            setStatus(
-              "Ready. Tap CONNECT GOOGLE SHEETS."
+            setConnectNote(
+              "Ready to connect."
             );
 
             return;
@@ -19877,6 +19879,28 @@
   }
 
 
+  function setConnectNote(message) {
+    const box =
+      document.getElementById(
+        "status"
+      );
+
+    if (!box) return;
+
+    box.className =
+      "connect-note";
+
+    box.classList.remove(
+      "hidden"
+    );
+
+    box.textContent =
+      String(
+        message || ""
+      );
+  }
+
+
   function fail(
     message
   ) {
@@ -24262,15 +24286,14 @@
       historyLoadedOnce =
         true;
 
-      setStatus(
-        "Shopping history ready.",
-        "success"
-      );
+      hideStatus();
 
     } catch (error) {
 
-      handleApiError(
-        error
+      hideStatus();
+      showErrorToast(
+        "History unavailable",
+        error?.message || String(error || "History could not be loaded.")
       );
 
       const list =
@@ -24312,9 +24335,10 @@
       historyLoadedOnce =
         true;
 
-      setStatus(
-        "Shopping history refreshed.",
-        "success"
+      hideStatus();
+      showSuccessToast(
+        "History refreshed",
+        "Your shopping history is up to date."
       );
 
     } catch (error) {
@@ -25132,6 +25156,8 @@
     index
   ) {
 
+    hideStatus();
+
     const trip =
       historyTrips[
         index
@@ -25518,15 +25544,14 @@
       reportsLoadedOnce =
         true;
 
-      setStatus(
-        "Shopping reports ready.",
-        "success"
-      );
+      hideStatus();
 
     } catch (error) {
 
-      handleApiError(
-        error
+      hideStatus();
+      showErrorToast(
+        "Reports unavailable",
+        error?.message || String(error || "Reports could not be loaded.")
       );
 
       document.getElementById(
@@ -25575,9 +25600,10 @@
       reportsLoadedOnce =
         true;
 
-      setStatus(
-        "Shopping reports refreshed.",
-        "success"
+      hideStatus();
+      showSuccessToast(
+        "Reports refreshed",
+        "Your shopping reports are up to date."
       );
 
     } catch (error) {
@@ -26256,13 +26282,12 @@
         false
       );
 
-      setStatus(
-        "Management ready.",
-        "success"
-      );
+      hideStatus();
     } catch (error) {
-      handleApiError(
-        error
+      hideStatus();
+      showErrorToast(
+        "Management unavailable",
+        error?.message || String(error || "Management could not be loaded.")
       );
     }
   }
