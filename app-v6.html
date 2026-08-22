@@ -4046,6 +4046,73 @@
       line-height: 1.4;
     }
 
+    .known-product-suggestions {
+      display: grid;
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .known-product-suggestions.hidden {
+      display: none;
+    }
+
+    .known-product-suggestion {
+      width: 100%;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #444b58;
+      border-radius: 10px;
+      background: #20242d;
+      color: #ffffff;
+      text-align: left;
+    }
+
+    .known-product-suggestion:active {
+      background: #2b303b;
+    }
+
+    .known-product-suggestion-image {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      object-fit: contain;
+      border-radius: 9px;
+      background: #ffffff;
+    }
+
+    .known-product-suggestion-image-placeholder {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9px;
+      background: #191d25;
+      color: #8f97a4;
+      font-size: 20px;
+    }
+
+    .known-product-suggestion-copy {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .known-product-suggestion-name {
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .known-product-suggestion-meta {
+      margin-top: 3px;
+      color: #aeb4c0;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
     .online-search-overlay {
       position: fixed;
       inset: 0;
@@ -4731,7 +4798,13 @@
           autocomplete="off"
           placeholder="Example: Oikos Pro Yogurt 900 g"
           oninput="productNameChanged()"
+          onfocus="renderKnownProductSuggestions()"
         >
+
+        <div
+          id="known-product-suggestions"
+          class="known-product-suggestions hidden"
+        ></div>
 
         <div
           id="confirmation-container"
@@ -6658,7 +6731,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3I.2 — One-tap product search. Production remains index.html.
+    V6 Stage 3I.3 — Known-product typeahead with saved images. Production remains index.html.
   </div>
 
 </div>
@@ -7255,9 +7328,9 @@
 
 <script>
 
-  // V6 Stage 3I.2 — one-tap product search.
-  // Product-search launchers now open the overlay and immediately run the
-  // keywords already entered. SEARCH remains available only for refinements.
+  // V6 Stage 3I.3 — known-product typeahead with saved images.
+  // Typing a product name now surfaces local canonical/product-history matches
+  // in every trip mode. Persisted canonical images are shown when available.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -7276,6 +7349,8 @@
   let selectedOnlineProductResult = null;
 
   let productCatalogMetadataHeadersReady = false;
+
+  let knownProductSuggestionResults = [];
 
   // V6 Stage 3E.2 — Management preview retailer picker state.
   // This has its own request/timer state so Management preview never hijacks
@@ -7629,6 +7704,22 @@
 
     if (priceNote) {
       priceNote.textContent = "";
+    }
+
+    knownProductSuggestionResults =
+      [];
+
+    const suggestionHost =
+      document.getElementById(
+        "known-product-suggestions"
+      );
+
+    if (suggestionHost) {
+      suggestionHost.classList.add(
+        "hidden"
+      );
+      suggestionHost.innerHTML =
+        "";
     }
   }
 
@@ -15228,6 +15319,419 @@
   }
 
 
+  function canonicalImageForProductName(
+    productName
+  ) {
+
+    const normalized =
+      normalizeProductIdentity(
+        productName
+      );
+
+    if (!normalized) {
+      return "";
+    }
+
+    const direct =
+      productCatalog.find(
+        record =>
+          record.active !== false &&
+          normalizeProductIdentity(
+            record.canonicalName
+          ) ===
+            normalized
+      );
+
+    if (
+      direct?.imageUrl
+    ) {
+      return String(
+        direct.imageUrl
+      ).trim();
+    }
+
+    const alias =
+      productAliases.find(
+        record =>
+          record.confirmed === true &&
+          normalizeProductIdentity(
+            record.aliasValue
+          ) ===
+            normalized
+      );
+
+    if (!alias?.productId) {
+      return "";
+    }
+
+    const canonical =
+      productCatalog.find(
+        record =>
+          record.active !== false &&
+          String(
+            record.productId || ""
+          ).trim() ===
+            String(
+              alias.productId || ""
+            ).trim()
+      );
+
+    return String(
+      canonical?.imageUrl || ""
+    ).trim();
+  }
+
+
+  function buildKnownProductSuggestionResults(
+    query
+  ) {
+
+    const normalizedQuery =
+      normalizeProductIdentity(
+        query
+      );
+
+    if (
+      normalizedQuery.length < 2
+    ) {
+      return [];
+    }
+
+    const byName =
+      new Map();
+
+    const addCandidate =
+      (
+        name,
+        sourceLabel,
+        imageUrl = "",
+        productId = ""
+      ) => {
+
+        const cleanName =
+          String(
+            name || ""
+          ).trim();
+
+        const normalizedName =
+          normalizeProductIdentity(
+            cleanName
+          );
+
+        if (
+          !cleanName ||
+          !normalizedName ||
+          !normalizedName.includes(
+            normalizedQuery
+          )
+        ) {
+          return;
+        }
+
+        const starts =
+          normalizedName.startsWith(
+            normalizedQuery
+          );
+
+        const wholeWord =
+          (
+            ` ${normalizedName} `
+          ).includes(
+            ` ${normalizedQuery} `
+          );
+
+        const existing =
+          byName.get(
+            normalizedName
+          );
+
+        const candidate = {
+          name:
+            cleanName,
+          sourceLabel:
+            String(
+              sourceLabel || "Known product"
+            ).trim(),
+          imageUrl:
+            String(
+              imageUrl ||
+              canonicalImageForProductName(
+                cleanName
+              ) ||
+              ""
+            ).trim(),
+          productId:
+            String(
+              productId || ""
+            ).trim(),
+          score:
+            wholeWord
+              ? 300
+              : starts
+                ? 200
+                : 100
+        };
+
+        if (
+          !existing ||
+          candidate.score >
+            existing.score ||
+          (
+            !existing.imageUrl &&
+            candidate.imageUrl
+          )
+        ) {
+          byName.set(
+            normalizedName,
+            candidate
+          );
+        }
+      };
+
+    productCatalog.forEach(
+      record => {
+        if (
+          record.active === false
+        ) {
+          return;
+        }
+
+        addCandidate(
+          record.canonicalName,
+          "Canonical product",
+          record.imageUrl,
+          record.productId
+        );
+      }
+    );
+
+    productDatabase.forEach(
+      record => {
+        const storeMatch =
+          storesMatchForKnownProduct(
+            record.store,
+            activeTrip?.store || ""
+          );
+
+        addCandidate(
+          record.product,
+          storeMatch
+            ? `Bought at ${record.store || "this store"}`
+            : `Bought before • ${record.store || "other store"}`,
+          canonicalImageForProductName(
+            record.product
+          ),
+          ""
+        );
+      }
+    );
+
+    return [
+      ...byName.values()
+    ]
+      .sort(
+        (a, b) =>
+          b.score -
+          a.score ||
+          a.name.localeCompare(
+            b.name
+          )
+      )
+      .slice(
+        0,
+        8
+      );
+  }
+
+
+  function renderKnownProductSuggestions() {
+
+    const host =
+      document.getElementById(
+        "known-product-suggestions"
+      );
+
+    const input =
+      document.getElementById(
+        "product-name"
+      );
+
+    if (
+      !host ||
+      !input ||
+      !activeTrip
+    ) {
+      return;
+    }
+
+    knownProductSuggestionResults =
+      buildKnownProductSuggestionResults(
+        input.value
+      );
+
+    if (
+      !knownProductSuggestionResults.length
+    ) {
+      host.classList.add(
+        "hidden"
+      );
+      host.innerHTML =
+        "";
+      return;
+    }
+
+    host.innerHTML =
+      knownProductSuggestionResults
+        .map(
+          (result, index) => {
+
+            const imageHtml =
+              result.imageUrl
+                ? (
+                    '<img class="known-product-suggestion-image" src="' +
+                    escapeHtml(
+                      result.imageUrl
+                    ) +
+                    '" alt="" loading="lazy">'
+                  )
+                : '<div class="known-product-suggestion-image-placeholder">◻</div>';
+
+            return (
+              '<button class="known-product-suggestion" type="button" onclick="selectKnownProductSuggestion(' +
+              index +
+              ')">' +
+                imageHtml +
+                '<span class="known-product-suggestion-copy">' +
+                  '<span class="known-product-suggestion-name">' +
+                    escapeHtml(
+                      result.name
+                    ) +
+                  '</span>' +
+                  '<span class="known-product-suggestion-meta">' +
+                    escapeHtml(
+                      result.sourceLabel
+                    ) +
+                  '</span>' +
+                '</span>' +
+              '</button>'
+            );
+          }
+        )
+        .join(
+          ""
+        );
+
+    host.classList.remove(
+      "hidden"
+    );
+  }
+
+
+  function selectKnownProductSuggestion(
+    index
+  ) {
+
+    const result =
+      knownProductSuggestionResults[
+        index
+      ];
+
+    if (!result) {
+      return;
+    }
+
+    const input =
+      document.getElementById(
+        "product-name"
+      );
+
+    input.value =
+      result.name;
+
+    document.getElementById(
+      "confirm-name"
+    ).checked =
+      true;
+
+    const host =
+      document.getElementById(
+        "known-product-suggestions"
+      );
+
+    if (host) {
+      host.classList.add(
+        "hidden"
+      );
+      host.innerHTML =
+        "";
+    }
+
+    clearFormError();
+    clearValidationStyles();
+
+    updateWrongProductPreviousPrice();
+    renderPriceComparisons();
+    updateOnlineProductSearchAvailability();
+
+    if (
+      result.imageUrl
+    ) {
+      const box =
+        document.getElementById(
+          "online-product-enrichment"
+        );
+
+      const image =
+        document.getElementById(
+          "online-product-image"
+        );
+
+      const sourceLabel =
+        document.getElementById(
+          "online-product-source-label"
+        );
+
+      const priceNote =
+        document.getElementById(
+          "online-product-price-note"
+        );
+
+      if (box) {
+        box.classList.remove(
+          "hidden"
+        );
+      }
+
+      if (image) {
+        image.src =
+          result.imageUrl;
+        image.alt =
+          result.name;
+        image.classList.remove(
+          "hidden"
+        );
+      }
+
+      if (sourceLabel) {
+        sourceLabel.textContent =
+          "Saved product image";
+      }
+
+      if (priceNote) {
+        priceNote.textContent =
+          "Previously saved product reference.";
+      }
+    }
+
+    showSuccessToast(
+      "Known product selected",
+      result.imageUrl
+        ? "Saved product information and image are available for this item."
+        : "Saved product information is available for this item."
+    );
+  }
+
+
   function productNameChanged() {
 
     document.getElementById(
@@ -15244,6 +15748,8 @@
     renderPriceComparisons();
 
     updateOnlineProductSearchAvailability();
+
+    renderKnownProductSuggestions();
   }
 
 
