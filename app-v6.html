@@ -6658,7 +6658,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3H.3 — Cancelled trip history labeling. Production remains index.html.
+    V6 Stage 3I.1 — Product image/source metadata persistence. Production remains index.html.
   </div>
 
 </div>
@@ -7255,9 +7255,9 @@
 
 <script>
 
-  // V6 Stage 3H.3 — cancelled trip history labeling.
-  // History now includes CANCELLED trip records with a clear red marker,
-  // while Reports remain FINISHED-only and cancelled trips contribute $0.
+  // V6 Stage 3I.1 — product image/source metadata persistence.
+  // Web-selected product image/source metadata is now stored on the canonical
+  // Product Catalog record after a confirmed item write. Matching behavior is unchanged.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -7271,9 +7271,11 @@
   let onlineProductSearchSource = null;
   let onlineProductSearchPreviewResults = [];
 
-  // Stage 3F.6 transient web-result metadata.
-  // Intentionally not persisted to Sheets yet.
+  // Web-result metadata for the currently reviewed item.
+  // Stage 3I.1 persists confirmed image/source metadata to Product Catalog.
   let selectedOnlineProductResult = null;
+
+  let productCatalogMetadataHeadersReady = false;
 
   // V6 Stage 3E.2 — Management preview retailer picker state.
   // This has its own request/timer state so Management preview never hijacks
@@ -12410,7 +12412,7 @@
       promoGroupProductsResult
     ] = await Promise.all([
       sheetsGetValues(
-        `'${PRODUCT_CATALOG_SHEET}'!A2:J`,
+        `'${PRODUCT_CATALOG_SHEET}'!A2:N`,
         "UNFORMATTED_VALUE"
       ),
       sheetsGetValues(
@@ -12440,7 +12442,11 @@
           notes: String(row[6] ?? "").trim(),
           active: row[7] === true || String(row[7] ?? "").trim().toUpperCase() === "TRUE",
           created: row[8] ?? "",
-          modified: row[9] ?? ""
+          modified: row[9] ?? "",
+          imageUrl: String(row[10] ?? "").trim(),
+          sourceName: String(row[11] ?? "").trim(),
+          sourceId: String(row[12] ?? "").trim(),
+          sourceUrl: String(row[13] ?? "").trim()
         }))
         .filter(record => record.productId || record.canonicalName);
 
@@ -13195,6 +13201,185 @@
   }
 
 
+  async function ensureProductCatalogMetadataColumns() {
+
+    if (
+      productCatalogMetadataHeadersReady
+    ) {
+      return;
+    }
+
+    const expected = [
+      "Image URL",
+      "Source Name",
+      "Source ID",
+      "Source URL"
+    ];
+
+    const result =
+      await sheetsGetValues(
+        `'${PRODUCT_CATALOG_SHEET}'!K1:N1`,
+        "FORMATTED_VALUE"
+      );
+
+    const existing =
+      Array.from(
+        {length: 4},
+        (_, index) =>
+          String(
+            result.values?.[0]?.[index] ??
+            ""
+          ).trim()
+      );
+
+    const unexpected =
+      existing.some(
+        (value, index) =>
+          value &&
+          value !== expected[index]
+      );
+
+    if (
+      unexpected
+    ) {
+      throw new Error(
+        "Product Catalog columns K:N are already being used for different data, so product reference metadata was not written."
+      );
+    }
+
+    const updates = [];
+
+    expected.forEach(
+      (header, index) => {
+        if (!existing[index]) {
+          const column =
+            ["K", "L", "M", "N"][index];
+
+          updates.push({
+            range:
+              `'${PRODUCT_CATALOG_SHEET}'!${column}1`,
+            values:
+              [[header]]
+          });
+        }
+      }
+    );
+
+    if (
+      updates.length
+    ) {
+      await sheetsValuesBatchUpdate(
+        updates,
+        "RAW"
+      );
+    }
+
+    productCatalogMetadataHeadersReady =
+      true;
+  }
+
+
+  function onlineMetadataSnapshot(
+    result
+  ) {
+
+    if (!result) {
+      return null;
+    }
+
+    const snapshot = {
+      imageUrl:
+        String(
+          result.image || ""
+        ).trim(),
+
+      sourceName:
+        String(
+          result.source ||
+          onlineProductSearchSource?.retailerName ||
+          ""
+        ).trim(),
+
+      sourceId:
+        String(
+          result.sourceId ||
+          onlineProductSearchSource?.id ||
+          ""
+        ).trim(),
+
+      sourceUrl:
+        String(
+          result.url || ""
+        ).trim()
+    };
+
+    return Object.values(
+      snapshot
+    ).some(Boolean)
+      ? snapshot
+      : null;
+  }
+
+
+  async function persistCanonicalOnlineMetadata(
+    productRecord,
+    result
+  ) {
+
+    if (
+      !productRecord?.sheetRow ||
+      !result
+    ) {
+      return false;
+    }
+
+    const metadata =
+      onlineMetadataSnapshot(
+        result
+      );
+
+    if (!metadata) {
+      return false;
+    }
+
+    await ensureProductCatalogMetadataColumns();
+
+    const modified =
+      localIsoWithOffset(
+        new Date()
+      );
+
+    await sheetsValuesBatchUpdate(
+      [
+        {
+          range:
+            `'${PRODUCT_CATALOG_SHEET}'!J${productRecord.sheetRow}:N${productRecord.sheetRow}`,
+
+          values:
+            [[
+              modified,
+              metadata.imageUrl,
+              metadata.sourceName,
+              metadata.sourceId,
+              metadata.sourceUrl
+            ]]
+        }
+      ],
+      "RAW"
+    );
+
+    Object.assign(
+      productRecord,
+      {
+        modified,
+        ...metadata
+      }
+    );
+
+    return true;
+  }
+
+
   async function createCanonicalProductFromName(canonicalName, nowValue) {
 
     const cleanName = String(canonicalName || "").trim();
@@ -13207,8 +13392,23 @@
     const row = await findNextReferenceRow(PRODUCT_CATALOG_SHEET);
 
     await sheetsValuesBatchUpdate([{
-      range: `'${PRODUCT_CATALOG_SHEET}'!A${row}:J${row}`,
-      values: [[productId, cleanName, "", "", "", "", "", true, nowValue, nowValue]]
+      range: `'${PRODUCT_CATALOG_SHEET}'!A${row}:N${row}`,
+      values: [[
+        productId,
+        cleanName,
+        "",
+        "",
+        "",
+        "",
+        "",
+        true,
+        nowValue,
+        nowValue,
+        "",
+        "",
+        "",
+        ""
+      ]]
     }], "RAW");
 
     const record = {
@@ -13222,7 +13422,11 @@
       notes: "",
       active: true,
       created: nowValue,
-      modified: nowValue
+      modified: nowValue,
+      imageUrl: "",
+      sourceName: "",
+      sourceId: "",
+      sourceUrl: ""
     };
 
     productCatalog.push(record);
@@ -13267,17 +13471,64 @@
   }
 
 
-  async function learnCanonicalIdentityAfterShoppingWrite(productName, barcode, resolution) {
+  async function learnCanonicalIdentityAfterShoppingWrite(
+    productName,
+    barcode,
+    resolution,
+    onlineResult = null
+  ) {
+
+    let productRecord =
+      null;
 
     try {
-      return await ensureCanonicalProductForConfirmedItem(productName, barcode, resolution);
+      productRecord =
+        await ensureCanonicalProductForConfirmedItem(
+          productName,
+          barcode,
+          resolution
+        );
     } catch (error) {
-      // Canonical learning remains non-blocking in Stage 2B. The normal
-      // shopping write already succeeded, so an identity-table problem must never
-      // make the user believe the item itself failed to save.
-      console.warn("V6 canonical identity learning failed", error);
+      // The shopping row already exists. Identity learning must remain non-blocking.
+      console.warn(
+        "V6 canonical identity learning failed",
+        error
+      );
       return null;
     }
+
+    if (
+      productRecord &&
+      onlineResult
+    ) {
+      try {
+        const saved =
+          await persistCanonicalOnlineMetadata(
+            productRecord,
+            onlineResult
+          );
+
+        if (saved) {
+          showSuccessToast(
+            "Product reference saved",
+            "The selected image and retailer reference are now linked to this product."
+          );
+        }
+      } catch (error) {
+        console.warn(
+          "V6 product reference metadata persistence failed",
+          error
+        );
+
+        showErrorToast(
+          "Item added; product reference not saved",
+          error?.message ||
+          "The shopping item was saved, but its image/source reference could not be stored."
+        );
+      }
+    }
+
+    return productRecord;
   }
 
 
@@ -15430,7 +15681,10 @@
       await learnCanonicalIdentityAfterShoppingWrite(
         product,
         currentBarcode,
-        canonicalResolution
+        canonicalResolution,
+        selectedOnlineProductResult
+          ? { ...selectedOnlineProductResult }
+          : null
       );
 
 
@@ -27835,6 +28089,19 @@
         const record = entry.record;
         const aliases = productAliases.filter(alias => String(alias.productId || "").trim() === String(record.productId || "").trim());
         const detail = [record.brand, record.variant, [record.size, record.unit].filter(value => String(value ?? "").trim()).join(" ")].filter(Boolean).join(" • ");
+
+        const referenceDetail =
+          [
+            record.imageUrl
+              ? "Image saved"
+              : "",
+            record.sourceName ||
+              record.sourceId ||
+              ""
+          ]
+          .filter(Boolean)
+          .join(" • ");
+
         return (
           '<div class="management-row">' +
             '<div class="management-row-top">' +
@@ -27845,6 +28112,7 @@
               escapeHtml(record.productId || "No Product ID") +
               (detail ? ' • ' + escapeHtml(detail) : '') +
               ' • ' + escapeHtml(`${aliases.length} alias${aliases.length === 1 ? "" : "es"}`) +
+              (referenceDetail ? ' • ' + escapeHtml(referenceDetail) : '') +
               (record.active === false ? ' • INACTIVE' : '') +
             '</div>' +
           '</div>'
