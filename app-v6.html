@@ -7184,7 +7184,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2a — PDF table-row reconstruction fix. Production remains index.html.
+    V6 Stage 3J.2b — Header-anchored PDF table parser. Production remains index.html.
   </div>
 
 </div>
@@ -7892,9 +7892,9 @@
 
 <script>
 
-  // V6 Stage 3J.2a — PDF table-row reconstruction fix.
-  // Text PDFs now preserve x/y layout and reconstruct product / quantity / price
-  // rows before review. The 3J.2 import/review/save workflow is otherwise unchanged.
+  // V6 Stage 3J.2b — header-anchored PDF table parser.
+  // PDF tables now use the actual Artículo / Cant. / Precio header coordinates
+  // as fixed column anchors, with stricter resets for wrapped product-name state.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -14564,293 +14564,328 @@
 
 
   function parsePdfLayoutRows(layoutRows) {
-    if (
-      !Array.isArray(
-        layoutRows
-      ) ||
-      !layoutRows.length
-    ) {
+    if (!Array.isArray(layoutRows) || !layoutRows.length) {
       return {
         rows: [],
-        parser:
-          "PDF layout table parser"
+        parser: "PDF header-anchored table parser"
       };
     }
 
+    const rowsByPage = new Map();
+
+    layoutRows.forEach(row => {
+      const page = Number(row?.pageNumber || 1);
+      if (!rowsByPage.has(page)) rowsByPage.set(page, []);
+      rowsByPage.get(page).push(row);
+    });
+
     const result = [];
-    let sectionState =
-      "AVAILABLE";
+    let sectionState = "AVAILABLE";
 
-    let pendingProductLines = [];
+    for (const [pageNumber, pageRowsRaw] of rowsByPage.entries()) {
+      const pageRows = pageRowsRaw
+        .slice()
+        .sort((a, b) => Number(b.y || 0) - Number(a.y || 0));
 
-    const flushPendingProduct =
-      () => {
-        pendingProductLines =
-          pendingProductLines
-            .map(
-              cleanPdfTableCell
-            )
-            .filter(
-              Boolean
-            )
-            .slice(
-              -4
-            );
+      let pendingProductLines = [];
+
+      const clearPending = () => {
+        pendingProductLines = [];
       };
 
-    for (
-      const row of layoutRows
-    ) {
-
-      const items =
-        Array.isArray(
-          row?.items
-        )
-          ? row.items
-          : [];
-
-      const rowText =
-        items
-          .map(
-            item =>
-              String(
-                item?.value || ""
-              )
-          )
-          .join(
-            " "
-          )
-          .replace(
-            /\s+/g,
-            " "
-          )
-          .trim();
-
-      sectionState =
-        sectionStateFromPdfText(
-          rowText,
-          sectionState
-        );
-
-      if (
-        !rowText ||
-        documentLineShouldBeIgnored(
-          rowText
-        ) ||
-        /Art[ií]culos (?:no disponibles|disponibles)/i.test(
-          rowText
-        ) ||
-        /Estos art[ií]culos no se cobrar[aá]n/i.test(
-          rowText
-        )
-      ) {
-        continue;
-      }
-
-      const sorted =
-        items
-          .slice()
-          .sort(
-            (a, b) =>
-              Number(
-                a.x || 0
-              ) -
-              Number(
-                b.x || 0
-              )
-          );
-
-      if (
-        !sorted.length
-      ) {
-        continue;
-      }
-
-      const maxX =
-        Math.max(
-          ...sorted.map(
-            item =>
-              Number(
-                item.x || 0
-              )
-          )
-        );
-
-      const minX =
-        Math.min(
-          ...sorted.map(
-            item =>
-              Number(
-                item.x || 0
-              )
-          )
-        );
-
-      const width =
-        Math.max(
-          1,
-          maxX - minX
-        );
-
-      const productBoundary =
-        minX +
-        width * 0.57;
-
-      const quantityBoundary =
-        minX +
-        width * 0.77;
-
-      const productParts = [];
-      const quantityParts = [];
-      const priceParts = [];
-
-      sorted.forEach(
-        item => {
-
-          const x =
-            Number(
-              item.x || 0
-            );
-
-          const value =
-            normalizeOcrLine(
-              item.value
-            );
-
-          if (!value) {
-            return;
-          }
-
-          if (
-            x >=
-              quantityBoundary
-          ) {
-            priceParts.push(
-              value
-            );
-          } else if (
-            x >=
-              productBoundary
-          ) {
-            quantityParts.push(
-              value
-            );
-          } else {
-            productParts.push(
-              value
-            );
-          }
-        }
-      );
-
-      const productText =
-        cleanPdfTableCell(
-          productParts.join(
-            " "
-          )
-        );
-
-      const quantityText =
-        quantityParts.join(
-          " "
-        );
-
-      const priceText =
-        priceParts.join(
-          " "
-        );
-
-      const quantity =
-        parseQuantityUnitFromText(
-          quantityText
-        );
-
-      const price =
-        parsePriceFromText(
-          priceText
-        );
-
-      if (
-        quantity &&
-        price !== null
-      ) {
-
-        const mergedProduct =
-          cleanPdfTableCell(
-            [
-              ...pendingProductLines,
-              productText
-            ]
-              .filter(
-                Boolean
-              )
-              .join(
-                " "
-              )
-          );
-
-        pendingProductLines =
-          [];
+      const cleanProductCandidate = value => {
+        const cleaned = cleanPdfTableCell(value);
 
         if (
-          mergedProduct
+          !cleaned ||
+          /^(?:Art[ií]culo|Cant\.?|Precio)$/i.test(cleaned) ||
+          /^Agotado$/i.test(cleaned) ||
+          /^Disponible$/i.test(cleaned) ||
+          /^No disponible$/i.test(cleaned)
         ) {
-          result.push({
-            include:
-              sectionState !==
-                "UNAVAILABLE",
-            unavailable:
-              sectionState ===
-                "UNAVAILABLE",
-            product:
-              mergedProduct,
-            quantity:
-              quantity.quantity,
-            quantityUnit:
-              quantity.unit ||
-              "pzas",
-            detectedPrice:
-              price,
-            priceMeaning:
-              "LINE_TOTAL",
-            source:
-              "PDF table layout"
-          });
+          return "";
         }
 
+        return cleaned;
+      };
+
+      // Find the first explicit table header on this page.
+      let header = null;
+
+      for (const row of pageRows) {
+        const items = Array.isArray(row?.items) ? row.items.slice() : [];
+        const normalizedItems = items
+          .map(item => ({
+            x: Number(item.x || 0),
+            value: normalizeOcrLine(item.value || "")
+          }))
+          .filter(item => item.value);
+
+        const article = normalizedItems.find(item =>
+          /^Art[ií]culo$/i.test(item.value)
+        );
+        const qty = normalizedItems.find(item =>
+          /^Cant\.?$/i.test(item.value)
+        );
+        const price = normalizedItems.find(item =>
+          /^Precio$/i.test(item.value)
+        );
+
+        if (article && qty && price) {
+          header = {
+            y: Number(row.y || 0),
+            articleX: article.x,
+            qtyX: qty.x,
+            priceX: price.x
+          };
+          break;
+        }
+      }
+
+      // If the page begins with table continuation and no repeated header,
+      // infer column anchors from quantity/price-bearing rows.
+      if (!header) {
+        const qtyXs = [];
+        const priceXs = [];
+        const productXs = [];
+
+        pageRows.forEach(row => {
+          const items = Array.isArray(row?.items) ? row.items : [];
+
+          items.forEach(item => {
+            const value = normalizeOcrLine(item?.value || "");
+            const x = Number(item?.x || 0);
+
+            if (parseQuantityUnitFromText(value)) {
+              qtyXs.push(x);
+            } else if (
+              /\$?\s*\d+(?:[.,]\d{2})\s*$/.test(value)
+            ) {
+              priceXs.push(x);
+            } else if (
+              /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(value) &&
+              !documentLineShouldBeIgnored(value)
+            ) {
+              productXs.push(x);
+            }
+          });
+        });
+
+        const median = values => {
+          if (!values.length) return null;
+          const sorted = values.slice().sort((a, b) => a - b);
+          const mid = Math.floor(sorted.length / 2);
+          return sorted.length % 2
+            ? sorted[mid]
+            : (sorted[mid - 1] + sorted[mid]) / 2;
+        };
+
+        const articleX = median(productXs);
+        const qtyX = median(qtyXs);
+        const priceX = median(priceXs);
+
+        if (
+          articleX !== null &&
+          qtyX !== null &&
+          priceX !== null
+        ) {
+          header = {
+            y: Number.POSITIVE_INFINITY,
+            articleX,
+            qtyX,
+            priceX
+          };
+        }
+      }
+
+      if (!header) {
         continue;
       }
 
-      const onlyProductLike =
-        productText &&
-        !quantityText &&
-        !priceText &&
-        /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(
-          productText
-        ) &&
-        !/^(?:Art[ií]culo|Cant\.?|Precio)$/i.test(
-          productText
-        );
+      const articleQtyBoundary =
+        (header.articleX + header.qtyX) / 2;
 
-      if (
-        onlyProductLike
-      ) {
-        pendingProductLines.push(
-          productText
-        );
+      const qtyPriceBoundary =
+        (header.qtyX + header.priceX) / 2;
 
-        flushPendingProduct();
+      let lastPricedRowY = null;
+
+      for (const row of pageRows) {
+        const rowY = Number(row?.y || 0);
+        const items = Array.isArray(row?.items)
+          ? row.items.slice().sort((a, b) => Number(a.x || 0) - Number(b.x || 0))
+          : [];
+
+        if (!items.length) continue;
+
+        const rowText = items
+          .map(item => String(item?.value || ""))
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        const newSection =
+          sectionStateFromPdfText(
+            rowText,
+            sectionState
+          );
+
+        if (newSection !== sectionState) {
+          sectionState = newSection;
+          clearPending();
+          lastPricedRowY = null;
+        }
+
+        const isHeaderRow =
+          items.some(item => /^Art[ií]culo$/i.test(normalizeOcrLine(item.value || ""))) &&
+          items.some(item => /^Cant\.?$/i.test(normalizeOcrLine(item.value || ""))) &&
+          items.some(item => /^Precio$/i.test(normalizeOcrLine(item.value || "")));
+
+        if (isHeaderRow) {
+          clearPending();
+          lastPricedRowY = null;
+          continue;
+        }
+
+        if (
+          !rowText ||
+          documentLineShouldBeIgnored(rowText) ||
+          /Art[ií]culos (?:no disponibles|disponibles)/i.test(rowText) ||
+          /Estos art[ií]culos no se cobrar[aá]n/i.test(rowText)
+        ) {
+          continue;
+        }
+
+        const productParts = [];
+        const quantityParts = [];
+        const priceParts = [];
+
+        items.forEach(item => {
+          const x = Number(item.x || 0);
+          const value = normalizeOcrLine(item.value || "");
+          if (!value) return;
+
+          if (x >= qtyPriceBoundary) {
+            priceParts.push(value);
+          } else if (x >= articleQtyBoundary) {
+            quantityParts.push(value);
+          } else {
+            productParts.push(value);
+          }
+        });
+
+        const productText =
+          cleanProductCandidate(
+            productParts.join(" ")
+          );
+
+        const quantityText =
+          quantityParts.join(" ");
+
+        const priceText =
+          priceParts.join(" ");
+
+        const quantity =
+          parseQuantityUnitFromText(
+            quantityText
+          );
+
+        const price =
+          parsePriceFromText(
+            priceText
+          );
+
+        if (quantity && price !== null) {
+          // Only keep immediately adjacent wrapped product lines.
+          if (
+            lastPricedRowY !== null &&
+            Math.abs(lastPricedRowY - rowY) > 60
+          ) {
+            clearPending();
+          }
+
+          const mergedProduct =
+            cleanProductCandidate(
+              [
+                ...pendingProductLines,
+                productText
+              ]
+                .filter(Boolean)
+                .join(" ")
+            );
+
+          clearPending();
+
+          if (mergedProduct) {
+            result.push({
+              include:
+                sectionState !== "UNAVAILABLE",
+              unavailable:
+                sectionState === "UNAVAILABLE",
+              product:
+                mergedProduct,
+              quantity:
+                quantity.quantity,
+              quantityUnit:
+                quantity.unit || "pzas",
+              detectedPrice:
+                price,
+              priceMeaning:
+                "LINE_TOTAL",
+              source:
+                `PDF header-anchored table • page ${pageNumber}`
+            });
+          }
+
+          lastPricedRowY = rowY;
+          continue;
+        }
+
+        // A wrapped product line is valid only when it sits in the product
+        // column and contains no quantity/price content.
+        const productOnlyRow =
+          Boolean(productText) &&
+          !quantityText &&
+          !priceText &&
+          /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(productText) &&
+          !/^(?:Agotado|Disponible|No disponible)$/i.test(productText);
+
+        if (productOnlyRow) {
+          // Introductory prose often spans the whole page and can appear above
+          // the first table row. Reject long sentence-like text.
+          const sentenceLike =
+            productText.length > 95 ||
+            /[.!?]$/.test(productText) ||
+            /^(?:Lamentamos|Tu pedido|Revisa|Como soluci[oó]n|Nuestra firme intenci[oó]n|Sin embargo|De suceder|Nos reservamos)/i.test(productText);
+
+          if (!sentenceLike) {
+            // If this line is far away from the most recent priced row, it can
+            // only belong to the next row; keep at most two wrapped lines.
+            pendingProductLines.push(productText);
+
+            if (pendingProductLines.length > 2) {
+              pendingProductLines =
+                pendingProductLines.slice(-2);
+            }
+          }
+
+          continue;
+        }
+
+        // Status/noise rows must never leak into the next product.
+        if (
+          /Agotado|no disponible|disponible/i.test(rowText)
+        ) {
+          continue;
+        }
       }
     }
 
     return {
-      rows:
-        result,
-      parser:
-        "PDF layout table parser"
+      rows: result,
+      parser: "PDF header-anchored table parser"
     };
   }
-
 
   function parseImportedDocumentRows(textValue) {
     const lines = String(textValue || "")
