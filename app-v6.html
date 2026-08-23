@@ -2541,6 +2541,47 @@
     .payment-remaining-good { color: #8de6b0; }
     .payment-remaining-bad { color: #ff929b; }
 
+    .payment-remaining-banner {
+      margin: 12px 0 14px;
+      padding: 13px 14px;
+      border: 1px solid #6d4d89;
+      border-radius: 11px;
+      background: #251c31;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .payment-remaining-banner.hidden {
+      display: none;
+    }
+
+    .payment-remaining-banner-label {
+      color: #d8c7e9;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.3;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .payment-remaining-banner-value {
+      white-space: nowrap;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .payment-remaining-banner.complete {
+      border-color: #3f7654;
+      background: #17251c;
+    }
+
+    .payment-remaining-banner.over {
+      border-color: #8a4048;
+      background: #311d21;
+    }
+
     .cash-change-preview {
       margin-top: 12px;
       border: 1px solid #3c5948;
@@ -5659,6 +5700,15 @@
 
       <div id="payment-mode-help" class="payment-section-hint">Choose one method. The full trip total will be assigned automatically.</div>
 
+      <div
+        id="payment-remaining-banner"
+        class="payment-remaining-banner hidden"
+        aria-live="polite"
+      >
+        <span class="payment-remaining-banner-label">Remaining to assign</span>
+        <strong id="payment-remaining-banner-value" class="payment-remaining-banner-value">$0.00</strong>
+      </div>
+
       <div class="payment-method-picker">
         <button
           id="payment-method-picker-trigger"
@@ -6839,7 +6889,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3I.6a — Known-product selection regression fix. Production remains index.html.
+    V6 Stage 3I.7 — Mixed Payment remaining balance. Production remains index.html.
   </div>
 
 </div>
@@ -7436,9 +7486,9 @@
 
 <script>
 
-  // V6 Stage 3I.6a — known-product selection regression fix.
-  // Selecting a local known-product suggestion now restores current-store price
-  // and barcode state, while preserving the 3I.6 Management/Reports navigation.
+  // V6 Stage 3I.7 — Mixed Payment remaining balance.
+  // A prominent live balance now shows how much of the trip total remains to be
+  // assigned while using Mixed Payment. All 3I.6a product fixes are preserved.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -18979,13 +19029,45 @@
     document.getElementById("payment-mode-single")?.classList.toggle("selected", paymentMode === "SINGLE");
     document.getElementById("payment-mode-mixed")?.classList.toggle("selected", paymentMode === "MIXED");
     const help = document.getElementById("payment-mode-help");
-    if (help) help.textContent = paymentMode === "MIXED" ? "Add two or more methods and assign the amount paid with each one." : "Choose one method. The full trip total will be assigned automatically.";
+    if (help) help.textContent = paymentMode === "MIXED" ? "Add two or more methods and assign the amount paid with each one. The remaining balance updates as you enter each amount." : "Choose one method. The full trip total will be assigned automatically.";
+    renderMixedPaymentRemainingBanner();
     renderPaymentAllocations();
     renderPaymentMethodList();
     updatePaymentMethodPickerTrigger();
   }
 
+  function renderMixedPaymentRemainingBanner() {
+    const banner = document.getElementById("payment-remaining-banner");
+    const value = document.getElementById("payment-remaining-banner-value");
+    if (!banner || !value) return;
+
+    if (paymentMode !== "MIXED") {
+      banner.classList.add("hidden");
+      banner.classList.remove("complete", "over");
+      return;
+    }
+
+    const total = getCurrentPaymentTripTotal();
+    const allocated = paymentAllocatedTotal();
+    const remaining = roundMoney(total - allocated);
+
+    banner.classList.remove("hidden", "complete", "over");
+
+    if (Math.abs(remaining) <= 0.009) {
+      banner.classList.add("complete");
+      value.textContent = formatMoney(0);
+    } else if (remaining < 0) {
+      banner.classList.add("over");
+      value.textContent = formatMoney(Math.abs(remaining)) + " over";
+    } else {
+      value.textContent = formatMoney(remaining);
+    }
+  }
+
+
   function renderPaymentAllocationSummary() {
+    renderMixedPaymentRemainingBanner();
+
     const summary = document.getElementById("payment-allocation-summary");
     if (!summary) return;
 
