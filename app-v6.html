@@ -7658,7 +7658,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2k — Regression cleanup: retailer search, products, management, history. Production remains index.html.
+    V6 Stage 3J.2m — Search CORS recovery. Production remains index.html.
   </div>
 
 </div>
@@ -8660,10 +8660,10 @@
 
 <script>
 
-  // V6 Stage 3J.2l — fresh-search recovery + plural-query expansion.
-  // Keeps the completed V6 stack intact. This isolated pass changes only the
-  // live retailer product-search request lifecycle, sparse plural expansion,
-  // retry recovery, and result deduplication.
+  // V6 Stage 3J.2m — search CORS recovery.
+  // Keeps 3J.2l's unique fresh request, stale-request abort, retry, plural
+  // expansion, and deduplication. Removes non-simple request headers that can
+  // trigger a CORS preflight unsupported by the frozen 3F.10 Worker.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -10294,7 +10294,8 @@
     );
 
     // Browser/edge cache buster. The current Worker ignores this parameter,
-    // but it guarantees that every app search reaches the Worker as a unique URL.
+    // but every explicit app search still uses a unique URL. Provider-side
+    // freshness is a separate Worker concern and is intentionally not changed here.
     url.searchParams.set(
       "fresh",
       `${Date.now()}-${requestSerial}-${Math.random().toString(36).slice(2, 9)}`
@@ -10309,13 +10310,7 @@
 
           headers: {
             "Accept":
-              "application/json",
-
-            "Cache-Control":
-              "no-cache",
-
-            "Pragma":
-              "no-cache"
+              "application/json"
           },
 
           cache:
