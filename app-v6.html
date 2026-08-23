@@ -1366,6 +1366,247 @@
       color: #fff0f0;
     }
 
+    .document-import-promo-button {
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      width: 100%;
+      background: #5b347c;
+      border: 1px solid rgba(189, 137, 255, .44);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .document-import-promo-card {
+      padding: 13px;
+      border: 1px solid rgba(189, 137, 255, .62);
+      border-radius: 12px;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(112, 53, 164, .24),
+          rgba(32, 36, 45, .98)
+        );
+    }
+
+    .document-import-promo-card.invalid {
+      border-color: rgba(255, 121, 131, .72);
+    }
+
+    .document-import-promo-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .document-import-promo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 950;
+      font-size: 15px;
+      color: #f1d9ff;
+    }
+
+    .document-import-promo-type {
+      margin-top: 4px;
+      color: #c9a7ed;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .document-import-promo-mini-list {
+      display: grid;
+      gap: 6px;
+      margin: 11px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .document-import-promo-mini-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, .18);
+      color: #e7e9ee;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .document-import-promo-mini-list li span:last-child {
+      color: #bfc4cd;
+      white-space: nowrap;
+    }
+
+    .document-import-promo-totals {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .document-import-promo-total-box {
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(0,0,0,.20);
+      color: #aeb4c0;
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .document-import-promo-total-box strong {
+      display: block;
+      margin-top: 3px;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .document-import-promo-error {
+      margin-top: 9px;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(117, 34, 43, .52);
+      color: #ffd8dc;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .document-import-promo-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .document-import-promo-actions button {
+      margin: 0;
+      padding: 10px 8px;
+      font-size: 11px;
+    }
+
+    #document-import-promo-overlay {
+      z-index: 2750;
+    }
+
+    .document-import-promo-builder {
+      width: min(100%, 620px);
+      max-height: min(90vh, 860px);
+      overflow: auto;
+    }
+
+    .import-promo-member-list {
+      display: grid;
+      gap: 8px;
+      max-height: 36vh;
+      overflow: auto;
+      margin-top: 12px;
+      padding-right: 2px;
+    }
+
+    .import-promo-member {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) 90px;
+      gap: 8px;
+      align-items: center;
+      padding: 9px;
+      border: 1px solid #454b58;
+      border-radius: 9px;
+      background: #1d2129;
+    }
+
+    .import-promo-member input[type="checkbox"] {
+      width: 19px;
+      height: 19px;
+      margin: 0;
+    }
+
+    .import-promo-member-name {
+      min-width: 0;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .import-promo-member-meta {
+      display: block;
+      margin-top: 3px;
+      color: #aeb4c0;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .import-promo-member-qty label {
+      margin: 0 0 4px;
+      color: #aeb4c0;
+      font-size: 9px;
+      line-height: 1.2;
+    }
+
+    .import-promo-member-qty input {
+      margin: 0;
+      padding: 8px 7px;
+      font-size: 12px;
+    }
+
+    .import-promo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .import-promo-grid .wide {
+      grid-column: 1 / -1;
+    }
+
+    .import-promo-field.hidden {
+      display: none;
+    }
+
+    .import-promo-preview {
+      margin-top: 12px;
+      padding: 11px;
+      border-radius: 9px;
+      background: #171b22;
+      color: #cbd0d8;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .import-promo-preview strong {
+      color: #fff;
+    }
+
+    .import-promo-preview.invalid {
+      background: rgba(94, 29, 35, .68);
+      color: #ffe1e4;
+    }
+
+    @media (max-width: 540px) {
+      .document-import-promo-totals {
+        grid-template-columns: 1fr;
+      }
+
+      .import-promo-member {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+
+      .import-promo-member-qty {
+        grid-column: 2;
+      }
+
+      .import-promo-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .import-promo-grid .wide {
+        grid-column: auto;
+      }
+    }
+
     .document-import-row-head {
       display: flex;
       align-items: center;
@@ -7312,7 +7553,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2h — Trip-flow UI cleanup. Production remains index.html.
+    V6 Stage 3J.2i — Imported-order promo groups. Production remains index.html.
   </div>
 
 </div>
@@ -7452,6 +7693,179 @@
         disabled
       >
         ADD REVIEWED ITEMS TO TRIP
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<div
+  id="document-import-promo-overlay"
+  class="change-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="document-import-promo-title"
+>
+  <div class="change-card document-import-promo-builder">
+    <div id="document-import-promo-title" class="change-title">
+      🏷 Build Promotion
+    </div>
+
+    <div class="change-body">
+      This item belongs to a promo. Which other imported items are bundled with it?
+      Select the participating rows and, when needed, how many units from each row participate.
+    </div>
+
+    <div id="document-import-promo-members" class="import-promo-member-list"></div>
+
+    <div class="import-promo-grid">
+      <div class="wide">
+        <label for="document-import-promo-type">Promotion type</label>
+        <select
+          id="document-import-promo-type"
+          onchange="updateDocumentImportPromoDraftField('type', this.value)"
+        >
+          <option value="X_FOR_Y">X for $Y</option>
+          <option value="BUY_X_GET_Y">Buy X, get Y free</option>
+          <option value="PERCENT">Percentage discount</option>
+          <option value="SPECIAL_UNIT">Special unit price</option>
+          <option value="MANUAL">Other / manual promo total</option>
+        </select>
+      </div>
+
+      <div id="import-promo-x-field" class="import-promo-field">
+        <label for="document-import-promo-x-quantity">X units</label>
+        <input
+          id="document-import-promo-x-quantity"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="Example: 7"
+          oninput="updateDocumentImportPromoDraftField('xQuantity', this.value)"
+        >
+      </div>
+
+      <div id="import-promo-y-field" class="import-promo-field">
+        <label for="document-import-promo-x-price">Bundle price $Y</label>
+        <input
+          id="document-import-promo-x-price"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="Example: 100"
+          oninput="updateDocumentImportPromoDraftField('xPrice', this.value)"
+        >
+      </div>
+
+      <div id="import-promo-buy-field" class="import-promo-field hidden">
+        <label for="document-import-promo-buy-quantity">Buy X</label>
+        <input
+          id="document-import-promo-buy-quantity"
+          type="number"
+          inputmode="numeric"
+          min="1"
+          step="1"
+          placeholder="Example: 2"
+          oninput="updateDocumentImportPromoDraftField('buyQuantity', this.value)"
+        >
+      </div>
+
+      <div id="import-promo-free-field" class="import-promo-field hidden">
+        <label for="document-import-promo-free-quantity">Get Y free</label>
+        <input
+          id="document-import-promo-free-quantity"
+          type="number"
+          inputmode="numeric"
+          min="1"
+          step="1"
+          placeholder="Example: 1"
+          oninput="updateDocumentImportPromoDraftField('freeQuantity', this.value)"
+        >
+      </div>
+
+      <div id="import-promo-percent-field" class="import-promo-field hidden wide">
+        <label for="document-import-promo-percent">Percent off</label>
+        <input
+          id="document-import-promo-percent"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          max="100"
+          step="0.01"
+          placeholder="Example: 20"
+          oninput="updateDocumentImportPromoDraftField('percent', this.value)"
+        >
+      </div>
+
+      <div id="import-promo-special-field" class="import-promo-field hidden wide">
+        <label for="document-import-promo-special-price">Special price per participating unit</label>
+        <input
+          id="document-import-promo-special-price"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="Example: 12.50"
+          oninput="updateDocumentImportPromoDraftField('specialUnitPrice', this.value)"
+        >
+      </div>
+
+      <div id="import-promo-manual-field" class="import-promo-field hidden wide">
+        <label for="document-import-promo-manual-total">Promo total for all participating units</label>
+        <input
+          id="document-import-promo-manual-total"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="Enter final bundled total"
+          oninput="updateDocumentImportPromoDraftField('manualTotal', this.value)"
+        >
+      </div>
+
+      <div class="wide">
+        <label for="document-import-promo-note">Promo note (optional)</label>
+        <input
+          id="document-import-promo-note"
+          type="text"
+          autocomplete="off"
+          placeholder="Example: assorted Pedigree pouches"
+          oninput="updateDocumentImportPromoDraftField('note', this.value)"
+        >
+      </div>
+    </div>
+
+    <div id="document-import-promo-preview" class="import-promo-preview">
+      Select the promo items and complete the promotion details.
+    </div>
+
+    <div class="change-actions">
+      <button
+        type="button"
+        class="change-cancel"
+        onclick="cancelDocumentImportPromoBuilder()"
+      >
+        CANCEL
+      </button>
+
+      <button
+        id="document-import-promo-unbundle-button"
+        type="button"
+        class="change-forward hidden"
+        onclick="unbundleDocumentImportPromoDraft()"
+      >
+        UNBUNDLE PROMO
+      </button>
+
+      <button
+        id="document-import-promo-save-button"
+        type="button"
+        class="change-history"
+        onclick="saveDocumentImportPromoBuilder()"
+      >
+        SAVE PROMO
       </button>
     </div>
   </div>
@@ -8092,9 +8506,10 @@
 
 <script>
 
-  // V6 Stage 3J.2h — trip-flow UI cleanup.
-  // Keeps 3J.2d row recognition, 3J.2f quota-safe batch saving, and 3J.2g
-  // shipment accounting intact. Cleans the app shell and payment/import UX.
+  // V6 Stage 3J.2i — imported-order promo groups.
+  // Keeps 3J.2d row recognition, 3J.2f quota-safe batch saving, 3J.2g shipping,
+  // and 3J.2h payment/UI fixes intact. OCR rows can now be bundled into one
+  // review-time PROMO card while still saving every real product separately.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -8121,6 +8536,9 @@
 
   let documentImportBusy = false;
   let documentImportRows = [];
+  let documentImportPromoGroups = [];
+  let documentImportPromoDraft = null;
+
   let documentImportMeta = {
     filename: "",
     sourceType: "",
@@ -17045,6 +17463,2131 @@
   }
 
 
+  function resetDocumentImportPromoState() {
+    documentImportPromoGroups =
+      [];
+
+    documentImportPromoDraft =
+      null;
+
+    hide(
+      "document-import-promo-overlay"
+    );
+  }
+
+
+  function documentImportPromoGroupId() {
+    return (
+      "IPG-" +
+      Date.now() +
+      "-" +
+      Math.random()
+        .toString(36)
+        .slice(2, 7)
+        .toUpperCase()
+    );
+  }
+
+
+  function documentImportPromoGroupForRow(
+    rowIndex
+  ) {
+    const row =
+      documentImportRows[
+        rowIndex
+      ];
+
+    const groupId =
+      String(
+        row?.promoGroupId || ""
+      );
+
+    if (!groupId) {
+      return null;
+    }
+
+    return (
+      documentImportPromoGroups.find(
+        group =>
+          group.id ===
+            groupId
+      ) ||
+      null
+    );
+  }
+
+
+  function documentImportPromoTypeText(
+    type
+  ) {
+    return (
+      promoTypeLabel(
+        type
+      ) ||
+      "Promotion"
+    );
+  }
+
+
+  function documentImportPromoGroupText(
+    group,
+    calculation
+  ) {
+    if (!group) {
+      return "";
+    }
+
+    const totalQty =
+      calculation?.totalParticipatingQuantity ??
+      0;
+
+    let text =
+      "";
+
+    if (
+      group.type ===
+        "X_FOR_Y"
+    ) {
+      text =
+        `${formatPlainNumber(group.xQuantity)} for ${formatMoney(group.xPrice)}`;
+
+      if (
+        calculation?.bundleCount
+      ) {
+        text +=
+          ` × ${formatPlainNumber(calculation.bundleCount)} ${calculation.bundleCount === 1 ? "bundle" : "bundles"}`;
+      }
+
+    } else if (
+      group.type ===
+        "BUY_X_GET_Y"
+    ) {
+      text =
+        `Buy ${formatPlainNumber(group.buyQuantity)}, get ${formatPlainNumber(group.freeQuantity)} free`;
+
+    } else if (
+      group.type ===
+        "PERCENT"
+    ) {
+      text =
+        `${formatPlainNumber(group.percent)}% off`;
+
+    } else if (
+      group.type ===
+        "SPECIAL_UNIT"
+    ) {
+      text =
+        `${formatMoney(group.specialUnitPrice)} per participating unit`;
+
+    } else if (
+      group.type ===
+        "MANUAL"
+    ) {
+      text =
+        `Manual promo total ${formatMoney(group.manualTotal)}`;
+    }
+
+    if (
+      totalQty > 0
+    ) {
+      text +=
+        ` • ${formatPlainNumber(totalQty)} participating units`;
+    }
+
+    if (
+      String(
+        group.note || ""
+      ).trim()
+    ) {
+      text +=
+        ` • ${String(group.note).trim()}`;
+    }
+
+    return text;
+  }
+
+
+  function documentImportPromoAllocateCents(
+    targetCents,
+    members
+  ) {
+    const safeTarget =
+      Math.max(
+        0,
+        Math.round(
+          Number(
+            targetCents
+          ) || 0
+        )
+      );
+
+    const totalBase =
+      members.reduce(
+        (
+          sum,
+          member
+        ) =>
+          sum +
+          Math.max(
+            0,
+            member.participantRegularCents
+          ),
+        0
+      );
+
+    const allocations =
+      new Map();
+
+    if (
+      !members.length
+    ) {
+      return allocations;
+    }
+
+    if (
+      totalBase <= 0
+    ) {
+      members.forEach(
+        member =>
+          allocations.set(
+            member.rowIndex,
+            0
+          )
+      );
+
+      return allocations;
+    }
+
+    const provisional =
+      members.map(
+        member => {
+          const raw =
+            safeTarget *
+            (
+              member.participantRegularCents /
+              totalBase
+            );
+
+          const floor =
+            Math.floor(
+              raw
+            );
+
+          return {
+            rowIndex:
+              member.rowIndex,
+            floor,
+            fraction:
+              raw -
+              floor
+          };
+        }
+      );
+
+    let used =
+      provisional.reduce(
+        (
+          sum,
+          entry
+        ) =>
+          sum +
+          entry.floor,
+        0
+      );
+
+    let remaining =
+      safeTarget -
+      used;
+
+    provisional
+      .slice()
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          (
+            b.fraction -
+            a.fraction
+          ) ||
+          (
+            a.rowIndex -
+            b.rowIndex
+          )
+      )
+      .forEach(
+        entry => {
+          if (
+            remaining <=
+              0
+          ) {
+            return;
+          }
+
+          entry.floor +=
+            1;
+
+          remaining -=
+            1;
+        }
+      );
+
+    provisional.forEach(
+      entry =>
+        allocations.set(
+          entry.rowIndex,
+          entry.floor
+        )
+    );
+
+    return allocations;
+  }
+
+
+  function calculateDocumentImportPromoGroup(
+    group
+  ) {
+    if (
+      !group ||
+      !Array.isArray(
+        group.members
+      ) ||
+      !group.members.length
+    ) {
+      return {
+        valid:
+          false,
+        error:
+          "Choose at least one product for the promotion.",
+        allocations:
+          new Map()
+      };
+    }
+
+    const members =
+      [];
+
+    for (
+      const member
+      of group.members
+    ) {
+      const rowIndex =
+        Number(
+          member.rowIndex
+        );
+
+      const row =
+        documentImportRows[
+          rowIndex
+        ];
+
+      if (
+        !row ||
+        row.unavailable ||
+        row.importSaved ===
+          true
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            "One of the selected promo rows is no longer available.",
+          allocations:
+            new Map()
+        };
+      }
+
+      const totalQuantity =
+        Number(
+          row.quantity
+        );
+
+      const participatingQuantity =
+        Number(
+          member.quantity
+        );
+
+      const regular =
+        documentImportComputedValues(
+          row
+        );
+
+      if (
+        !regular.valid ||
+        !Number.isFinite(
+          totalQuantity
+        ) ||
+        totalQuantity <= 0 ||
+        !Number.isFinite(
+          participatingQuantity
+        ) ||
+        participatingQuantity <= 0 ||
+        participatingQuantity >
+          totalQuantity +
+          0.0000001
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            `Check the participating quantity for ${String(row.product || "a promo item")}.`,
+          allocations:
+            new Map()
+        };
+      }
+
+      const regularLineCents =
+        Math.round(
+          Number(
+            regular.lineTotal
+          ) *
+          100
+        );
+
+      const participantRegularCents =
+        participatingQuantity >=
+          totalQuantity -
+          0.0000001
+            ? regularLineCents
+            : Math.round(
+                regularLineCents *
+                (
+                  participatingQuantity /
+                  totalQuantity
+                )
+              );
+
+      members.push({
+        rowIndex,
+        row,
+        totalQuantity,
+        participatingQuantity,
+        regular,
+        regularLineCents,
+        participantRegularCents,
+        nonParticipantRegularCents:
+          regularLineCents -
+          participantRegularCents
+      });
+    }
+
+    const totalParticipatingQuantity =
+      members.reduce(
+        (
+          sum,
+          member
+        ) =>
+          sum +
+          member.participatingQuantity,
+        0
+      );
+
+    const regularParticipantCents =
+      members.reduce(
+        (
+          sum,
+          member
+        ) =>
+          sum +
+          member.participantRegularCents,
+        0
+      );
+
+    const regularGroupCents =
+      members.reduce(
+        (
+          sum,
+          member
+        ) =>
+          sum +
+          member.regularLineCents,
+        0
+      );
+
+    let targetParticipantCents =
+      null;
+
+    let bundleCount =
+      null;
+
+    const positive =
+      value =>
+        Number.isFinite(
+          Number(
+            value
+          )
+        ) &&
+        Number(
+          value
+        ) >
+          0;
+
+    if (
+      group.type ===
+        "X_FOR_Y"
+    ) {
+      if (
+        !positive(
+          group.xQuantity
+        ) ||
+        !positive(
+          group.xPrice
+        )
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            "Enter both X and $Y for the bundle.",
+          allocations:
+            new Map()
+        };
+      }
+
+      const x =
+        Number(
+          group.xQuantity
+        );
+
+      const rawBundles =
+        totalParticipatingQuantity /
+        x;
+
+      const roundedBundles =
+        Math.round(
+          rawBundles
+        );
+
+      if (
+        roundedBundles <= 0 ||
+        Math.abs(
+          rawBundles -
+          roundedBundles
+        ) >
+          0.000001
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            `The selected promo quantities total ${formatPlainNumber(totalParticipatingQuantity)}. For an ${formatPlainNumber(x)} for ${formatMoney(group.xPrice)} offer, the participating quantity must make complete bundles.`,
+          allocations:
+            new Map()
+        };
+      }
+
+      bundleCount =
+        roundedBundles;
+
+      targetParticipantCents =
+        Math.round(
+          bundleCount *
+          Number(
+            group.xPrice
+          ) *
+          100
+        );
+
+    } else if (
+      group.type ===
+        "BUY_X_GET_Y"
+    ) {
+      const buy =
+        Number(
+          group.buyQuantity
+        );
+
+      const free =
+        Number(
+          group.freeQuantity
+        );
+
+      if (
+        !Number.isInteger(
+          buy
+        ) ||
+        buy <= 0 ||
+        !Number.isInteger(
+          free
+        ) ||
+        free <= 0
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            "Buy X / get Y free needs whole positive unit counts.",
+          allocations:
+            new Map()
+        };
+      }
+
+      if (
+        members.some(
+          member =>
+            !Number.isInteger(
+              member.participatingQuantity
+            )
+        )
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            "Buy X / get Y free can only use whole participating units.",
+          allocations:
+            new Map()
+        };
+      }
+
+      const groupSize =
+        buy +
+        free;
+
+      const fullGroups =
+        totalParticipatingQuantity /
+        groupSize;
+
+      const roundedGroups =
+        Math.round(
+          fullGroups
+        );
+
+      if (
+        roundedGroups <= 0 ||
+        Math.abs(
+          fullGroups -
+          roundedGroups
+        ) >
+          0.000001
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            `The selected participating units must make complete groups of ${groupSize}.`,
+          allocations:
+            new Map()
+        };
+      }
+
+      bundleCount =
+        roundedGroups;
+
+      const freeUnits =
+        roundedGroups *
+        free;
+
+      const unitCandidates =
+        [];
+
+      members.forEach(
+        member => {
+          const approximateUnitCents =
+            member.participantRegularCents /
+            member.participatingQuantity;
+
+          for (
+            let i = 0;
+            i <
+              member.participatingQuantity;
+            i++
+          ) {
+            unitCandidates.push({
+              rowIndex:
+                member.rowIndex,
+              cents:
+                approximateUnitCents
+            });
+          }
+        }
+      );
+
+      unitCandidates.sort(
+        (
+          a,
+          b
+        ) =>
+          (
+            a.cents -
+            b.cents
+          ) ||
+          (
+            a.rowIndex -
+            b.rowIndex
+          )
+      );
+
+      const freeValue =
+        unitCandidates
+          .slice(
+            0,
+            freeUnits
+          )
+          .reduce(
+            (
+              sum,
+              unit
+            ) =>
+              sum +
+              unit.cents,
+            0
+          );
+
+      targetParticipantCents =
+        Math.max(
+          0,
+          regularParticipantCents -
+          Math.round(
+            freeValue
+          )
+        );
+
+    } else if (
+      group.type ===
+        "PERCENT"
+    ) {
+      const percent =
+        Number(
+          group.percent
+        );
+
+      if (
+        !Number.isFinite(
+          percent
+        ) ||
+        percent <= 0 ||
+        percent > 100
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            "Enter a percentage greater than 0 and no more than 100.",
+          allocations:
+            new Map()
+        };
+      }
+
+      targetParticipantCents =
+        Math.round(
+          regularParticipantCents *
+          (
+            1 -
+            percent /
+            100
+          )
+        );
+
+    } else if (
+      group.type ===
+        "SPECIAL_UNIT"
+    ) {
+      if (
+        !positive(
+          group.specialUnitPrice
+        )
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            "Enter the special price per participating unit.",
+          allocations:
+            new Map()
+        };
+      }
+
+      targetParticipantCents =
+        Math.round(
+          totalParticipatingQuantity *
+          Number(
+            group.specialUnitPrice
+          ) *
+          100
+        );
+
+    } else if (
+      group.type ===
+        "MANUAL"
+    ) {
+      const manual =
+        Number(
+          group.manualTotal
+        );
+
+      if (
+        !Number.isFinite(
+          manual
+        ) ||
+        manual < 0
+      ) {
+        return {
+          valid:
+            false,
+          error:
+            "Enter the final promo total for all participating units.",
+          allocations:
+            new Map()
+        };
+      }
+
+      targetParticipantCents =
+        Math.round(
+          manual *
+          100
+        );
+
+    } else {
+      return {
+        valid:
+          false,
+        error:
+          "Choose a promotion type.",
+        allocations:
+          new Map()
+      };
+    }
+
+    if (
+      targetParticipantCents >
+        regularParticipantCents
+    ) {
+      return {
+        valid:
+          false,
+        error:
+          "The calculated promo price is higher than the regular value of the participating units.",
+        allocations:
+          new Map()
+      };
+    }
+
+    const participantAllocations =
+      documentImportPromoAllocateCents(
+        targetParticipantCents,
+        members
+      );
+
+    const allocations =
+      new Map();
+
+    members.forEach(
+      member => {
+        const allocatedParticipantCents =
+          participantAllocations.get(
+            member.rowIndex
+          ) ||
+          0;
+
+        const actualLineCents =
+          member.nonParticipantRegularCents +
+          allocatedParticipantCents;
+
+        const savingsCents =
+          Math.max(
+            0,
+            member.regularLineCents -
+            actualLineCents
+          );
+
+        allocations.set(
+          member.rowIndex,
+          {
+            actualLineTotal:
+              roundMoney(
+                actualLineCents /
+                100
+              ),
+
+            effectiveUnitPrice:
+              roundMoneyMore(
+                (
+                  actualLineCents /
+                  100
+                ) /
+                member.totalQuantity
+              ),
+
+            regularLineTotal:
+              roundMoney(
+                member.regularLineCents /
+                100
+              ),
+
+            regularUnitPrice:
+              member.regular.unitPrice,
+
+            savings:
+              roundMoney(
+                savingsCents /
+                100
+              ),
+
+            participatingQuantity:
+              member.participatingQuantity,
+
+            allocatedParticipantTotal:
+              roundMoney(
+                allocatedParticipantCents /
+                100
+              )
+          }
+        );
+      }
+    );
+
+    const promoGroupCents =
+      regularGroupCents -
+      (
+        regularParticipantCents -
+        targetParticipantCents
+      );
+
+    return {
+      valid:
+        true,
+
+      error:
+        "",
+
+      members,
+
+      allocations,
+
+      totalParticipatingQuantity,
+
+      regularParticipantTotal:
+        roundMoney(
+          regularParticipantCents /
+          100
+        ),
+
+      regularGroupTotal:
+        roundMoney(
+          regularGroupCents /
+          100
+        ),
+
+      promoParticipantTotal:
+        roundMoney(
+          targetParticipantCents /
+          100
+        ),
+
+      promoGroupTotal:
+        roundMoney(
+          promoGroupCents /
+          100
+        ),
+
+      savings:
+        roundMoney(
+          (
+            regularParticipantCents -
+            targetParticipantCents
+          ) /
+          100
+        ),
+
+      bundleCount
+    };
+  }
+
+
+  function documentImportEffectivePricing(
+    rowIndex
+  ) {
+    const row =
+      documentImportRows[
+        rowIndex
+      ];
+
+    const regular =
+      documentImportComputedValues(
+        row
+      );
+
+    if (
+      !regular.valid
+    ) {
+      return {
+        valid:
+          false
+      };
+    }
+
+    const group =
+      documentImportPromoGroupForRow(
+        rowIndex
+      );
+
+    if (!group) {
+      return {
+        valid:
+          true,
+        unitPrice:
+          regular.unitPrice,
+        lineTotal:
+          regular.lineTotal,
+        regularUnitPrice:
+          regular.unitPrice,
+        regularLineTotal:
+          regular.lineTotal,
+        savings:
+          0,
+        promoApplied:
+          "NO",
+        promoType:
+          "",
+        promoDetails:
+          "",
+        promoQuantity:
+          "",
+        promoTotal:
+          ""
+      };
+    }
+
+    const calculation =
+      calculateDocumentImportPromoGroup(
+        group
+      );
+
+    const allocation =
+      calculation.allocations?.get(
+        rowIndex
+      );
+
+    if (
+      !calculation.valid ||
+      !allocation
+    ) {
+      return {
+        valid:
+          false,
+        groupError:
+          calculation.error ||
+          "This promotion needs attention."
+      };
+    }
+
+    const details =
+      `IMPORTED PROMO GROUP ${group.id} • ${documentImportPromoTypeText(group.type)} • ${documentImportPromoGroupText(group, calculation)}`;
+
+    return {
+      valid:
+        true,
+      unitPrice:
+        allocation.effectiveUnitPrice,
+      lineTotal:
+        allocation.actualLineTotal,
+      regularUnitPrice:
+        allocation.regularUnitPrice,
+      regularLineTotal:
+        allocation.regularLineTotal,
+      savings:
+        allocation.savings,
+      promoApplied:
+        "YES",
+      promoType:
+        documentImportPromoTypeText(
+          group.type
+        ),
+      promoDetails:
+        details,
+      promoQuantity:
+        allocation.participatingQuantity,
+      promoTotal:
+        calculation.promoGroupTotal
+    };
+  }
+
+
+  function documentImportPromoGroupHasSelectedRows(
+    group
+  ) {
+    return (
+      Array.isArray(
+        group?.members
+      ) &&
+      group.members.some(
+        member =>
+          documentImportRows[
+            member.rowIndex
+          ]?.include
+      )
+    );
+  }
+
+
+  function setDocumentImportPromoGroupIncluded(
+    groupId,
+    included
+  ) {
+    const group =
+      documentImportPromoGroups.find(
+        item =>
+          item.id ===
+            groupId
+      );
+
+    if (!group) {
+      return;
+    }
+
+    group.members.forEach(
+      member => {
+        const row =
+          documentImportRows[
+            member.rowIndex
+          ];
+
+        if (
+          row &&
+          row.importSaved !==
+            true
+        ) {
+          row.include =
+            Boolean(
+              included
+            );
+        }
+      }
+    );
+
+    renderDocumentImportReview();
+  }
+
+
+  function unbundleDocumentImportPromoGroup(
+    groupId
+  ) {
+    const group =
+      documentImportPromoGroups.find(
+        item =>
+          item.id ===
+            groupId
+      );
+
+    if (!group) {
+      return;
+    }
+
+    group.members.forEach(
+      member => {
+        const row =
+          documentImportRows[
+            member.rowIndex
+          ];
+
+        if (
+          row &&
+          row.promoGroupId ===
+            groupId
+        ) {
+          row.promoGroupId =
+            "";
+        }
+      }
+    );
+
+    documentImportPromoGroups =
+      documentImportPromoGroups.filter(
+        item =>
+          item.id !==
+            groupId
+      );
+
+    if (
+      documentImportPromoDraft?.id ===
+        groupId
+    ) {
+      documentImportPromoDraft =
+        null;
+
+      hide(
+        "document-import-promo-overlay"
+      );
+    }
+
+    renderDocumentImportReview();
+
+    showSuccessToast(
+      "Promo unbundled",
+      "The products are separate review items again."
+    );
+  }
+
+
+  function documentImportPromoDraftMembers() {
+    const members =
+      [];
+
+    const source =
+      documentImportPromoDraft?.members ||
+      {};
+
+    Object.entries(
+      source
+    ).forEach(
+      (
+        [
+          indexText,
+          state
+        ]
+      ) => {
+        if (
+          !state?.selected
+        ) {
+          return;
+        }
+
+        const rowIndex =
+          Number(
+            indexText
+          );
+
+        const row =
+          documentImportRows[
+            rowIndex
+          ];
+
+        if (!row) {
+          return;
+        }
+
+        const quantity =
+          normalizeDocumentMoney(
+            state.quantity
+          );
+
+        members.push({
+          rowIndex,
+          quantity:
+            quantity === null
+              ? ""
+              : quantity
+        });
+      }
+    );
+
+    return members;
+  }
+
+
+  function documentImportPromoDraftAsGroup() {
+    if (
+      !documentImportPromoDraft
+    ) {
+      return null;
+    }
+
+    return {
+      id:
+        documentImportPromoDraft.id ||
+        documentImportPromoGroupId(),
+
+      type:
+        documentImportPromoDraft.type ||
+        "X_FOR_Y",
+
+      members:
+        documentImportPromoDraftMembers(),
+
+      xQuantity:
+        documentImportPromoDraft.xQuantity,
+
+      xPrice:
+        documentImportPromoDraft.xPrice,
+
+      buyQuantity:
+        documentImportPromoDraft.buyQuantity,
+
+      freeQuantity:
+        documentImportPromoDraft.freeQuantity,
+
+      percent:
+        documentImportPromoDraft.percent,
+
+      specialUnitPrice:
+        documentImportPromoDraft.specialUnitPrice,
+
+      manualTotal:
+        documentImportPromoDraft.manualTotal,
+
+      note:
+        String(
+          documentImportPromoDraft.note ||
+          ""
+        ).trim()
+    };
+  }
+
+
+  function openDocumentImportPromoBuilder(
+    rowIndex,
+    existingGroupId = ""
+  ) {
+    const row =
+      documentImportRows[
+        rowIndex
+      ];
+
+    if (
+      !row ||
+      row.unavailable ||
+      row.importSaved ===
+        true
+    ) {
+      return;
+    }
+
+    const existing =
+      existingGroupId
+        ? documentImportPromoGroups.find(
+            group =>
+              group.id ===
+                existingGroupId
+          )
+        : documentImportPromoGroupForRow(
+            rowIndex
+          );
+
+    const members =
+      {};
+
+    if (existing) {
+      existing.members.forEach(
+        member => {
+          members[
+            member.rowIndex
+          ] = {
+            selected:
+              true,
+            quantity:
+              member.quantity
+          };
+        }
+      );
+    } else {
+      members[
+        rowIndex
+      ] = {
+        selected:
+          true,
+        quantity:
+          row.quantity
+      };
+    }
+
+    documentImportPromoDraft = {
+      id:
+        existing?.id ||
+        "",
+
+      seedRowIndex:
+        rowIndex,
+
+      type:
+        existing?.type ||
+        "X_FOR_Y",
+
+      members,
+
+      xQuantity:
+        existing?.xQuantity ||
+        "",
+
+      xPrice:
+        existing?.xPrice ||
+        "",
+
+      buyQuantity:
+        existing?.buyQuantity ||
+        "",
+
+      freeQuantity:
+        existing?.freeQuantity ||
+        "",
+
+      percent:
+        existing?.percent ||
+        "",
+
+      specialUnitPrice:
+        existing?.specialUnitPrice ||
+        "",
+
+      manualTotal:
+        existing?.manualTotal ||
+        "",
+
+      note:
+        existing?.note ||
+        ""
+    };
+
+    renderDocumentImportPromoBuilder();
+
+    show(
+      "document-import-promo-overlay"
+    );
+  }
+
+
+  function cancelDocumentImportPromoBuilder() {
+    documentImportPromoDraft =
+      null;
+
+    hide(
+      "document-import-promo-overlay"
+    );
+  }
+
+
+  function setDocumentImportPromoDraftMember(
+    rowIndex,
+    selected
+  ) {
+    if (
+      !documentImportPromoDraft
+    ) {
+      return;
+    }
+
+    const row =
+      documentImportRows[
+        rowIndex
+      ];
+
+    if (!row) {
+      return;
+    }
+
+    const current =
+      documentImportPromoDraft.members[
+        rowIndex
+      ] || {};
+
+    documentImportPromoDraft.members[
+      rowIndex
+    ] = {
+      selected:
+        Boolean(
+          selected
+        ),
+
+      quantity:
+        current.quantity ||
+        row.quantity
+    };
+
+    renderDocumentImportPromoBuilder();
+  }
+
+
+  function updateDocumentImportPromoDraftMemberQuantity(
+    rowIndex,
+    value
+  ) {
+    if (
+      !documentImportPromoDraft
+    ) {
+      return;
+    }
+
+    const current =
+      documentImportPromoDraft.members[
+        rowIndex
+      ] || {
+        selected:
+          true
+      };
+
+    current.quantity =
+      value;
+
+    current.selected =
+      true;
+
+    documentImportPromoDraft.members[
+      rowIndex
+    ] =
+      current;
+
+    renderDocumentImportPromoBuilder(
+      false
+    );
+  }
+
+
+  function updateDocumentImportPromoDraftField(
+    field,
+    value
+  ) {
+    if (
+      !documentImportPromoDraft
+    ) {
+      return;
+    }
+
+    if (
+      field ===
+        "type"
+    ) {
+      documentImportPromoDraft.type =
+        String(
+          value || "X_FOR_Y"
+        );
+
+    } else if (
+      field ===
+        "note"
+    ) {
+      documentImportPromoDraft.note =
+        String(
+          value || ""
+        );
+
+    } else {
+      const parsed =
+        normalizeDocumentMoney(
+          value
+        );
+
+      documentImportPromoDraft[
+        field
+      ] =
+        parsed === null
+          ? ""
+          : parsed;
+    }
+
+    renderDocumentImportPromoBuilder(
+      false
+    );
+  }
+
+
+  function renderDocumentImportPromoBuilder(
+    rebuildMembers = true
+  ) {
+    if (
+      !documentImportPromoDraft
+    ) {
+      return;
+    }
+
+    const membersBox =
+      document.getElementById(
+        "document-import-promo-members"
+      );
+
+    const typeInput =
+      document.getElementById(
+        "document-import-promo-type"
+      );
+
+    const preview =
+      document.getElementById(
+        "document-import-promo-preview"
+      );
+
+    const saveButton =
+      document.getElementById(
+        "document-import-promo-save-button"
+      );
+
+    const unbundleButton =
+      document.getElementById(
+        "document-import-promo-unbundle-button"
+      );
+
+    if (
+      !membersBox ||
+      !typeInput ||
+      !preview ||
+      !saveButton
+    ) {
+      return;
+    }
+
+    const editingId =
+      String(
+        documentImportPromoDraft.id ||
+        ""
+      );
+
+    if (rebuildMembers) {
+      membersBox.innerHTML =
+        documentImportRows
+          .map(
+            (
+              row,
+              rowIndex
+            ) => {
+              if (
+                row.unavailable ||
+                row.importSaved ===
+                  true
+              ) {
+                return "";
+              }
+
+              const existingGroup =
+                documentImportPromoGroupForRow(
+                  rowIndex
+                );
+
+              if (
+                existingGroup &&
+                existingGroup.id !==
+                  editingId
+              ) {
+                return "";
+              }
+
+              const state =
+                documentImportPromoDraft.members[
+                  rowIndex
+                ] || {};
+
+              const selected =
+                Boolean(
+                  state.selected
+                );
+
+              const quantity =
+                state.quantity !==
+                  undefined
+                    ? state.quantity
+                    : row.quantity;
+
+              return (
+                '<div class="import-promo-member">' +
+                  '<input type="checkbox" ' +
+                    (
+                      selected
+                        ? "checked "
+                        : ""
+                    ) +
+                    'onchange="setDocumentImportPromoDraftMember(' +
+                      rowIndex +
+                      ', this.checked)">' +
+
+                  '<div class="import-promo-member-name">' +
+                    escapeHtml(
+                      row.product ||
+                      `Item ${rowIndex + 1}`
+                    ) +
+                    '<span class="import-promo-member-meta">' +
+                      escapeHtml(
+                        `${formatPlainNumber(row.quantity)} ${row.quantityUnit || ""} • ${formatMoney(documentImportComputedValues(row).lineTotal || 0)} document value`
+                      ) +
+                    '</span>' +
+                  '</div>' +
+
+                  '<div class="import-promo-member-qty">' +
+                    '<label>Promo qty</label>' +
+                    '<input type="number" inputmode="decimal" min="0" step="0.01" ' +
+                      (
+                        selected
+                          ? ""
+                          : "disabled "
+                      ) +
+                      'value="' +
+                        escapeDocumentImportAttribute(
+                          quantity
+                        ) +
+                      '" oninput="updateDocumentImportPromoDraftMemberQuantity(' +
+                        rowIndex +
+                        ', this.value)">' +
+                  '</div>' +
+                '</div>'
+              );
+            }
+          )
+          .join(
+            ""
+          );
+    }
+
+    typeInput.value =
+      documentImportPromoDraft.type ||
+      "X_FOR_Y";
+
+    const ids = {
+      X_FOR_Y:
+        [
+          "import-promo-x-field",
+          "import-promo-y-field"
+        ],
+
+      BUY_X_GET_Y:
+        [
+          "import-promo-buy-field",
+          "import-promo-free-field"
+        ],
+
+      PERCENT:
+        [
+          "import-promo-percent-field"
+        ],
+
+      SPECIAL_UNIT:
+        [
+          "import-promo-special-field"
+        ],
+
+      MANUAL:
+        [
+          "import-promo-manual-field"
+        ]
+    };
+
+    Object.values(
+      ids
+    )
+      .flat()
+      .forEach(
+        id =>
+          document
+            .getElementById(
+              id
+            )
+            ?.classList.add(
+              "hidden"
+            )
+      );
+
+    (
+      ids[
+        documentImportPromoDraft.type
+      ] ||
+      []
+    ).forEach(
+      id =>
+        document
+          .getElementById(
+            id
+          )
+          ?.classList.remove(
+            "hidden"
+          )
+    );
+
+    const setValue =
+      (
+        id,
+        value
+      ) => {
+        const input =
+          document.getElementById(
+            id
+          );
+
+        if (
+          input &&
+          document.activeElement !==
+            input
+        ) {
+          input.value =
+            value ===
+              undefined ||
+            value ===
+              null
+                ? ""
+                : value;
+        }
+      };
+
+    setValue(
+      "document-import-promo-x-quantity",
+      documentImportPromoDraft.xQuantity
+    );
+
+    setValue(
+      "document-import-promo-x-price",
+      documentImportPromoDraft.xPrice
+    );
+
+    setValue(
+      "document-import-promo-buy-quantity",
+      documentImportPromoDraft.buyQuantity
+    );
+
+    setValue(
+      "document-import-promo-free-quantity",
+      documentImportPromoDraft.freeQuantity
+    );
+
+    setValue(
+      "document-import-promo-percent",
+      documentImportPromoDraft.percent
+    );
+
+    setValue(
+      "document-import-promo-special-price",
+      documentImportPromoDraft.specialUnitPrice
+    );
+
+    setValue(
+      "document-import-promo-manual-total",
+      documentImportPromoDraft.manualTotal
+    );
+
+    setValue(
+      "document-import-promo-note",
+      documentImportPromoDraft.note
+    );
+
+    if (unbundleButton) {
+      unbundleButton.classList.toggle(
+        "hidden",
+        !editingId
+      );
+    }
+
+    const draftGroup =
+      documentImportPromoDraftAsGroup();
+
+    const calculation =
+      calculateDocumentImportPromoGroup(
+        draftGroup
+      );
+
+    if (
+      calculation.valid
+    ) {
+      preview.classList.remove(
+        "invalid"
+      );
+
+      preview.innerHTML =
+        "<strong>" +
+        escapeHtml(
+          documentImportPromoGroupText(
+            draftGroup,
+            calculation
+          )
+        ) +
+        "</strong><br>" +
+        "Regular value of bundled rows: " +
+        escapeHtml(
+          formatMoney(
+            calculation.regularGroupTotal
+          )
+        ) +
+        "<br>Promo value of bundled rows: " +
+        escapeHtml(
+          formatMoney(
+            calculation.promoGroupTotal
+          )
+        ) +
+        "<br>Savings: " +
+        escapeHtml(
+          formatMoney(
+            calculation.savings
+          )
+        );
+
+      saveButton.disabled =
+        false;
+
+    } else {
+      preview.classList.add(
+        "invalid"
+      );
+
+      preview.textContent =
+        calculation.error ||
+        "Complete the promotion details.";
+
+      saveButton.disabled =
+        true;
+    }
+  }
+
+
+  function saveDocumentImportPromoBuilder() {
+    const group =
+      documentImportPromoDraftAsGroup();
+
+    const calculation =
+      calculateDocumentImportPromoGroup(
+        group
+      );
+
+    if (
+      !group ||
+      !calculation.valid
+    ) {
+      showErrorToast(
+        "Promo needs attention",
+        calculation.error ||
+        "Check the promotion details."
+      );
+
+      return;
+    }
+
+    const editingId =
+      String(
+        documentImportPromoDraft?.id ||
+        ""
+      );
+
+    if (editingId) {
+      const previous =
+        documentImportPromoGroups.find(
+          item =>
+            item.id ===
+              editingId
+        );
+
+      previous?.members?.forEach(
+        member => {
+          const row =
+            documentImportRows[
+              member.rowIndex
+            ];
+
+          if (
+            row?.promoGroupId ===
+              editingId
+          ) {
+            row.promoGroupId =
+              "";
+          }
+        }
+      );
+
+      documentImportPromoGroups =
+        documentImportPromoGroups.filter(
+          item =>
+            item.id !==
+              editingId
+        );
+    }
+
+    group.members.forEach(
+      member => {
+        const row =
+          documentImportRows[
+            member.rowIndex
+          ];
+
+        if (row) {
+          row.promoGroupId =
+            group.id;
+
+          row.include =
+            true;
+        }
+      }
+    );
+
+    documentImportPromoGroups.push(
+      group
+    );
+
+    documentImportPromoDraft =
+      null;
+
+    hide(
+      "document-import-promo-overlay"
+    );
+
+    renderDocumentImportReview();
+
+    showSuccessToast(
+      "Promo grouped",
+      `${group.members.length} product row${group.members.length === 1 ? "" : "s"} now appear as one PROMO card in the review.`
+    );
+  }
+
+
+  function unbundleDocumentImportPromoDraft() {
+    const groupId =
+      String(
+        documentImportPromoDraft?.id ||
+        ""
+      );
+
+    if (!groupId) {
+      cancelDocumentImportPromoBuilder();
+      return;
+    }
+
+    unbundleDocumentImportPromoGroup(
+      groupId
+    );
+  }
+
+
+  function renderDocumentImportPromoGroupCard(
+    group
+  ) {
+    const calculation =
+      calculateDocumentImportPromoGroup(
+        group
+      );
+
+    const members =
+      Array.isArray(
+        group?.members
+      )
+        ? group.members
+        : [];
+
+    const included =
+      members.length > 0 &&
+      members.every(
+        member =>
+          documentImportRows[
+            member.rowIndex
+          ]?.include
+      );
+
+    const firstMember =
+      members[0];
+
+    const editIndex =
+      firstMember?.rowIndex ??
+      0;
+
+    const list =
+      members
+        .map(
+          member => {
+            const row =
+              documentImportRows[
+                member.rowIndex
+              ];
+
+            if (!row) {
+              return "";
+            }
+
+            return (
+              "<li><span>" +
+                escapeHtml(
+                  row.product ||
+                  `Item ${member.rowIndex + 1}`
+                ) +
+              "</span><span>" +
+                escapeHtml(
+                  `${formatPlainNumber(member.quantity)} promo / ${formatPlainNumber(row.quantity)} total`
+                ) +
+              "</span></li>"
+            );
+          }
+        )
+        .join(
+          ""
+        );
+
+    const totals =
+      calculation.valid
+        ? (
+            '<div class="document-import-promo-totals">' +
+              '<div class="document-import-promo-total-box">Regular<strong>' +
+                escapeHtml(
+                  formatMoney(
+                    calculation.regularGroupTotal
+                  )
+                ) +
+              "</strong></div>" +
+              '<div class="document-import-promo-total-box">Promo<strong>' +
+                escapeHtml(
+                  formatMoney(
+                    calculation.promoGroupTotal
+                  )
+                ) +
+              "</strong></div>" +
+              '<div class="document-import-promo-total-box">Savings<strong>' +
+                escapeHtml(
+                  formatMoney(
+                    calculation.savings
+                  )
+                ) +
+              "</strong></div>" +
+            "</div>"
+          )
+        : (
+            '<div class="document-import-promo-error">' +
+              escapeHtml(
+                calculation.error ||
+                "This promotion needs attention."
+              ) +
+            "</div>"
+          );
+
+    return (
+      '<div class="document-import-promo-card' +
+        (
+          calculation.valid
+            ? ""
+            : " invalid"
+        ) +
+      '">' +
+
+        '<div class="document-import-promo-head">' +
+          "<div>" +
+            '<div class="document-import-promo-badge">🏷 PROMO</div>' +
+            '<div class="document-import-promo-type">' +
+              escapeHtml(
+                documentImportPromoGroupText(
+                  group,
+                  calculation
+                )
+              ) +
+            "</div>" +
+          "</div>" +
+
+          '<label class="document-import-include">' +
+            '<input type="checkbox" ' +
+              (
+                included
+                  ? "checked "
+                  : ""
+              ) +
+              'onchange="setDocumentImportPromoGroupIncluded(\'' +
+                escapeDocumentImportAttribute(
+                  group.id
+                ) +
+                '\', this.checked)">' +
+            "Include" +
+          "</label>" +
+        "</div>" +
+
+        '<ul class="document-import-promo-mini-list">' +
+          list +
+        "</ul>" +
+
+        totals +
+
+        '<div class="document-import-promo-actions">' +
+          '<button type="button" class="change-forward" onclick="openDocumentImportPromoBuilder(' +
+            editIndex +
+            ', \'' +
+            escapeDocumentImportAttribute(
+              group.id
+            ) +
+            '\')">EDIT PROMO</button>' +
+
+          '<button type="button" class="change-cancel" onclick="unbundleDocumentImportPromoGroup(\'' +
+            escapeDocumentImportAttribute(
+              group.id
+            ) +
+            '\')">UNBUNDLE</button>' +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+
   function documentImportShippingFeeValue() {
     const parsed =
       normalizeDocumentMoney(
@@ -17102,44 +19645,157 @@
 
 
   function renderDocumentImportReview() {
-    const list = document.getElementById("document-import-list");
-    const summary = document.getElementById("document-import-summary");
-    const progress = document.getElementById("document-import-progress");
-    const review = document.getElementById("document-import-review");
-    const saveButton = document.getElementById("document-import-save-button");
-    const shippingInclude = document.getElementById("document-import-shipping-include");
-    const shippingInput = document.getElementById("document-import-shipping-fee");
-    const shippingTotal = document.getElementById("document-import-with-shipping-total");
-    const shippingNote = document.getElementById("document-import-shipping-note");
+    const list =
+      document.getElementById(
+        "document-import-list"
+      );
 
-    if (!list || !summary || !review) return;
+    const summary =
+      document.getElementById(
+        "document-import-summary"
+      );
 
-    progress?.classList.add("hidden");
-    review.classList.remove("hidden");
+    const progress =
+      document.getElementById(
+        "document-import-progress"
+      );
+
+    const review =
+      document.getElementById(
+        "document-import-review"
+      );
+
+    const saveButton =
+      document.getElementById(
+        "document-import-save-button"
+      );
+
+    const shippingInclude =
+      document.getElementById(
+        "document-import-shipping-include"
+      );
+
+    const shippingInput =
+      document.getElementById(
+        "document-import-shipping-fee"
+      );
+
+    const shippingTotal =
+      document.getElementById(
+        "document-import-with-shipping-total"
+      );
+
+    const shippingNote =
+      document.getElementById(
+        "document-import-shipping-note"
+      );
+
+    if (
+      !list ||
+      !summary ||
+      !review
+    ) {
+      return;
+    }
+
+    progress?.classList.add(
+      "hidden"
+    );
+
+    review.classList.remove(
+      "hidden"
+    );
 
     const savedRows =
       documentImportRows.filter(
         row =>
-          row.importSaved === true
+          row.importSaved ===
+            true
       );
 
     const selectedRows =
-      documentImportRows.filter(
-        row =>
-          row.include &&
-          row.importSaved !== true
+      documentImportRows
+        .map(
+          (
+            row,
+            sourceIndex
+          ) => ({
+            row,
+            sourceIndex
+          })
+        )
+        .filter(
+          entry =>
+            entry.row.include &&
+            entry.row.importSaved !==
+              true
+        );
+
+    let selectedTotal =
+      0;
+
+    let selectedRegularTotal =
+      0;
+
+    let promoSavings =
+      0;
+
+    let invalidSelectedPricing =
+      false;
+
+    selectedRows.forEach(
+      entry => {
+        const pricing =
+          documentImportEffectivePricing(
+            entry.sourceIndex
+          );
+
+        if (
+          !pricing.valid
+        ) {
+          invalidSelectedPricing =
+            true;
+
+          return;
+        }
+
+        selectedTotal +=
+          Number(
+            pricing.lineTotal
+          ) || 0;
+
+        selectedRegularTotal +=
+          Number(
+            pricing.regularLineTotal
+          ) || 0;
+
+        promoSavings +=
+          Number(
+            pricing.savings
+          ) || 0;
+      }
+    );
+
+    selectedTotal =
+      roundMoney(
+        selectedTotal
       );
 
-    const selectedTotal =
+    selectedRegularTotal =
       roundMoney(
-        selectedRows.reduce((sum, row) => {
-          const computed = documentImportComputedValues(row);
-          return sum + (computed.valid ? computed.lineTotal : 0);
-        }, 0)
+        selectedRegularTotal
+      );
+
+    promoSavings =
+      roundMoney(
+        promoSavings
       );
 
     const unavailableCount =
-      documentImportRows.filter(row => row.unavailable).length;
+      documentImportRows.filter(
+        row =>
+          row.unavailable
+      ).length;
 
     const reviewedShippingFee =
       documentImportShippingFeeValue();
@@ -17151,9 +19807,10 @@
 
     const shippingFeeForTotal =
       shippingIncluded &&
-      reviewedShippingFee !== null
-        ? reviewedShippingFee
-        : 0;
+      reviewedShippingFee !==
+        null
+          ? reviewedShippingFee
+          : 0;
 
     const selectedTripTotal =
       roundMoney(
@@ -17168,11 +19825,12 @@
 
     if (shippingInput) {
       shippingInput.value =
-        reviewedShippingFee === null
-          ? ""
-          : String(
-              reviewedShippingFee
-            );
+        reviewedShippingFee ===
+          null
+            ? ""
+            : String(
+                reviewedShippingFee
+              );
 
       shippingInput.disabled =
         !shippingIncluded;
@@ -17186,11 +19844,14 @@
     }
 
     if (shippingNote) {
-      if (documentImportMeta.shippingDetected) {
+      if (
+        documentImportMeta.shippingDetected
+      ) {
         shippingNote.textContent =
           shippingIncluded
             ? `Detected ${formatMoney(shippingFeeForTotal)} shipment/delivery in the document. It will be stored at trip level, not as a product.`
             : "A shipment/delivery fee was detected in the document, but it is currently excluded.";
+
       } else {
         shippingNote.textContent =
           shippingIncluded
@@ -17201,15 +19862,31 @@
 
     summary.innerHTML =
       "<strong>" +
-      escapeHtml(documentImportMeta.filename || "Imported document") +
+      escapeHtml(
+        documentImportMeta.filename ||
+        "Imported document"
+      ) +
       "</strong><br>" +
+
       escapeHtml(
         `${documentImportRows.length} candidate product row${documentImportRows.length === 1 ? "" : "s"} detected`
       ) +
+
       " • " +
+
       escapeHtml(
         `${selectedRows.length} selected`
       ) +
+
+      (
+        documentImportPromoGroups.length
+          ? " • " +
+            escapeHtml(
+              `${documentImportPromoGroups.length} promo group${documentImportPromoGroups.length === 1 ? "" : "s"}`
+            )
+          : ""
+      ) +
+
       (
         savedRows.length
           ? " • " +
@@ -17218,179 +19895,374 @@
             )
           : ""
       ) +
+
       (
         unavailableCount
-          ? " • " + escapeHtml(`${unavailableCount} unavailable/not charged`)
+          ? " • " +
+            escapeHtml(
+              `${unavailableCount} unavailable/not charged`
+            )
           : ""
       ) +
-      "<br>Selected product total: <strong>" +
-      escapeHtml(formatMoney(selectedTotal)) +
+
+      "<br>Selected product total" +
+      (
+        promoSavings > 0
+          ? " after promos"
+          : ""
+      ) +
+      ": <strong>" +
+      escapeHtml(
+        formatMoney(
+          selectedTotal
+        )
+      ) +
       "</strong>" +
+
       (
-        isUsableNumber(documentImportMeta.subtotal)
+        promoSavings > 0
+          ? "<br>Regular/document value before manual promos: <strong>" +
+            escapeHtml(
+              formatMoney(
+                selectedRegularTotal
+              )
+            ) +
+            "</strong>" +
+            "<br>Promo savings: <strong>" +
+            escapeHtml(
+              formatMoney(
+                promoSavings
+              )
+            ) +
+            "</strong>"
+          : ""
+      ) +
+
+      (
+        isUsableNumber(
+          documentImportMeta.subtotal
+        )
           ? "<br>Detected document subtotal: <strong>" +
-            escapeHtml(formatMoney(documentImportMeta.subtotal)) +
+            escapeHtml(
+              formatMoney(
+                documentImportMeta.subtotal
+              )
+            ) +
             "</strong>"
           : ""
       ) +
+
       (
-        isUsableNumber(documentImportMeta.total)
+        isUsableNumber(
+          documentImportMeta.total
+        )
           ? "<br>Detected document total paid: <strong>" +
-            escapeHtml(formatMoney(documentImportMeta.total)) +
+            escapeHtml(
+              formatMoney(
+                documentImportMeta.total
+              )
+            ) +
             "</strong>"
           : ""
       ) +
+
       "<br><span class=\"muted\">" +
       escapeHtml(
         `${documentImportMeta.sourceType || "Document"} • ${documentImportMeta.parser || "Parser"}`
       ) +
       "</span>";
 
+    const renderedPromoGroups =
+      new Set();
+
     list.innerHTML =
       documentImportRows
-        .map((row, index) => {
-          const computed = documentImportComputedValues(row);
-          const unavailableClass = row.unavailable ? " unavailable" : "";
-          const savedClass = row.importSaved === true ? " saved" : "";
+        .map(
+          (
+            row,
+            index
+          ) => {
+            const group =
+              documentImportPromoGroupForRow(
+                index
+              );
 
-          const knownRecord =
-            knownProductRecordAtCurrentStore(
-              row.product
-            );
-
-          const canonicalRecord =
-            findCanonicalProductByExactName(
-              row.product
-            );
-
-          const matchHint =
-            knownRecord
-              ? (
-                  '<div class="ocr-candidate-note">Known at this store' +
-                  (
-                    isUsableNumber(
-                      knownRecord.price
-                    )
-                      ? ' • Last unit price ' +
-                        escapeHtml(
-                          formatMoney(
-                            knownRecord.price
-                          )
-                        )
-                      : ''
-                  ) +
-                  '</div>'
+            if (group) {
+              if (
+                renderedPromoGroups.has(
+                  group.id
                 )
-              : canonicalRecord
-                ? '<div class="ocr-candidate-note">Canonical product already known</div>'
-                : '<div class="ocr-candidate-note">New/unmatched product — can be confirmed now and assigned a barcode later.</div>';
+              ) {
+                return "";
+              }
 
-          const status = row.importSaved === true
-            ? '<span class="document-import-status">✓ ADDED TO TRIP</span>'
-            : row.unavailable
-              ? '<span class="document-import-status unavailable">NOT CHARGED / UNAVAILABLE</span>'
-              : '<span class="document-import-status">PURCHASE CANDIDATE</span>';
+              renderedPromoGroups.add(
+                group.id
+              );
 
-          return (
-            '<div class="document-import-row' + unavailableClass + savedClass + '">' +
-              '<div class="document-import-row-head">' +
-                '<label class="document-import-include">' +
-                  '<input type="checkbox" ' +
-                    (row.include ? "checked " : "") +
-                    (row.importSaved === true ? "disabled " : "") +
-                    'onchange="updateDocumentImportField(' + index + ', \'include\', this.checked, true)">' +
-                  "Include" +
-                "</label>" +
-                status +
-              "</div>" +
+              return (
+                renderDocumentImportPromoGroupCard(
+                  group
+                )
+              );
+            }
 
-              '<div class="document-import-fields">' +
-                "<div>" +
-                  "<label>Product name</label>" +
-                  '<input type="text" value="' +
-                    escapeDocumentImportAttribute(row.product) +
-                    '" oninput="updateDocumentImportField(' + index + ', \'product\', this.value, false)">' +
-                  matchHint +
-                "</div>" +
-                (
-                  row.details
-                    ? (
-                        '<div class="document-import-field">' +
-                          '<label>Details / child information</label>' +
-                          '<input type="text" value="' +
-                            escapeDocumentImportAttribute(row.details) +
-                            '" oninput="updateDocumentImportField(' + index + ', \'details\', this.value, false)">' +
-                          '<div class="ocr-candidate-note">Indented content was attached to this product row rather than treated as a new product.</div>' +
-                        '</div>'
+            const computed =
+              documentImportComputedValues(
+                row
+              );
+
+            const unavailableClass =
+              row.unavailable
+                ? " unavailable"
+                : "";
+
+            const savedClass =
+              row.importSaved ===
+                true
+                  ? " saved"
+                  : "";
+
+            const knownRecord =
+              knownProductRecordAtCurrentStore(
+                row.product
+              );
+
+            const canonicalRecord =
+              findCanonicalProductByExactName(
+                row.product
+              );
+
+            const matchHint =
+              knownRecord
+                ? (
+                    '<div class="ocr-candidate-note">Known at this store' +
+                    (
+                      isUsableNumber(
+                        knownRecord.price
                       )
-                    : ""
-                ) +
-                "<div>" +
-                  "<label>Amount</label>" +
-                  '<input type="number" inputmode="decimal" min="0" step="0.01" value="' +
-                    escapeDocumentImportAttribute(row.quantity) +
-                    '" onchange="updateDocumentImportField(' + index + ', \'quantity\', this.value, true)">' +
-                "</div>" +
-                "<div>" +
-                  "<label>Unit</label>" +
-                  '<input type="text" value="' +
-                    escapeDocumentImportAttribute(row.quantityUnit || "pzas") +
-                    '" oninput="updateDocumentImportField(' + index + ', \'quantityUnit\', this.value, false)">' +
-                "</div>" +
-              "</div>" +
+                        ? ' • Last unit price ' +
+                          escapeHtml(
+                            formatMoney(
+                              knownRecord.price
+                            )
+                          )
+                        : ''
+                    ) +
+                    '</div>'
+                  )
+                : canonicalRecord
+                  ? '<div class="ocr-candidate-note">Canonical product already known</div>'
+                  : '<div class="ocr-candidate-note">New/unmatched product — can be confirmed now and assigned a barcode later.</div>';
 
-              '<div class="document-import-price-grid">' +
-                "<div>" +
-                  "<label>Detected price</label>" +
-                  '<input type="number" inputmode="decimal" min="0" step="0.01" value="' +
-                    escapeDocumentImportAttribute(row.detectedPrice) +
-                    '" onchange="updateDocumentImportField(' + index + ', \'detectedPrice\', this.value, true)">' +
-                "</div>" +
-                "<div>" +
-                  "<label>This price means…</label>" +
-                  '<select onchange="updateDocumentImportField(' + index + ', \'priceMeaning\', this.value, true)">' +
-                    '<option value="LINE_TOTAL"' +
-                      (row.priceMeaning === "LINE_TOTAL" ? " selected" : "") +
-                      ">Line total</option>" +
-                    '<option value="UNIT_PRICE"' +
-                      (row.priceMeaning === "UNIT_PRICE" ? " selected" : "") +
-                      ">Unit price</option>" +
-                  "</select>" +
-                "</div>" +
-              "</div>" +
+            const status =
+              row.importSaved ===
+                true
+                  ? '<span class="document-import-status">✓ ADDED TO TRIP</span>'
+                  : row.unavailable
+                    ? '<span class="document-import-status unavailable">NOT CHARGED / UNAVAILABLE</span>'
+                    : '<span class="document-import-status">PURCHASE CANDIDATE</span>';
 
-              '<div class="document-import-derived">' +
-                '<div class="document-import-derived-box">Calculated unit price<strong>' +
-                  escapeHtml(computed.valid ? formatMoney(computed.unitPrice) : "—") +
-                "</strong></div>" +
-                '<div class="document-import-derived-box">Calculated line total<strong>' +
-                  escapeHtml(computed.valid ? formatMoney(computed.lineTotal) : "—") +
-                "</strong></div>" +
-              "</div>" +
-            "</div>"
-          );
-        })
-        .join("");
+            const promoButton =
+              (
+                !row.unavailable &&
+                row.importSaved !==
+                  true
+              )
+                ? (
+                    '<button type="button" class="document-import-promo-button" onclick="openDocumentImportPromoBuilder(' +
+                      index +
+                      ')">🏷 PROMO</button>'
+                  )
+                : "";
 
-    if (saveButton) {
-      const shippingInvalid =
-        shippingIncluded &&
-        (
-          reviewedShippingFee === null ||
-          reviewedShippingFee < 0
+            return (
+              '<div class="document-import-row' +
+                unavailableClass +
+                savedClass +
+              '">' +
+
+                '<div class="document-import-row-head">' +
+                  '<label class="document-import-include">' +
+                    '<input type="checkbox" ' +
+                      (
+                        row.include
+                          ? "checked "
+                          : ""
+                      ) +
+                      (
+                        row.importSaved ===
+                          true
+                            ? "disabled "
+                            : ""
+                      ) +
+                      'onchange="updateDocumentImportField(' +
+                        index +
+                        ', \'include\', this.checked, true)">' +
+                    "Include" +
+                  "</label>" +
+                  status +
+                "</div>" +
+
+                '<div class="document-import-fields">' +
+                  "<div>" +
+                    "<label>Product name</label>" +
+                    '<input type="text" value="' +
+                      escapeDocumentImportAttribute(
+                        row.product
+                      ) +
+                      '" oninput="updateDocumentImportField(' +
+                        index +
+                        ', \'product\', this.value, false)">' +
+                    matchHint +
+                  "</div>" +
+
+                  (
+                    row.details
+                      ? (
+                          '<div class="document-import-field">' +
+                            '<label>Details / child information</label>' +
+                            '<input type="text" value="' +
+                              escapeDocumentImportAttribute(
+                                row.details
+                              ) +
+                              '" oninput="updateDocumentImportField(' +
+                                index +
+                                ', \'details\', this.value, false)">' +
+                            '<div class="ocr-candidate-note">Indented content was attached to this product row rather than treated as a new product.</div>' +
+                          '</div>'
+                        )
+                      : ""
+                  ) +
+
+                  "<div>" +
+                    "<label>Amount</label>" +
+                    '<input type="number" inputmode="decimal" min="0" step="0.01" value="' +
+                      escapeDocumentImportAttribute(
+                        row.quantity
+                      ) +
+                      '" onchange="updateDocumentImportField(' +
+                        index +
+                        ', \'quantity\', this.value, true)">' +
+                  "</div>" +
+
+                  "<div>" +
+                    "<label>Unit</label>" +
+                    '<input type="text" value="' +
+                      escapeDocumentImportAttribute(
+                        row.quantityUnit ||
+                        "pzas"
+                      ) +
+                      '" oninput="updateDocumentImportField(' +
+                        index +
+                        ', \'quantityUnit\', this.value, false)">' +
+                  "</div>" +
+                "</div>" +
+
+                '<div class="document-import-price-grid">' +
+                  "<div>" +
+                    "<label>Detected price</label>" +
+                    '<input type="number" inputmode="decimal" min="0" step="0.01" value="' +
+                      escapeDocumentImportAttribute(
+                        row.detectedPrice
+                      ) +
+                      '" onchange="updateDocumentImportField(' +
+                        index +
+                        ', \'detectedPrice\', this.value, true)">' +
+                  "</div>" +
+
+                  "<div>" +
+                    "<label>This price means…</label>" +
+                    '<select onchange="updateDocumentImportField(' +
+                      index +
+                      ', \'priceMeaning\', this.value, true)">' +
+                      '<option value="LINE_TOTAL"' +
+                        (
+                          row.priceMeaning ===
+                            "LINE_TOTAL"
+                              ? " selected"
+                              : ""
+                        ) +
+                        ">Line total</option>" +
+                      '<option value="UNIT_PRICE"' +
+                        (
+                          row.priceMeaning ===
+                            "UNIT_PRICE"
+                              ? " selected"
+                              : ""
+                        ) +
+                        ">Unit price</option>" +
+                    "</select>" +
+                  "</div>" +
+                "</div>" +
+
+                '<div class="document-import-derived">' +
+                  '<div class="document-import-derived-box">Calculated unit price<strong>' +
+                    escapeHtml(
+                      computed.valid
+                        ? formatMoney(
+                            computed.unitPrice
+                          )
+                        : "—"
+                    ) +
+                  "</strong></div>" +
+
+                  '<div class="document-import-derived-box">Calculated line total<strong>' +
+                    escapeHtml(
+                      computed.valid
+                        ? formatMoney(
+                            computed.lineTotal
+                          )
+                        : "—"
+                    ) +
+                  "</strong></div>" +
+                "</div>" +
+
+                promoButton +
+              "</div>"
+            );
+          }
+        )
+        .join(
+          ""
         );
 
+    const shippingInvalid =
+      shippingIncluded &&
+      (
+        reviewedShippingFee ===
+          null ||
+        reviewedShippingFee <
+          0
+      );
+
+    const invalidPromoGroup =
+      documentImportPromoGroups.some(
+        group =>
+          documentImportPromoGroupHasSelectedRows(
+            group
+          ) &&
+          !calculateDocumentImportPromoGroup(
+            group
+          ).valid
+      );
+
+    if (saveButton) {
       saveButton.disabled =
         documentImportBusy ||
         !selectedRows.length ||
         shippingInvalid ||
-        selectedRows.some(row =>
-          !String(row.product || "").trim() ||
-          !documentImportComputedValues(row).valid
+        invalidSelectedPricing ||
+        invalidPromoGroup ||
+        selectedRows.some(
+          entry =>
+            !String(
+              entry.row.product ||
+              ""
+            ).trim()
         );
     }
   }
-
 
   function updateDocumentImportField(index, field, value, rerender) {
     const row = documentImportRows[index];
@@ -17445,6 +20317,8 @@
 
     documentImportBusy = true;
     documentImportRows = [];
+    resetDocumentImportPromoState();
+
     documentImportMeta = {
       filename: file.name || "Imported document",
       sourceType: "",
@@ -17686,6 +20560,8 @@
     documentImportRows =
       [];
 
+    resetDocumentImportPromoState();
+
     documentImportMeta = {
       filename:
         "",
@@ -17742,6 +20618,7 @@
     hide("document-import-overlay");
 
     documentImportRows = [];
+    resetDocumentImportPromoState();
     documentImportMeta = {
       filename: "",
       sourceType: "",
@@ -17820,6 +20697,38 @@
 
       setDocumentImportSaveStatus(
         "Check the shipment/delivery fee before adding this order.",
+        "error"
+      );
+
+      return;
+    }
+
+    const invalidPromoGroup =
+      documentImportPromoGroups.find(
+        group =>
+          documentImportPromoGroupHasSelectedRows(
+            group
+          ) &&
+          !calculateDocumentImportPromoGroup(
+            group
+          ).valid
+      );
+
+    if (invalidPromoGroup) {
+      const calculation =
+        calculateDocumentImportPromoGroup(
+          invalidPromoGroup
+        );
+
+      showErrorToast(
+        "Check promo group",
+        calculation.error ||
+        "One promotion needs attention before the order can be added."
+      );
+
+      setDocumentImportSaveStatus(
+        calculation.error ||
+        "Check the promotion group before adding this order.",
         "error"
       );
 
@@ -17910,9 +20819,18 @@
         selectedRows.map(
           row => {
             const computed =
-              documentImportComputedValues(
-                row
+              documentImportEffectivePricing(
+                row.sourceIndex
               );
+
+            if (
+              !computed.valid
+            ) {
+              throw new Error(
+                computed.groupError ||
+                `Promotion pricing could not be calculated for ${row.product}.`
+              );
+            }
 
             const prior =
               knownProductRecordAtCurrentStore(
@@ -17957,21 +20875,21 @@
                       : ""
                   ),
                 shelfUnitPrice:
-                  computed.unitPrice,
+                  computed.regularUnitPrice,
                 promoApplied:
-                  "NO",
+                  computed.promoApplied,
                 promoType:
-                  "",
+                  computed.promoType,
                 promoDetails:
-                  "",
+                  computed.promoDetails,
                 regularLineTotal:
-                  computed.lineTotal,
+                  computed.regularLineTotal,
                 savings:
-                  0,
+                  computed.savings,
                 promoQuantity:
-                  "",
+                  computed.promoQuantity,
                 promoTotal:
-                  ""
+                  computed.promoTotal
               }
             };
           }
@@ -18102,6 +21020,8 @@
       // in a later dedicated stage.
       documentImportRows =
         [];
+
+      resetDocumentImportPromoState();
 
       documentImportMeta = {
         filename:
@@ -22568,6 +25488,18 @@
     if (
       item.promoApplied === "YES"
     ) {
+
+      if (
+        /IMPORTED PROMO GROUP/i.test(
+          String(
+            item.promoDetails || ""
+          )
+        )
+      ) {
+        throw new Error(
+          "This item belongs to a multi-product imported promotion. Its amount cannot be safely recalculated by itself because the discount depends on the other bundled products."
+        );
+      }
 
       if (
         item.promoType === "X for $Y" &&
