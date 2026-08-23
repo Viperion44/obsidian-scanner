@@ -808,17 +808,33 @@
     }
 
     .history-trip-store {
-      flex: 1;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
       font-size: 18px;
       font-weight: bold;
       line-height: 1.3;
     }
 
     .history-trip-total {
+      flex: 0 0 auto;
+      max-width: 42%;
       white-space: nowrap;
+      text-align: right;
       font-size: 18px;
       font-weight: bold;
       color: #ffffff;
+    }
+
+    .history-trip-card.successful {
+      border-color: #356b49;
+      background: #1d2922;
+    }
+
+    .history-trip-card.zero {
+      border-color: #8b7733;
+      background: #2b281b;
     }
 
     .history-trip-card.cancelled {
@@ -840,8 +856,31 @@
       text-transform: uppercase;
     }
 
+    .history-trip-total.success-total {
+      color: #75df91;
+    }
+
+    .history-trip-total.zero-total {
+      color: #f2d56b;
+    }
+
     .history-trip-total.cancelled-total {
       color: #ff9aa4;
+      font-size: 16px;
+    }
+
+    .history-zero-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 8px;
+      border: 1px solid #a98d33;
+      border-radius: 999px;
+      background: #4a4020;
+      color: #f2d56b;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .5px;
+      text-transform: uppercase;
     }
 
     .history-trip-date {
@@ -973,6 +1012,14 @@
       padding-top: 11px;
       border-top: 1px solid #4a505c;
       font-size: 20px;
+    }
+
+    .history-receipt-final.success-final span:last-child {
+      color: #75df91;
+    }
+
+    .history-receipt-final.zero-final span:last-child {
+      color: #f2d56b;
     }
 
     .history-back-button {
@@ -2329,6 +2376,26 @@
     .canonical-match-more { background: #4a3a61; }
 
     /* V6 Stage 2C — Canonical Product Management */
+    .management-product-search-wrap {
+      margin: 0 0 12px;
+      padding: 11px;
+      border: 1px solid #414754;
+      border-radius: 10px;
+      background: #1c2028;
+    }
+
+    .management-product-search-wrap input {
+      width: 100%;
+      margin: 0;
+    }
+
+    .management-product-search-summary {
+      margin-top: 6px;
+      color: #aeb4c0;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
     .canonical-management-summary {
       margin-bottom: 12px;
       padding: 11px 12px;
@@ -6999,7 +7066,7 @@
       >
         <span class="management-action-icon">📦</span>
         <span class="management-action-title">Products</span>
-        <span class="management-action-desc">Review saved product/store records.</span>
+        <span class="management-action-desc">Search and review known products, including barcode-less online/OCR purchases.</span>
       </button>
 
       <button
@@ -7023,7 +7090,7 @@
       </button>
 
       <button
-        class="management-action"
+        class="management-action hidden"
         type="button"
         onclick="showManagementOnlineSearchPreview()"
       >
@@ -7033,7 +7100,7 @@
       </button>
 
       <button
-        class="management-action"
+        class="management-action hidden"
         type="button"
         onclick="showManagementPromoGroups()"
       >
@@ -7591,7 +7658,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2j — Promo bundle count + searchable item picker. Production remains index.html.
+    V6 Stage 3J.2k — Regression cleanup: retailer search, products, management, history. Production remains index.html.
   </div>
 
 </div>
@@ -8190,7 +8257,7 @@
 >
   <div class="online-search-card">
     <div id="online-product-search-title" class="product-search-title">LOOK FOR THIS PRODUCT ONLINE</div>
-    <div id="online-product-search-preview-note" class="online-search-preview-note">Selecting a result only pre-fills the product form; nothing is added until you confirm.</div>
+    <div id="online-product-search-preview-note" class="online-search-preview-note">Live retailer results only. Saved app products and promo groups are not searched here. Selecting a result only pre-fills the product form; nothing is added until you confirm.</div>
     <div id="online-product-search-source-box" class="online-search-source-box">—</div>
     <div class="online-search-query-row">
       <input id="online-product-search-query" type="search" autocomplete="off" placeholder="Product keywords">
@@ -8593,9 +8660,9 @@
 
 <script>
 
-  // V6 Stage 3J.2j — promo bundle count + searchable item picker.
-  // Keeps the 3J.2i promo-group architecture intact while adding explicit
-  // repetition count, searchable eligible items, and X items at $Y each.
+  // V6 Stage 3J.2k — regression cleanup pass.
+  // Keeps the completed V6 shopping/import/payment stack intact while tightening
+  // live-retailer search, barcode-less product records, Management UX, and History.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -9029,9 +9096,12 @@
           .replace(/[^0-9.-]/g, "")
       );
 
+    // A grocery listing parsed as zero is treated as missing/invalid price.
+    // This prevents test/parser artifacts from appearing as "$0.00 MXN" and
+    // prevents zero from being prefilled into the shopping form.
     return (
       Number.isFinite(numeric) &&
-      numeric >= 0
+      numeric > 0
     )
       ? numeric
       : null;
@@ -9737,10 +9807,38 @@
   }
 
   function formatOnlineSearchPrice(result) {
-    const numeric = Number(result?.price);
-    if (Number.isFinite(numeric) && numeric >= 0) return formatMoney(numeric);
-    const raw = String(result?.price ?? "").trim();
-    return raw || "Price unavailable";
+    const numeric = normalizedOnlineResultPrice(result);
+    return numeric !== null
+      ? formatMoney(numeric)
+      : "Price unavailable";
+  }
+
+  function onlineProductResultMatchesSelectedRetailer(product) {
+    if (!onlineProductSearchSource || !product) return false;
+
+    if (product.retailerMatch === true) {
+      return true;
+    }
+
+    const candidates = [];
+    const add = value => {
+      const normalized = normalizeRetailerSourceMatchText(value);
+      if (normalized) candidates.push(normalized);
+
+      const websiteKey = normalizedWebsiteKey(value);
+      if (websiteKey) {
+        const domainNormalized = normalizeRetailerSourceMatchText(websiteKey);
+        if (domainNormalized) candidates.push(domainNormalized);
+      }
+    };
+
+    add(product.source);
+    add(product.url);
+
+    return sourceMatchesTripRetailer(
+      onlineProductSearchSource,
+      [...new Set(candidates)]
+    );
   }
 
   function renderOnlineProductSearchResults() {
@@ -9824,12 +9922,16 @@
       }
 
       const returnedProducts = Array.isArray(data.products) ? data.products : [];
-      onlineProductSearchPreviewResults = returnedProducts.map((product, index) => ({
+      const retailerProducts = returnedProducts.filter(
+        product => onlineProductResultMatchesSelectedRetailer(product)
+      );
+
+      onlineProductSearchPreviewResults = retailerProducts.map((product, index) => ({
         index,
         title: String(product?.name || "").trim(),
         source: String(product?.source || data?.retailer?.name || onlineProductSearchSource.retailerName || "").trim(),
-        price: product?.price ?? "",
-        oldPrice: product?.oldPrice ?? "",
+        price: normalizedOnlineResultPrice(product) ?? "",
+        oldPrice: normalizedOnlineResultPrice({price: product?.oldPrice}) ?? "",
         currency: String(product?.currency || "MXN").trim(),
         productId: String(product?.productId || "").trim(),
         url: String(product?.url || "").trim(),
@@ -9838,14 +9940,17 @@
         reviews: product?.reviews ?? "",
         delivery: String(product?.delivery || "").trim(),
         snippet: String(product?.snippet || "").trim(),
-        retailerMatch: Boolean(product?.retailerMatch),
+        retailerMatch: true,
         sourceId: onlineProductSearchSource.id
       })).filter(result => result.title);
 
       renderOnlineProductSearchResults();
 
       if (!onlineProductSearchPreviewResults.length) {
-        showErrorToast("No online matches", `No ${onlineProductSearchSource.retailerName} results were returned for “${query}”.`);
+        const detail = returnedProducts.length
+          ? `The search service returned results, but none could be verified as ${onlineProductSearchSource.retailerName} listings. Try a shorter or singular keyword.`
+          : `No ${onlineProductSearchSource.retailerName} results were returned for “${query}”. Try a shorter or singular keyword.`;
+        showErrorToast("No retailer matches", detail);
       }
     } catch (error) {
       const message = String(error?.message || error || "Online retailer search failed.");
@@ -10225,6 +10330,7 @@
 
   let managementReturnPanelId = "home-panel";
   let managementProducts = [];
+  let managementProductSearchQuery = "";
   let managementTrips = [];
   let managementCancelledTrips = [];
   let managementHistoryRows = [];
@@ -28739,7 +28845,8 @@
         const key =
           makeProductStoreKey(
             record.barcode,
-            record.store
+            record.store,
+            record.product
           );
 
         if (
@@ -28793,8 +28900,11 @@
           );
 
         if (
-          !barcode ||
-          !store
+          !store ||
+          (
+            !barcode &&
+            !product
+          )
         ) {
 
           return;
@@ -28803,7 +28913,8 @@
         const key =
           makeProductStoreKey(
             barcode,
-            store
+            store,
+            product
           );
 
 
@@ -29065,13 +29176,22 @@
 
   function makeProductStoreKey(
     barcode,
-    store
+    store,
+    product = ""
   ) {
 
-    return (
+    const barcodeValue =
       String(
         barcode ?? ""
-      ).trim() +
+      ).trim();
+
+    const identity =
+      barcodeValue
+        ? `BARCODE:${barcodeValue}`
+        : `NAME:${normalizeProductIdentity(product)}`;
+
+    return (
+      identity +
       "||" +
       normalizeStore(
         store
@@ -35689,15 +35809,40 @@
             const cancelled =
               trip.cancelled === true;
 
+            const zeroTrip =
+              !cancelled &&
+              Number(
+                trip.itemCount
+              ) === 0;
+
+            const statusClass =
+              cancelled
+                ? " cancelled"
+                : zeroTrip
+                  ? " zero"
+                  : " successful";
+
+            const totalClass =
+              cancelled
+                ? " cancelled-total"
+                : zeroTrip
+                  ? " zero-total"
+                  : " success-total";
+
             const cancelledBadgeHtml =
               cancelled
                 ? '<span class="history-cancelled-badge">CANCELLED</span>'
                 : "";
 
+            const zeroBadgeHtml =
+              zeroTrip
+                ? '<span class="history-zero-badge">ZERO</span>'
+                : "";
+
             return (
 
               '<button class="history-trip-card' +
-              (cancelled ? ' cancelled' : '') +
+              statusClass +
               '" type="button" onclick="openHistoryReceiptByIndex(' +
               index +
               ')">' +
@@ -35712,7 +35857,7 @@
                   "</div>" +
 
                   '<div class="history-trip-total' +
-                    (cancelled ? ' cancelled-total' : '') +
+                    totalClass +
                   '">' +
                     escapeHtml(
                       cancelled
@@ -35746,6 +35891,7 @@
                 "</div>" +
 
                 cancelledBadgeHtml +
+                zeroBadgeHtml +
 
               "</button>"
             );
@@ -35755,7 +35901,6 @@
           ""
         );
   }
-
 
   function formatHistoryTripDate(
     trip
@@ -35880,6 +36025,30 @@
     currentHistoryReceiptTrip =
       trip;
 
+    const zeroTrip =
+      trip.cancelled !== true &&
+      Number(
+        trip.itemCount
+      ) === 0;
+
+    const finalRow =
+      document.querySelector(
+        "#history-receipt-panel .history-receipt-final"
+      );
+
+    if (finalRow) {
+      finalRow.classList.remove(
+        "success-final",
+        "zero-final"
+      );
+
+      finalRow.classList.add(
+        zeroTrip
+          ? "zero-final"
+          : "success-final"
+      );
+    }
+
     document.getElementById(
       "history-receipt-store"
     ).textContent =
@@ -35929,7 +36098,7 @@
               Number(
                 trip.itemCount
               ) === 0
-                ? "No items were purchased on this trip."
+                ? '<span class="history-zero-badge" style="margin:0 0 9px;">ZERO</span><br>No items were purchased on this trip.'
                 : "No item-level receipt data is stored for this trip."
             ) +
           "</div>" +
@@ -37296,6 +37465,80 @@
   }
 
 
+  function latestManagementHistoryProductRecord(
+    productName
+  ) {
+    const normalized =
+      normalizeProductIdentity(
+        productName
+      );
+
+    if (!normalized) return null;
+
+    for (
+      let index = managementHistoryRows.length - 1;
+      index >= 0;
+      index--
+    ) {
+      const row =
+        managementHistoryRows[index]?.row || [];
+
+      if (
+        normalizeProductIdentity(
+          String(row[4] ?? "").trim()
+        ) !== normalized
+      ) {
+        continue;
+      }
+
+      return {
+        store:
+          String(row[2] ?? "").trim(),
+        barcode:
+          String(row[3] ?? "").trim(),
+        price:
+          normalizeNumericValue(row[6]),
+        regularPrice:
+          normalizeNumericValue(row[9]),
+        promoApplied:
+          String(row[10] ?? "").trim(),
+        promoDetails:
+          String(row[12] ?? "").trim()
+      };
+    }
+
+    return null;
+  }
+
+
+  function managementProductSearchChanged(
+    value
+  ) {
+    managementProductSearchQuery =
+      String(value || "");
+
+    showManagementProducts(
+      false
+    );
+
+    const input =
+      document.getElementById(
+        "management-product-search"
+      );
+
+    if (input) {
+      input.focus({preventScroll:true});
+
+      try {
+        input.setSelectionRange(
+          input.value.length,
+          input.value.length
+        );
+      } catch (_) {}
+    }
+  }
+
+
   function showManagementProducts(
     shouldScroll = true
   ) {
@@ -37322,107 +37565,246 @@
         "management-content"
       );
 
-    if (
-      !managementProducts.length
-    ) {
+    const legacyNames =
+      new Set(
+        managementProducts
+          .map(record =>
+            normalizeProductIdentity(
+              record.product
+            )
+          )
+          .filter(Boolean)
+      );
+
+    const combined = [];
+
+    managementProducts.forEach(
+      (record, originalIndex) => {
+        const price =
+          isUsableNumber(
+            record.lastEffectivePrice
+          )
+            ? record.lastEffectivePrice
+            : record.lastUnitPrice;
+
+        combined.push({
+          kind: "store",
+          name:
+            record.product ||
+            "Unnamed product",
+          originalIndex,
+          record,
+          canonicalIndex: null,
+          store:
+            record.lastStore ||
+            "Unknown store",
+          barcode:
+            record.barcode || "",
+          price,
+          searchable:
+            [
+              record.product,
+              record.barcode,
+              record.lastStore,
+              record.notes,
+              record.lastPromoDetails
+            ]
+              .filter(Boolean)
+              .join(" ")
+        });
+      }
+    );
+
+    productCatalog.forEach(
+      (record, canonicalIndex) => {
+        const normalized =
+          normalizeProductIdentity(
+            record.canonicalName
+          );
+
+        if (
+          normalized &&
+          legacyNames.has(
+            normalized
+          )
+        ) {
+          return;
+        }
+
+        const latest =
+          latestManagementHistoryProductRecord(
+            record.canonicalName
+          );
+
+        combined.push({
+          kind: "canonical",
+          name:
+            record.canonicalName ||
+            "Unnamed canonical product",
+          originalIndex: null,
+          canonicalIndex,
+          record,
+          store:
+            latest?.store || "",
+          barcode:
+            latest?.barcode || "",
+          price:
+            latest?.price,
+          latest,
+          searchable:
+            [
+              record.canonicalName,
+              record.productId,
+              record.brand,
+              record.variant,
+              record.size,
+              record.unit,
+              record.sourceName,
+              latest?.store,
+              latest?.barcode,
+              latest?.promoDetails
+            ]
+              .filter(Boolean)
+              .join(" ")
+        });
+      }
+    );
+
+    const query =
+      normalizeProductIdentity(
+        managementProductSearchQuery
+      );
+
+    const rows =
+      combined
+        .filter(entry => {
+          if (!query) return true;
+
+          return normalizeProductIdentity(
+            entry.searchable
+          ).includes(
+            query
+          );
+        })
+        .sort(
+          (a, b) =>
+            String(a.name)
+              .localeCompare(
+                String(b.name)
+              ) ||
+            String(a.store || "")
+              .localeCompare(
+                String(b.store || "")
+              )
+        );
+
+    const canonicalOnlyCount =
+      combined.filter(
+        entry =>
+          entry.kind ===
+          "canonical"
+      ).length;
+
+    const searchHtml =
+      '<div class="management-product-search-wrap">' +
+        '<input id="management-product-search" type="search" autocomplete="off" placeholder="Search product, barcode, store, brand or source" value="' +
+          escapeHtml(
+            managementProductSearchQuery
+          ) +
+          '" oninput="managementProductSearchChanged(this.value)">' +
+        '<div class="management-product-search-summary">' +
+          escapeHtml(
+            `${rows.length} shown of ${combined.length} known product record${combined.length === 1 ? "" : "s"} • ${managementProducts.length} store/barcode record${managementProducts.length === 1 ? "" : "s"} • ${canonicalOnlyCount} catalog-only`
+          ) +
+        '</div>' +
+      '</div>';
+
+    if (!combined.length) {
       box.innerHTML =
         '<div class="management-section-title">Products</div>' +
+        searchHtml +
         '<div class="management-empty">No product records are stored yet.</div>';
       return;
     }
 
-    const rows =
-      managementProducts
-        .map(
-          (record, originalIndex) => ({
-            record:
-              record,
-            originalIndex:
-              originalIndex
-          })
-        )
-        .sort(
-          (a, b) =>
-            (
-              a.record.product ||
-              a.record.barcode
-            ).localeCompare(
-              b.record.product ||
-              b.record.barcode
-            )
-        );
-
     box.innerHTML =
       '<div class="management-section-title">Products</div>' +
-      rows
-        .map(
-          entry => {
+      '<div class="canonical-management-summary">Products with a barcode/store record can be edited here. Online/OCR products without a barcode remain visible through the canonical catalog and purchase history instead of being discarded.</div>' +
+      searchHtml +
+      (
+        rows.length
+          ? rows
+              .map(entry => {
+                if (entry.kind === "store") {
+                  const record = entry.record;
+                  const price = entry.price;
 
-            const record =
-              entry.record;
-
-            const price =
-              isUsableNumber(
-                record.lastEffectivePrice
-              )
-                ? record.lastEffectivePrice
-                : record.lastUnitPrice;
-
-            return (
-              '<div class="management-row">' +
-                '<div class="management-row-top">' +
-                  '<div class="management-row-name">' +
-                    escapeHtml(
-                      record.product ||
-                      "Unnamed product"
-                    ) +
-                  "</div>" +
-                  '<button class="management-edit-button" type="button" onclick="editManagementProduct(' +
-                    entry.originalIndex +
-                  ')">EDIT</button>' +
-                "</div>" +
-                '<div class="management-row-meta">' +
-                  escapeHtml(
-                    record.lastStore ||
-                    "Unknown store"
-                  ) +
-                  (
-                    record.barcode
-                      ? " • Barcode " +
-                        escapeHtml(
+                  return (
+                    '<div class="management-row">' +
+                      '<div class="management-row-top">' +
+                        '<div class="management-row-name">' +
+                          escapeHtml(entry.name) +
+                        '</div>' +
+                        '<button class="management-edit-button" type="button" onclick="editManagementProduct(' +
+                          entry.originalIndex +
+                        ')">EDIT</button>' +
+                      '</div>' +
+                      '<div class="management-row-meta">' +
+                        escapeHtml(record.lastStore || "Unknown store") +
+                        (
                           record.barcode
-                        )
-                      : ""
-                  ) +
-                  (
-                    isUsableNumber(
-                      price
-                    )
-                      ? " • Last " +
-                        escapeHtml(
-                          formatMoney(
-                            price
-                          )
-                        )
-                      : ""
-                  ) +
-                  (
-                    record.lastPromoApplied === "YES" &&
-                    record.lastPromoDetails
-                      ? " • Promo: " +
-                        escapeHtml(
+                            ? ' • Barcode ' + escapeHtml(record.barcode)
+                            : ' • No barcode assigned'
+                        ) +
+                        (
+                          isUsableNumber(price)
+                            ? ' • Last ' + escapeHtml(formatMoney(price))
+                            : ''
+                        ) +
+                        (
+                          record.lastPromoApplied === "YES" &&
                           record.lastPromoDetails
-                        )
-                      : ""
-                  ) +
-                "</div>" +
-              "</div>"
-            );
-          }
-        )
-        .join(
-          ""
-        );
+                            ? ' • Promo: ' + escapeHtml(record.lastPromoDetails)
+                            : ''
+                        ) +
+                      '</div>' +
+                    '</div>'
+                  );
+                }
+
+                const record = entry.record;
+                const latest = entry.latest;
+                const meta = [
+                  "Canonical product",
+                  latest?.store
+                    ? `Last seen at ${latest.store}`
+                    : "No store/barcode record yet",
+                  isUsableNumber(latest?.price)
+                    ? `Last ${formatMoney(latest.price)}`
+                    : "",
+                  record.sourceName || record.sourceId || "",
+                  record.imageUrl ? "Image saved" : ""
+                ].filter(Boolean).join(" • ");
+
+                return (
+                  '<div class="management-row">' +
+                    '<div class="management-row-top">' +
+                      '<div class="management-row-name">' +
+                        escapeHtml(entry.name) +
+                      '</div>' +
+                      '<button class="management-edit-button" type="button" onclick="editManagementCanonicalProduct(' +
+                        entry.canonicalIndex +
+                      ')">EDIT</button>' +
+                    '</div>' +
+                    '<div class="management-row-meta">' +
+                      escapeHtml(meta) +
+                    '</div>' +
+                  '</div>'
+                );
+              })
+              .join("")
+          : '<div class="management-empty">No products match that search.</div>'
+      );
 
     if (
       shouldScroll
@@ -37430,7 +37812,6 @@
       scrollManagementContentIntoView();
     }
   }
-
 
   function editManagementProduct(
     index
@@ -37550,33 +37931,22 @@
       return;
     }
 
-    if (!newBarcode) {
-      fail(
-        "Enter a barcode."
-      );
-
-      showErrorToast(
-        "Barcode required",
-        "Enter a barcode before saving."
-      );
-
-      return;
-    }
-
     const duplicate =
-      managementProducts.find(
-        (other, index) =>
-          index !==
-            managementEditingProductIndex &&
-          other.barcode ===
-            newBarcode &&
-          normalizeStore(
-            other.lastStore
-          ) ===
-            normalizeStore(
-              record.lastStore
-            )
-      );
+      newBarcode
+        ? managementProducts.find(
+            (other, index) =>
+              index !==
+                managementEditingProductIndex &&
+              other.barcode ===
+                newBarcode &&
+              normalizeStore(
+                other.lastStore
+              ) ===
+                normalizeStore(
+                  record.lastStore
+                )
+          )
+        : null;
 
     if (duplicate) {
 
@@ -37674,17 +38044,35 @@
 
     const matchingHistory =
       managementHistoryRows.filter(
-        entry =>
-          String(
-            entry.row[3] ?? ""
-          ).trim() ===
-            oldBarcode &&
-          normalizeStore(
+        entry => {
+          const historyStoreMatch =
+            normalizeStore(
+              String(
+                entry.row[2] ?? ""
+              ).trim()
+            ) ===
+              oldStoreKey;
+
+          if (!historyStoreMatch) {
+            return false;
+          }
+
+          if (oldBarcode) {
+            return String(
+              entry.row[3] ?? ""
+            ).trim() ===
+              oldBarcode;
+          }
+
+          return normalizeProductIdentity(
             String(
-              entry.row[2] ?? ""
+              entry.row[4] ?? ""
             ).trim()
           ) ===
-            oldStoreKey
+            normalizeProductIdentity(
+              oldProduct
+            );
+        }
       );
 
 
@@ -38717,9 +39105,10 @@
       "management-payment-editor"
     );
     if (!silent) {
-      setStatus(
-        "Payment edit cancelled.",
-        "success"
+      hideStatus();
+      showSuccessToast(
+        "Payment edit cancelled",
+        "No payment-method changes were saved."
       );
     }
   }
