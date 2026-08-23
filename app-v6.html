@@ -8660,9 +8660,10 @@
 
 <script>
 
-  // V6 Stage 3J.2k — regression cleanup pass.
-  // Keeps the completed V6 shopping/import/payment stack intact while tightening
-  // live-retailer search, barcode-less product records, Management UX, and History.
+  // V6 Stage 3J.2l — fresh-search recovery + plural-query expansion.
+  // Keeps the completed V6 stack intact. This isolated pass changes only the
+  // live retailer product-search request lifecycle, sparse plural expansion,
+  // retry recovery, and result deduplication.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -8675,6 +8676,12 @@
   let onlineProductSearchContext = "";
   let onlineProductSearchSource = null;
   let onlineProductSearchPreviewResults = [];
+
+  // Stage 3J.2l: each explicit search owns a unique request generation.
+  // A new search aborts the previous generation so an old/failed response
+  // cannot overwrite a newer retry.
+  let onlineProductSearchRequestSerial = 0;
+  let onlineProductSearchAbortController = null;
 
   // Web-result metadata for the currently reviewed item.
   // Stage 3I.1 persists confirmed image/source metadata to Product Catalog.
@@ -9795,7 +9802,628 @@
     openOnlineProductSearchOverlay(onlinePreviewSelectedSource, query);
   }
 
+  function cancelActiveOnlineProductSearchRequest() {
+    if (onlineProductSearchAbortController) {
+      try {
+        onlineProductSearchAbortController.abort();
+      } catch (_) {}
+    }
+
+    onlineProductSearchAbortController = null;
+    onlineProductSearchRequestSerial += 1;
+  }
+
+
+  function clearVisibleOnlineSearchToast() {
+    const toast =
+      document.getElementById(
+        "app-toast"
+      );
+
+    if (!toast) return;
+
+    if (toastHideTimer) {
+      clearTimeout(
+        toastHideTimer
+      );
+      toastHideTimer = null;
+    }
+
+    if (toastRemoveTimer) {
+      clearTimeout(
+        toastRemoveTimer
+      );
+      toastRemoveTimer = null;
+    }
+
+    toast.classList.remove(
+      "show",
+      "fade-out",
+      "error"
+    );
+  }
+
+
+  function onlineProductSearchSingularVariant(query) {
+    const cleaned =
+      String(
+        query || ""
+      )
+        .replace(
+          /\s+/g,
+          " "
+        )
+        .trim();
+
+    if (!cleaned) return "";
+
+    let changed =
+      false;
+
+    const words =
+      cleaned
+        .split(
+          " "
+        )
+        .map(
+          word => {
+            const match =
+              String(
+                word
+              ).match(
+                /^(.+?)([.,;:!?]*)$/
+              );
+
+            const core =
+              match?.[1] ||
+              word;
+
+            const punctuation =
+              match?.[2] ||
+              "";
+
+            // Conservative Spanish-oriented fallback:
+            // "sobres" -> "sobre", "chocolates" -> "chocolate",
+            // "galletas" -> "galleta". We only remove one final "s".
+            if (
+              core.length >= 5 &&
+              /[a-záéíóúüñ]s$/i.test(
+                core
+              ) &&
+              !/ss$/i.test(
+                core
+              )
+            ) {
+              changed =
+                true;
+
+              return (
+                core.slice(
+                  0,
+                  -1
+                ) +
+                punctuation
+              );
+            }
+
+            return word;
+          }
+        );
+
+    const variant =
+      words.join(
+        " "
+      );
+
+    return (
+      changed &&
+      normalizeProductIdentity(
+        variant
+      ) !==
+        normalizeProductIdentity(
+          cleaned
+        )
+    )
+      ? variant
+      : "";
+  }
+
+
+  function buildOnlineProductSearchQueries(query) {
+    const cleaned =
+      String(
+        query || ""
+      )
+        .replace(
+          /\s+/g,
+          " "
+        )
+        .trim();
+
+    if (!cleaned) return [];
+
+    const queries =
+      [cleaned];
+
+    const singular =
+      onlineProductSearchSingularVariant(
+        cleaned
+      );
+
+    if (
+      singular &&
+      !queries.some(
+        item =>
+          normalizeProductIdentity(
+            item
+          ) ===
+          normalizeProductIdentity(
+            singular
+          )
+      )
+    ) {
+      queries.push(
+        singular
+      );
+    }
+
+    return queries;
+  }
+
+
+  function onlineProductSearchResultKey(result) {
+    const url =
+      String(
+        result?.url || ""
+      )
+        .trim()
+        .replace(
+          /[#?].*$/,
+          ""
+        )
+        .replace(
+          /\/+$/,
+          ""
+        )
+        .toLowerCase();
+
+    if (url) {
+      return (
+        "URL|" +
+        url
+      );
+    }
+
+    const productId =
+      String(
+        result?.productId || ""
+      )
+        .trim();
+
+    if (productId) {
+      return (
+        "ID|" +
+        productId
+      );
+    }
+
+    return (
+      "TITLE|" +
+      normalizeProductIdentity(
+        result?.title ||
+        result?.name ||
+        ""
+      ) +
+      "|" +
+      normalizeRetailerSourceMatchText(
+        result?.source ||
+        ""
+      )
+    );
+  }
+
+
+  function mergeOnlineProductSearchResults(resultGroups) {
+    const merged =
+      new Map();
+
+    (
+      resultGroups ||
+      []
+    )
+      .flat()
+      .forEach(
+        result => {
+          if (!result?.title) return;
+
+          const key =
+            onlineProductSearchResultKey(
+              result
+            );
+
+          if (
+            !key ||
+            key ===
+              "TITLE||"
+          ) {
+            return;
+          }
+
+          const existing =
+            merged.get(
+              key
+            );
+
+          if (!existing) {
+            merged.set(
+              key,
+              {
+                ...result
+              }
+            );
+            return;
+          }
+
+          // Preserve the first ranking position, but let a later query enrich
+          // an otherwise incomplete duplicate with a usable price/image/etc.
+          const existingPrice =
+            normalizedOnlineResultPrice(
+              existing
+            );
+
+          const incomingPrice =
+            normalizedOnlineResultPrice(
+              result
+            );
+
+          merged.set(
+            key,
+            {
+              ...existing,
+
+              price:
+                existingPrice !== null
+                  ? existing.price
+                  : (
+                      incomingPrice !== null
+                        ? result.price
+                        : existing.price
+                    ),
+
+              oldPrice:
+                existing.oldPrice ||
+                result.oldPrice ||
+                "",
+
+              image:
+                existing.image ||
+                result.image ||
+                "",
+
+              delivery:
+                existing.delivery ||
+                result.delivery ||
+                "",
+
+              rating:
+                existing.rating ||
+                result.rating ||
+                "",
+
+              reviews:
+                existing.reviews ||
+                result.reviews ||
+                "",
+
+              snippet:
+                existing.snippet ||
+                result.snippet ||
+                "",
+
+              url:
+                existing.url ||
+                result.url ||
+                "",
+
+              productId:
+                existing.productId ||
+                result.productId ||
+                ""
+            }
+          );
+        }
+      );
+
+    return Array.from(
+      merged.values()
+    );
+  }
+
+
+  function mapOnlineProductSearchResponseProducts(
+    data,
+    queryUsed
+  ) {
+    const returnedProducts =
+      Array.isArray(
+        data?.products
+      )
+        ? data.products
+        : [];
+
+    const retailerProducts =
+      returnedProducts.filter(
+        product =>
+          onlineProductResultMatchesSelectedRetailer(
+            product
+          )
+      );
+
+    return retailerProducts
+      .map(
+        product => ({
+          title:
+            String(
+              product?.name ||
+              ""
+            ).trim(),
+
+          source:
+            String(
+              product?.source ||
+              data?.retailer?.name ||
+              onlineProductSearchSource?.retailerName ||
+              ""
+            ).trim(),
+
+          price:
+            normalizedOnlineResultPrice(
+              product
+            ) ??
+            "",
+
+          oldPrice:
+            normalizedOnlineResultPrice({
+              price:
+                product?.oldPrice
+            }) ??
+            "",
+
+          currency:
+            String(
+              product?.currency ||
+              "MXN"
+            ).trim(),
+
+          productId:
+            String(
+              product?.productId ||
+              ""
+            ).trim(),
+
+          url:
+            String(
+              product?.url ||
+              ""
+            ).trim(),
+
+          image:
+            String(
+              product?.image ||
+              ""
+            ).trim(),
+
+          rating:
+            product?.rating ??
+            "",
+
+          reviews:
+            product?.reviews ??
+            "",
+
+          delivery:
+            String(
+              product?.delivery ||
+              ""
+            ).trim(),
+
+          snippet:
+            String(
+              product?.snippet ||
+              ""
+            ).trim(),
+
+          resultOrigin:
+            String(
+              product?.resultOrigin ||
+              ""
+            ).trim(),
+
+          queryMatchType:
+            String(
+              product?.queryMatchType ||
+              ""
+            ).trim(),
+
+          queryRelevanceScore:
+            Number(
+              product?.queryRelevanceScore
+            ) ||
+            0,
+
+          queryUsed:
+            String(
+              queryUsed ||
+              ""
+            ),
+
+          retailerMatch:
+            true,
+
+          sourceId:
+            onlineProductSearchSource?.id ||
+            ""
+        })
+      )
+      .filter(
+        result =>
+          result.title
+      );
+  }
+
+
+  async function fetchFreshOnlineProductSearch(
+    query,
+    requestSerial,
+    signal
+  ) {
+    const url =
+      new URL(
+        "/search",
+        ONLINE_PRODUCT_SEARCH_WORKER_URL
+      );
+
+    url.searchParams.set(
+      "source",
+      onlineProductSearchSource.id
+    );
+
+    url.searchParams.set(
+      "q",
+      query
+    );
+
+    // Browser/edge cache buster. The current Worker ignores this parameter,
+    // but it guarantees that every app search reaches the Worker as a unique URL.
+    url.searchParams.set(
+      "fresh",
+      `${Date.now()}-${requestSerial}-${Math.random().toString(36).slice(2, 9)}`
+    );
+
+    const response =
+      await fetch(
+        url.toString(),
+        {
+          method:
+            "GET",
+
+          headers: {
+            "Accept":
+              "application/json",
+
+            "Cache-Control":
+              "no-cache",
+
+            "Pragma":
+              "no-cache"
+          },
+
+          cache:
+            "no-store",
+
+          signal
+        }
+      );
+
+    let data =
+      null;
+
+    try {
+      data =
+        await response.json();
+
+    } catch (_) {
+      throw new Error(
+        `Search service returned HTTP ${response.status} without valid JSON.`
+      );
+    }
+
+    if (
+      !response.ok ||
+      !data?.ok
+    ) {
+      const message =
+        String(
+          data?.providerMessage ||
+          data?.message ||
+          data?.error ||
+          `HTTP ${response.status}`
+        ).trim();
+
+      throw new Error(
+        message ||
+        "The retailer search service returned an error."
+      );
+    }
+
+    return {
+      data,
+      returnedCount:
+        Array.isArray(
+          data.products
+        )
+          ? data.products.length
+          : 0,
+
+      products:
+        mapOnlineProductSearchResponseProducts(
+          data,
+          query
+        )
+    };
+  }
+
+
+  async function fetchFreshOnlineProductSearchWithRetry(
+    query,
+    requestSerial,
+    signal
+  ) {
+    try {
+      return await fetchFreshOnlineProductSearch(
+        query,
+        requestSerial,
+        signal
+      );
+
+    } catch (firstError) {
+      if (
+        signal?.aborted ||
+        requestSerial !==
+          onlineProductSearchRequestSerial
+      ) {
+        throw firstError;
+      }
+
+      // One clean retry for transient Worker/provider failures.
+      await new Promise(
+        resolve =>
+          setTimeout(
+            resolve,
+            450
+          )
+      );
+
+      if (
+        signal?.aborted ||
+        requestSerial !==
+          onlineProductSearchRequestSerial
+      ) {
+        throw firstError;
+      }
+
+      return await fetchFreshOnlineProductSearch(
+        query,
+        requestSerial,
+        signal
+      );
+    }
+  }
+
+
   function openOnlineProductSearchOverlay(source, query) {
+    cancelActiveOnlineProductSearchRequest();
+
     onlineProductSearchSource = source;
     onlineProductSearchPreviewResults = [];
     document.getElementById("online-product-search-query").value = query;
@@ -9883,83 +10511,239 @@
   }
 
   async function runOnlineProductSearchPreview() {
-    const query = String(document.getElementById("online-product-search-query")?.value || "").trim();
-    const host = document.getElementById("online-product-search-results");
-    const button = document.getElementById("online-product-search-run-button");
-    if (!query || !onlineProductSearchSource || !host || !button) return;
+    const query =
+      String(
+        document.getElementById(
+          "online-product-search-query"
+        )?.value ||
+        ""
+      ).trim();
 
-    if (!onlineProductSearchSource.id || onlineProductSearchSource.id === "GENERIC_RETAILER") {
-      host.innerHTML = '<div class="management-empty">This retailer does not have a live search adapter yet. You can keep entering the product manually.</div>';
+    const host =
+      document.getElementById(
+        "online-product-search-results"
+      );
+
+    const button =
+      document.getElementById(
+        "online-product-search-run-button"
+      );
+
+    if (
+      !query ||
+      !onlineProductSearchSource ||
+      !host ||
+      !button
+    ) {
       return;
     }
 
-    button.disabled = true;
-    button.textContent = "SEARCHING…";
-    host.innerHTML = `<div class="management-empty">Searching ${escapeHtml(onlineProductSearchSource.retailerName)}…</div>`;
-    onlineProductSearchPreviewResults = [];
+    if (
+      !onlineProductSearchSource.id ||
+      onlineProductSearchSource.id ===
+        "GENERIC_RETAILER"
+    ) {
+      host.innerHTML =
+        '<div class="management-empty">This retailer does not have a live search adapter yet. You can keep entering the product manually.</div>';
 
-    try {
-      const url = new URL("/search", ONLINE_PRODUCT_SEARCH_WORKER_URL);
-      url.searchParams.set("source", onlineProductSearchSource.id);
-      url.searchParams.set("q", query);
+      return;
+    }
 
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {"Accept": "application/json"},
-        cache: "no-store"
-      });
-
-      let data = null;
+    // A retry must never inherit the previous request/error state.
+    if (onlineProductSearchAbortController) {
       try {
-        data = await response.json();
-      } catch (_) {
-        throw new Error(`Search service returned HTTP ${response.status} without valid JSON.`);
-      }
+        onlineProductSearchAbortController.abort();
+      } catch (_) {}
+    }
 
-      if (!response.ok || !data?.ok) {
-        const message = String(data?.providerMessage || data?.message || data?.error || `HTTP ${response.status}`).trim();
-        throw new Error(message || "The retailer search service returned an error.");
-      }
+    clearVisibleOnlineSearchToast();
 
-      const returnedProducts = Array.isArray(data.products) ? data.products : [];
-      const retailerProducts = returnedProducts.filter(
-        product => onlineProductResultMatchesSelectedRetailer(product)
+    const requestSerial =
+      ++onlineProductSearchRequestSerial;
+
+    const controller =
+      new AbortController();
+
+    onlineProductSearchAbortController =
+      controller;
+
+    const queryCandidates =
+      buildOnlineProductSearchQueries(
+        query
       );
 
-      onlineProductSearchPreviewResults = retailerProducts.map((product, index) => ({
-        index,
-        title: String(product?.name || "").trim(),
-        source: String(product?.source || data?.retailer?.name || onlineProductSearchSource.retailerName || "").trim(),
-        price: normalizedOnlineResultPrice(product) ?? "",
-        oldPrice: normalizedOnlineResultPrice({price: product?.oldPrice}) ?? "",
-        currency: String(product?.currency || "MXN").trim(),
-        productId: String(product?.productId || "").trim(),
-        url: String(product?.url || "").trim(),
-        image: String(product?.image || "").trim(),
-        rating: product?.rating ?? "",
-        reviews: product?.reviews ?? "",
-        delivery: String(product?.delivery || "").trim(),
-        snippet: String(product?.snippet || "").trim(),
-        retailerMatch: true,
-        sourceId: onlineProductSearchSource.id
-      })).filter(result => result.title);
+    button.disabled =
+      true;
+
+    button.textContent =
+      "SEARCHING…";
+
+    host.innerHTML =
+      `<div class="management-empty">Starting a new live search at ${escapeHtml(onlineProductSearchSource.retailerName)}…</div>`;
+
+    onlineProductSearchPreviewResults =
+      [];
+
+    let originalReturnedCount =
+      0;
+
+    let originalVerifiedCount =
+      0;
+
+    let singularVariantUsed =
+      "";
+
+    const resultGroups =
+      [];
+
+    try {
+      // Always search exactly what the user typed first.
+      const primary =
+        await fetchFreshOnlineProductSearchWithRetry(
+          queryCandidates[0],
+          requestSerial,
+          controller.signal
+        );
+
+      if (
+        controller.signal.aborted ||
+        requestSerial !==
+          onlineProductSearchRequestSerial
+      ) {
+        return;
+      }
+
+      originalReturnedCount =
+        primary.returnedCount;
+
+      originalVerifiedCount =
+        primary.products.length;
+
+      resultGroups.push(
+        primary.products
+      );
+
+      onlineProductSearchPreviewResults =
+        mergeOnlineProductSearchResults(
+          resultGroups
+        );
 
       renderOnlineProductSearchResults();
 
-      if (!onlineProductSearchPreviewResults.length) {
-        const detail = returnedProducts.length
-          ? `The search service returned results, but none could be verified as ${onlineProductSearchSource.retailerName} listings. Try a shorter or singular keyword.`
-          : `No ${onlineProductSearchSource.retailerName} results were returned for “${query}”. Try a shorter or singular keyword.`;
-        showErrorToast("No retailer matches", detail);
+      // If the original wording is sparse and there is a simple plural->singular
+      // variant, automatically try it. This addresses cases like
+      // "Pedigree sobres" -> "Pedigree sobre" without making the shopper edit it.
+      if (
+        queryCandidates.length > 1 &&
+        onlineProductSearchPreviewResults.length < 6
+      ) {
+        singularVariantUsed =
+          queryCandidates[1];
+
+        host.insertAdjacentHTML(
+          "beforeend",
+          `<div class="management-empty">Only ${onlineProductSearchPreviewResults.length} strong result${onlineProductSearchPreviewResults.length === 1 ? "" : "s"} found. Also checking “${escapeHtml(singularVariantUsed)}”…</div>`
+        );
+
+        const expanded =
+          await fetchFreshOnlineProductSearchWithRetry(
+            singularVariantUsed,
+            requestSerial,
+            controller.signal
+          );
+
+        if (
+          controller.signal.aborted ||
+          requestSerial !==
+            onlineProductSearchRequestSerial
+        ) {
+          return;
+        }
+
+        resultGroups.push(
+          expanded.products
+        );
+
+        onlineProductSearchPreviewResults =
+          mergeOnlineProductSearchResults(
+            resultGroups
+          );
+
+        renderOnlineProductSearchResults();
+
+        if (
+          onlineProductSearchPreviewResults.length
+        ) {
+          host.insertAdjacentHTML(
+            "beforeend",
+            `<div class="online-discovery-note">Expanded the live search with the singular wording “${escapeHtml(singularVariantUsed)}” and removed duplicate listings.</div>`
+          );
+        }
       }
+
+      if (
+        !onlineProductSearchPreviewResults.length
+      ) {
+        const detail =
+          originalReturnedCount
+            ? `The live service returned ${originalReturnedCount} result${originalReturnedCount === 1 ? "" : "s"}, but none could be verified as ${onlineProductSearchSource.retailerName} listings.`
+            : `No ${onlineProductSearchSource.retailerName} results were returned for “${query}”.`;
+
+        showErrorToast(
+          "No retailer matches",
+          detail
+        );
+
+      } else if (
+        originalVerifiedCount === 0 &&
+        singularVariantUsed
+      ) {
+        showSuccessToast(
+          "Search expanded",
+          `The original wording was sparse, so the app also searched “${singularVariantUsed}”.`
+        );
+      }
+
     } catch (error) {
-      const message = String(error?.message || error || "Online retailer search failed.");
+      if (
+        controller.signal.aborted ||
+        requestSerial !==
+          onlineProductSearchRequestSerial ||
+        error?.name ===
+          "AbortError"
+      ) {
+        return;
+      }
+
+      const message =
+        String(
+          error?.message ||
+          error ||
+          "Online retailer search failed."
+        );
+
       host.innerHTML =
-        `<div class="management-empty"><strong>Online search failed.</strong><br>${escapeHtml(message)}<br><br>You can keep entering the product manually.</div>`;
-      showErrorToast("Online search unavailable", message);
+        `<div class="management-empty"><strong>Online search failed.</strong><br>${escapeHtml(message)}<br><br>Tap SEARCH AGAIN to start a completely new app request, or continue with manual entry.</div>`;
+
+      showErrorToast(
+        "Online search unavailable",
+        message
+      );
+
     } finally {
-      button.disabled = false;
-      button.textContent = "SEARCH AGAIN";
+      if (
+        requestSerial ===
+          onlineProductSearchRequestSerial
+      ) {
+        onlineProductSearchAbortController =
+          null;
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "SEARCH AGAIN";
+      }
     }
   }
 
@@ -10023,6 +10807,8 @@
   }
 
   function closeOnlineProductSearch(keepManual) {
+    cancelActiveOnlineProductSearchRequest();
+
     document.getElementById("online-product-search-overlay")?.classList.add("hidden");
     if (keepManual && onlineProductSearchContext === "item") {
       document.getElementById("product-name")?.focus();
