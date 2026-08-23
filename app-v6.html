@@ -2582,6 +2582,34 @@
       background: #311d21;
     }
 
+    .payment-card-remaining {
+      margin-top: 10px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      background: #191d25;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #cfd4dd;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .payment-card-remaining strong {
+      white-space: nowrap;
+      font-size: 15px;
+      color: #d9b7ff;
+    }
+
+    .payment-card-remaining.complete strong {
+      color: #8de6b0;
+    }
+
+    .payment-card-remaining.over strong {
+      color: #ff929b;
+    }
+
     .cash-change-preview {
       margin-top: 12px;
       border: 1px solid #3c5948;
@@ -5035,7 +5063,7 @@
             >
 
             <div class="barcode-edit-hint">
-              Near Me only. Use this when a product learned without a barcode later becomes available in its physical package.
+              Near Me or Remote. Use this when a product learned without a barcode later becomes available in its physical package.
             </div>
           </div>
         </div>
@@ -6889,7 +6917,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3I.7 — Mixed Payment remaining balance. Production remains index.html.
+    V6 Stage 3I.8 — Per-method balance + Remote barcode assignment. Production remains index.html.
   </div>
 
 </div>
@@ -7486,9 +7514,9 @@
 
 <script>
 
-  // V6 Stage 3I.7 — Mixed Payment remaining balance.
-  // A prominent live balance now shows how much of the trip total remains to be
-  // assigned while using Mixed Payment. All 3I.6a product fixes are preserved.
+  // V6 Stage 3I.8 — per-method balance + Remote barcode assignment.
+  // Mixed-payment cards now show the live unassigned balance themselves, while
+  // the final balance banner remains. Remote may now assign/change barcodes too.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -14255,16 +14283,19 @@
       return;
     }
 
-    const nearMe =
-      getActiveTripMode() ===
-        "NEAR";
+    const mode =
+      getActiveTripMode();
+
+    const barcodeEditable =
+      mode === "NEAR" ||
+      mode === "REMOTE";
 
     actions.classList.toggle(
       "hidden",
-      !nearMe
+      !barcodeEditable
     );
 
-    if (!nearMe) {
+    if (!barcodeEditable) {
       box.classList.add(
         "hidden"
       );
@@ -14281,8 +14312,9 @@
   function enableNearMeBarcodeEntry() {
 
     if (
-      getActiveTripMode() !==
-        "NEAR"
+      !["NEAR", "REMOTE"].includes(
+        getActiveTripMode()
+      )
     ) {
       return;
     }
@@ -14340,9 +14372,16 @@
       );
 
     if (summary) {
+      const mode =
+        getActiveTripMode();
+
       const enteredBy =
         currentBarcode
-          ? "Near Me barcode assignment"
+          ? (
+              mode === "REMOTE"
+                ? "Remote barcode assignment"
+                : "Near Me barcode assignment"
+            )
           : "Product entry";
 
       summary.innerHTML =
@@ -14367,8 +14406,9 @@
   function nearMeBarcodeInputChanged() {
 
     if (
-      getActiveTripMode() !==
-        "NEAR"
+      !["NEAR", "REMOTE"].includes(
+        getActiveTripMode()
+      )
     ) {
       return;
     }
@@ -14401,8 +14441,9 @@
   function validateNearMeBarcodeAssignment() {
 
     if (
-      getActiveTripMode() !==
-        "NEAR"
+      !["NEAR", "REMOTE"].includes(
+        getActiveTripMode()
+      )
     ) {
       return true;
     }
@@ -16205,8 +16246,9 @@
 
     if (
       editableBarcode &&
-      getActiveTripMode() ===
-        "NEAR"
+      ["NEAR", "REMOTE"].includes(
+        getActiveTripMode()
+      )
     ) {
       editableBarcode.value =
         currentBarcode || "";
@@ -16651,8 +16693,9 @@
 
 
     if (
-      getActiveTripMode() ===
-        "NEAR" &&
+      ["NEAR", "REMOTE"].includes(
+        getActiveTripMode()
+      ) &&
       !validateNearMeBarcodeAssignment()
     ) {
       return;
@@ -19036,6 +19079,38 @@
     updatePaymentMethodPickerTrigger();
   }
 
+  function renderMixedPaymentCardRemaining() {
+    if (paymentMode !== "MIXED") return;
+
+    const total = getCurrentPaymentTripTotal();
+    const allocated = paymentAllocatedTotal();
+    const remaining = roundMoney(total - allocated);
+
+    paymentAllocations.forEach(allocation => {
+      const card = document.getElementById(
+        "payment-card-remaining-" + allocation.allocationId
+      );
+      const value = document.getElementById(
+        "payment-card-remaining-value-" + allocation.allocationId
+      );
+
+      if (!card || !value) return;
+
+      card.classList.remove("complete", "over");
+
+      if (Math.abs(remaining) <= 0.009) {
+        card.classList.add("complete");
+        value.textContent = formatMoney(0);
+      } else if (remaining < 0) {
+        card.classList.add("over");
+        value.textContent = formatMoney(Math.abs(remaining)) + " over";
+      } else {
+        value.textContent = formatMoney(remaining);
+      }
+    });
+  }
+
+
   function renderMixedPaymentRemainingBanner() {
     const banner = document.getElementById("payment-remaining-banner");
     const value = document.getElementById("payment-remaining-banner-value");
@@ -19066,6 +19141,7 @@
 
 
   function renderPaymentAllocationSummary() {
+    renderMixedPaymentCardRemaining();
     renderMixedPaymentRemainingBanner();
 
     const summary = document.getElementById("payment-allocation-summary");
@@ -19134,7 +19210,11 @@
           ? '<div id="payment-allocation-change-' + safeAllocationId + '" class="payment-allocation-change' + (changeVisible ? '' : ' hidden') + '">Change due: ' + escapeHtml(formatMoney(Math.max(0, allocation.change || 0))) + '</div>'
           : "";
 
-        return '<div class="payment-allocation-card" data-allocation-id="' + safeAllocationId + '"><div class="payment-allocation-top"><div><div class="payment-allocation-name">' + escapeHtml(method.nickname || "Payment method") + '</div><div class="payment-allocation-meta">' + escapeHtml(paymentMethodMetaParts(method).join(" • ") || "Payment method") + '</div></div>' + removeButton + '</div><div class="payment-allocation-fields">' + amountField + cashFields + '</div>' + changeLine + '</div>';
+        const cardRemaining = paymentMode === "MIXED"
+          ? '<div id="payment-card-remaining-' + safeAllocationId + '" class="payment-card-remaining"><span>Trip balance remaining</span><strong id="payment-card-remaining-value-' + safeAllocationId + '">$0.00</strong></div>'
+          : "";
+
+        return '<div class="payment-allocation-card" data-allocation-id="' + safeAllocationId + '"><div class="payment-allocation-top"><div><div class="payment-allocation-name">' + escapeHtml(method.nickname || "Payment method") + '</div><div class="payment-allocation-meta">' + escapeHtml(paymentMethodMetaParts(method).join(" • ") || "Payment method") + '</div></div>' + removeButton + '</div><div class="payment-allocation-fields">' + amountField + cashFields + '</div>' + changeLine + cardRemaining + '</div>';
       }).filter(Boolean).join("");
     }
 
