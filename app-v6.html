@@ -1496,13 +1496,51 @@
       overflow: auto;
     }
 
+    .import-promo-search-wrap {
+      margin-top: 12px;
+    }
+
+    .import-promo-search-wrap label {
+      display: block;
+      margin-bottom: 5px;
+      color: #b9bfca;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .import-promo-search-wrap input {
+      width: 100%;
+      margin: 0;
+    }
+
+    .import-promo-search-count {
+      margin-top: 5px;
+      color: #aeb4c0;
+      font-size: 10px;
+    }
+
     .import-promo-member-list {
       display: grid;
       gap: 8px;
       max-height: 36vh;
       overflow: auto;
-      margin-top: 12px;
+      margin-top: 10px;
       padding-right: 2px;
+    }
+
+    .import-promo-bundle-callout {
+      margin-top: 12px;
+      padding: 10px 11px;
+      border: 1px solid rgba(189, 137, 255, .36);
+      border-radius: 9px;
+      background: rgba(92, 48, 128, .18);
+      color: #ded5e8;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .import-promo-bundle-callout strong {
+      color: #fff;
     }
 
     .import-promo-member {
@@ -7553,7 +7591,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2i — Imported-order promo groups. Production remains index.html.
+    V6 Stage 3J.2j — Promo bundle count + searchable item picker. Production remains index.html.
   </div>
 
 </div>
@@ -7716,6 +7754,21 @@
       Select the participating rows and, when needed, how many units from each row participate.
     </div>
 
+    <div class="import-promo-search-wrap">
+      <label for="document-import-promo-search">Find an imported product</label>
+      <input
+        id="document-import-promo-search"
+        type="search"
+        autocomplete="off"
+        placeholder="Search product name or detected details…"
+        oninput="filterDocumentImportPromoMembers(this.value)"
+      >
+      <div
+        id="document-import-promo-search-count"
+        class="import-promo-search-count"
+      ></div>
+    </div>
+
     <div id="document-import-promo-members" class="import-promo-member-list"></div>
 
     <div class="import-promo-grid">
@@ -7725,16 +7778,30 @@
           id="document-import-promo-type"
           onchange="updateDocumentImportPromoDraftField('type', this.value)"
         >
-          <option value="X_FOR_Y">X for $Y</option>
+          <option value="X_FOR_Y">X for $Y total</option>
+          <option value="X_AT_Y_EACH">X items at $Y each</option>
           <option value="BUY_X_GET_Y">Buy X, get Y free</option>
           <option value="PERCENT">Percentage discount</option>
-          <option value="SPECIAL_UNIT">Special unit price</option>
+          <option value="SPECIAL_UNIT">Special unit price (no bundle threshold)</option>
           <option value="MANUAL">Other / manual promo total</option>
         </select>
       </div>
 
+      <div id="import-promo-count-field" class="import-promo-field">
+        <label for="document-import-promo-count">How many promo bundles?</label>
+        <input
+          id="document-import-promo-count"
+          type="number"
+          inputmode="numeric"
+          min="1"
+          step="1"
+          placeholder="Example: 2"
+          oninput="updateDocumentImportPromoDraftField('promoCount', this.value)"
+        >
+      </div>
+
       <div id="import-promo-x-field" class="import-promo-field">
-        <label for="document-import-promo-x-quantity">X units</label>
+        <label for="document-import-promo-x-quantity">Items per bundle (X)</label>
         <input
           id="document-import-promo-x-quantity"
           type="number"
@@ -7747,7 +7814,7 @@
       </div>
 
       <div id="import-promo-y-field" class="import-promo-field">
-        <label for="document-import-promo-x-price">Bundle price $Y</label>
+        <label for="document-import-promo-x-price">Total price per bundle ($Y)</label>
         <input
           id="document-import-promo-x-price"
           type="number"
@@ -7756,6 +7823,19 @@
           step="0.01"
           placeholder="Example: 100"
           oninput="updateDocumentImportPromoDraftField('xPrice', this.value)"
+        >
+      </div>
+
+      <div id="import-promo-each-field" class="import-promo-field hidden">
+        <label for="document-import-promo-each-price">Price per participating item ($Y)</label>
+        <input
+          id="document-import-promo-each-price"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="Example: 7"
+          oninput="updateDocumentImportPromoDraftField('eachPrice', this.value)"
         >
       </div>
 
@@ -7835,6 +7915,13 @@
           oninput="updateDocumentImportPromoDraftField('note', this.value)"
         >
       </div>
+    </div>
+
+    <div
+      id="document-import-promo-bundle-callout"
+      class="import-promo-bundle-callout"
+    >
+      <strong>Bundle check:</strong> Select the promo items and complete the promotion details.
     </div>
 
     <div id="document-import-promo-preview" class="import-promo-preview">
@@ -8506,10 +8593,9 @@
 
 <script>
 
-  // V6 Stage 3J.2i — imported-order promo groups.
-  // Keeps 3J.2d row recognition, 3J.2f quota-safe batch saving, 3J.2g shipping,
-  // and 3J.2h payment/UI fixes intact. OCR rows can now be bundled into one
-  // review-time PROMO card while still saving every real product separately.
+  // V6 Stage 3J.2j — promo bundle count + searchable item picker.
+  // Keeps the 3J.2i promo-group architecture intact while adding explicit
+  // repetition count, searchable eligible items, and X items at $Y each.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -17520,6 +17606,13 @@
   function documentImportPromoTypeText(
     type
   ) {
+    if (
+      type ===
+        "X_AT_Y_EACH"
+    ) {
+      return "X items at $Y each";
+    }
+
     return (
       promoTypeLabel(
         type
@@ -17533,79 +17626,65 @@
     group,
     calculation
   ) {
-    if (!group) {
-      return "";
-    }
+    if (!group) return "";
 
     const totalQty =
-      calculation?.totalParticipatingQuantity ??
-      0;
+      calculation?.totalParticipatingQuantity ?? 0;
 
-    let text =
-      "";
+    const promoCount =
+      Number(group.promoCount);
 
-    if (
-      group.type ===
-        "X_FOR_Y"
-    ) {
+    let text = "";
+
+    if (group.type === "X_FOR_Y") {
       text =
-        `${formatPlainNumber(group.xQuantity)} for ${formatMoney(group.xPrice)}`;
+        `${formatPlainNumber(group.xQuantity)} for ${formatMoney(group.xPrice)} total`;
 
-      if (
-        calculation?.bundleCount
-      ) {
+      if (Number.isInteger(promoCount) && promoCount > 0) {
         text +=
-          ` × ${formatPlainNumber(calculation.bundleCount)} ${calculation.bundleCount === 1 ? "bundle" : "bundles"}`;
+          ` • ${formatPlainNumber(promoCount)} promo ${promoCount === 1 ? "bundle" : "bundles"}`;
       }
 
-    } else if (
-      group.type ===
-        "BUY_X_GET_Y"
-    ) {
+    } else if (group.type === "X_AT_Y_EACH") {
+      text =
+        `${formatPlainNumber(group.xQuantity)} items at ${formatMoney(group.eachPrice)} each`;
+
+      if (Number.isInteger(promoCount) && promoCount > 0) {
+        text +=
+          ` • ${formatPlainNumber(promoCount)} promo ${promoCount === 1 ? "bundle" : "bundles"}`;
+      }
+
+    } else if (group.type === "BUY_X_GET_Y") {
       text =
         `Buy ${formatPlainNumber(group.buyQuantity)}, get ${formatPlainNumber(group.freeQuantity)} free`;
 
-    } else if (
-      group.type ===
-        "PERCENT"
-    ) {
-      text =
-        `${formatPlainNumber(group.percent)}% off`;
+      if (Number.isInteger(promoCount) && promoCount > 0) {
+        text +=
+          ` • ${formatPlainNumber(promoCount)} promo ${promoCount === 1 ? "bundle" : "bundles"}`;
+      }
 
-    } else if (
-      group.type ===
-        "SPECIAL_UNIT"
-    ) {
-      text =
-        `${formatMoney(group.specialUnitPrice)} per participating unit`;
+    } else if (group.type === "PERCENT") {
+      text = `${formatPlainNumber(group.percent)}% off`;
 
-    } else if (
-      group.type ===
-        "MANUAL"
-    ) {
-      text =
-        `Manual promo total ${formatMoney(group.manualTotal)}`;
+    } else if (group.type === "SPECIAL_UNIT") {
+      text = `${formatMoney(group.specialUnitPrice)} per participating unit`;
+
+    } else if (group.type === "MANUAL") {
+      text = `Manual promo total ${formatMoney(group.manualTotal)}`;
     }
 
-    if (
-      totalQty > 0
-    ) {
+    if (totalQty > 0) {
       text +=
         ` • ${formatPlainNumber(totalQty)} participating units`;
     }
 
-    if (
-      String(
-        group.note || ""
-      ).trim()
-    ) {
+    if (String(group.note || "").trim()) {
       text +=
         ` • ${String(group.note).trim()}`;
     }
 
     return text;
   }
-
 
   function documentImportPromoAllocateCents(
     targetCents,
@@ -17926,211 +18005,160 @@
       group.type ===
         "X_FOR_Y"
     ) {
-      if (
-        !positive(
-          group.xQuantity
-        ) ||
-        !positive(
-          group.xPrice
-        )
-      ) {
+      const x = Number(group.xQuantity);
+      const price = Number(group.xPrice);
+      const count = Number(group.promoCount);
+
+      if (!positive(x) || !positive(price)) {
         return {
-          valid:
-            false,
-          error:
-            "Enter both X and $Y for the bundle.",
-          allocations:
-            new Map()
+          valid: false,
+          error: "Enter the items per bundle (X) and the total bundle price ($Y).",
+          allocations: new Map()
         };
       }
 
-      const x =
-        Number(
-          group.xQuantity
-        );
-
-      const rawBundles =
-        totalParticipatingQuantity /
-        x;
-
-      const roundedBundles =
-        Math.round(
-          rawBundles
-        );
-
-      if (
-        roundedBundles <= 0 ||
-        Math.abs(
-          rawBundles -
-          roundedBundles
-        ) >
-          0.000001
-      ) {
+      if (!Number.isInteger(count) || count <= 0) {
         return {
-          valid:
-            false,
-          error:
-            `The selected promo quantities total ${formatPlainNumber(totalParticipatingQuantity)}. For an ${formatPlainNumber(x)} for ${formatMoney(group.xPrice)} offer, the participating quantity must make complete bundles.`,
-          allocations:
-            new Map()
+          valid: false,
+          error: "Enter how many promo bundles you are taking.",
+          allocations: new Map()
         };
       }
 
-      bundleCount =
-        roundedBundles;
+      const expectedQuantity = x * count;
 
+      if (Math.abs(totalParticipatingQuantity - expectedQuantity) > 0.000001) {
+        return {
+          valid: false,
+          error: `You selected ${formatPlainNumber(totalParticipatingQuantity)} participating units. ${formatPlainNumber(count)} promo ${count === 1 ? "bundle" : "bundles"} × ${formatPlainNumber(x)} items requires exactly ${formatPlainNumber(expectedQuantity)} participating units.`,
+          allocations: new Map()
+        };
+      }
+
+      bundleCount = count;
       targetParticipantCents =
-        Math.round(
-          bundleCount *
-          Number(
-            group.xPrice
-          ) *
-          100
-        );
+        Math.round(count * price * 100);
+
+    } else if (
+      group.type ===
+        "X_AT_Y_EACH"
+    ) {
+      const x = Number(group.xQuantity);
+      const eachPrice = Number(group.eachPrice);
+      const count = Number(group.promoCount);
+
+      if (!positive(x) || !positive(eachPrice)) {
+        return {
+          valid: false,
+          error: "Enter the items per bundle (X) and the promo price per item ($Y).",
+          allocations: new Map()
+        };
+      }
+
+      if (!Number.isInteger(count) || count <= 0) {
+        return {
+          valid: false,
+          error: "Enter how many promo bundles you are taking.",
+          allocations: new Map()
+        };
+      }
+
+      const expectedQuantity = x * count;
+
+      if (Math.abs(totalParticipatingQuantity - expectedQuantity) > 0.000001) {
+        return {
+          valid: false,
+          error: `You selected ${formatPlainNumber(totalParticipatingQuantity)} participating units. ${formatPlainNumber(count)} promo ${count === 1 ? "bundle" : "bundles"} × ${formatPlainNumber(x)} items requires exactly ${formatPlainNumber(expectedQuantity)} participating units.`,
+          allocations: new Map()
+        };
+      }
+
+      bundleCount = count;
+      targetParticipantCents =
+        Math.round(expectedQuantity * eachPrice * 100);
 
     } else if (
       group.type ===
         "BUY_X_GET_Y"
     ) {
-      const buy =
-        Number(
-          group.buyQuantity
-        );
-
-      const free =
-        Number(
-          group.freeQuantity
-        );
+      const buy = Number(group.buyQuantity);
+      const free = Number(group.freeQuantity);
+      const count = Number(group.promoCount);
 
       if (
-        !Number.isInteger(
-          buy
-        ) ||
+        !Number.isInteger(buy) ||
         buy <= 0 ||
-        !Number.isInteger(
-          free
-        ) ||
+        !Number.isInteger(free) ||
         free <= 0
       ) {
         return {
-          valid:
-            false,
-          error:
-            "Buy X / get Y free needs whole positive unit counts.",
-          allocations:
-            new Map()
+          valid: false,
+          error: "Buy X / get Y free needs whole positive unit counts.",
+          allocations: new Map()
+        };
+      }
+
+      if (!Number.isInteger(count) || count <= 0) {
+        return {
+          valid: false,
+          error: "Enter how many promo bundles you are taking.",
+          allocations: new Map()
         };
       }
 
       if (
         members.some(
           member =>
-            !Number.isInteger(
-              member.participatingQuantity
-            )
+            !Number.isInteger(member.participatingQuantity)
         )
       ) {
         return {
-          valid:
-            false,
-          error:
-            "Buy X / get Y free can only use whole participating units.",
-          allocations:
-            new Map()
+          valid: false,
+          error: "Buy X / get Y free can only use whole participating units.",
+          allocations: new Map()
         };
       }
 
-      const groupSize =
-        buy +
-        free;
+      const groupSize = buy + free;
+      const expectedQuantity = groupSize * count;
 
-      const fullGroups =
-        totalParticipatingQuantity /
-        groupSize;
-
-      const roundedGroups =
-        Math.round(
-          fullGroups
-        );
-
-      if (
-        roundedGroups <= 0 ||
-        Math.abs(
-          fullGroups -
-          roundedGroups
-        ) >
-          0.000001
-      ) {
+      if (Math.abs(totalParticipatingQuantity - expectedQuantity) > 0.000001) {
         return {
-          valid:
-            false,
-          error:
-            `The selected participating units must make complete groups of ${groupSize}.`,
-          allocations:
-            new Map()
+          valid: false,
+          error: `You selected ${formatPlainNumber(totalParticipatingQuantity)} participating units. ${formatPlainNumber(count)} promo ${count === 1 ? "bundle" : "bundles"} × ${formatPlainNumber(groupSize)} units requires exactly ${formatPlainNumber(expectedQuantity)} participating units.`,
+          allocations: new Map()
         };
       }
 
-      bundleCount =
-        roundedGroups;
+      bundleCount = count;
+      const freeUnits = count * free;
+      const unitCandidates = [];
 
-      const freeUnits =
-        roundedGroups *
-        free;
+      members.forEach(member => {
+        const approximateUnitCents =
+          member.participantRegularCents /
+          member.participatingQuantity;
 
-      const unitCandidates =
-        [];
-
-      members.forEach(
-        member => {
-          const approximateUnitCents =
-            member.participantRegularCents /
-            member.participatingQuantity;
-
-          for (
-            let i = 0;
-            i <
-              member.participatingQuantity;
-            i++
-          ) {
-            unitCandidates.push({
-              rowIndex:
-                member.rowIndex,
-              cents:
-                approximateUnitCents
-            });
-          }
+        for (let i = 0; i < member.participatingQuantity; i++) {
+          unitCandidates.push({
+            rowIndex: member.rowIndex,
+            cents: approximateUnitCents
+          });
         }
-      );
+      });
 
       unitCandidates.sort(
-        (
-          a,
-          b
-        ) =>
-          (
-            a.cents -
-            b.cents
-          ) ||
-          (
-            a.rowIndex -
-            b.rowIndex
-          )
+        (a, b) =>
+          (a.cents - b.cents) ||
+          (a.rowIndex - b.rowIndex)
       );
 
       const freeValue =
         unitCandidates
-          .slice(
-            0,
-            freeUnits
-          )
+          .slice(0, freeUnits)
           .reduce(
-            (
-              sum,
-              unit
-            ) =>
-              sum +
-              unit.cents,
+            (sum, unit) =>
+              sum + unit.cents,
             0
           );
 
@@ -18138,9 +18166,7 @@
         Math.max(
           0,
           regularParticipantCents -
-          Math.round(
-            freeValue
-          )
+          Math.round(freeValue)
         );
 
     } else if (
@@ -18692,6 +18718,9 @@
         documentImportPromoDraft.type ||
         "X_FOR_Y",
 
+      promoCount:
+        documentImportPromoDraft.promoCount,
+
       members:
         documentImportPromoDraftMembers(),
 
@@ -18700,6 +18729,9 @@
 
       xPrice:
         documentImportPromoDraft.xPrice,
+
+      eachPrice:
+        documentImportPromoDraft.eachPrice,
 
       buyQuantity:
         documentImportPromoDraft.buyQuantity,
@@ -18793,6 +18825,10 @@
         existing?.type ||
         "X_FOR_Y",
 
+      promoCount:
+        existing?.promoCount ||
+        1,
+
       members,
 
       xQuantity:
@@ -18801,6 +18837,10 @@
 
       xPrice:
         existing?.xPrice ||
+        "",
+
+      eachPrice:
+        existing?.eachPrice ||
         "",
 
       buyQuantity:
@@ -18828,10 +18868,23 @@
         ""
     };
 
+    const searchInput =
+      document.getElementById(
+        "document-import-promo-search"
+      );
+
+    if (searchInput) {
+      searchInput.value = "";
+    }
+
     renderDocumentImportPromoBuilder();
 
     show(
       "document-import-promo-overlay"
+    );
+
+    filterDocumentImportPromoMembers(
+      ""
     );
   }
 
@@ -18970,6 +19023,60 @@
   }
 
 
+  function normalizeDocumentImportPromoSearch(
+    value
+  ) {
+    return normalizeProductIdentity(
+      String(value || "")
+    );
+  }
+
+
+  function filterDocumentImportPromoMembers(
+    value
+  ) {
+    const query =
+      normalizeDocumentImportPromoSearch(value);
+
+    const rows =
+      Array.from(
+        document.querySelectorAll(
+          "#document-import-promo-members .import-promo-member"
+        )
+      );
+
+    let visible = 0;
+
+    rows.forEach(element => {
+      const haystack =
+        String(element.dataset.search || "");
+
+      const matches =
+        !query ||
+        haystack.includes(query);
+
+      element.classList.toggle(
+        "hidden",
+        !matches
+      );
+
+      if (matches) visible += 1;
+    });
+
+    const count =
+      document.getElementById(
+        "document-import-promo-search-count"
+      );
+
+    if (count) {
+      count.textContent =
+        query
+          ? `${visible} matching imported product${visible === 1 ? "" : "s"}`
+          : `${visible} eligible imported product${visible === 1 ? "" : "s"}`;
+    }
+  }
+
+
   function renderDocumentImportPromoBuilder(
     rebuildMembers = true
   ) {
@@ -18997,6 +19104,16 @@
     const saveButton =
       document.getElementById(
         "document-import-promo-save-button"
+      );
+
+    const searchInput =
+      document.getElementById(
+        "document-import-promo-search"
+      );
+
+    const bundleCallout =
+      document.getElementById(
+        "document-import-promo-bundle-callout"
       );
 
     const unbundleButton =
@@ -19064,8 +19181,21 @@
                     ? state.quantity
                     : row.quantity;
 
+              const searchText =
+                normalizeDocumentImportPromoSearch(
+                  [
+                    row.product,
+                    row.details,
+                    row.quantityUnit
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                );
+
               return (
-                '<div class="import-promo-member">' +
+                '<div class="import-promo-member" data-search="' +
+                  escapeDocumentImportAttribute(searchText) +
+                '">' +
                   '<input type="checkbox" ' +
                     (
                       selected
@@ -19111,6 +19241,10 @@
           .join(
             ""
           );
+
+      filterDocumentImportPromoMembers(
+        searchInput?.value || ""
+      );
     }
 
     typeInput.value =
@@ -19120,12 +19254,21 @@
     const ids = {
       X_FOR_Y:
         [
+          "import-promo-count-field",
           "import-promo-x-field",
           "import-promo-y-field"
         ],
 
+      X_AT_Y_EACH:
+        [
+          "import-promo-count-field",
+          "import-promo-x-field",
+          "import-promo-each-field"
+        ],
+
       BUY_X_GET_Y:
         [
+          "import-promo-count-field",
           "import-promo-buy-field",
           "import-promo-free-field"
         ],
@@ -19203,6 +19346,11 @@
       };
 
     setValue(
+      "document-import-promo-count",
+      documentImportPromoDraft.promoCount
+    );
+
+    setValue(
       "document-import-promo-x-quantity",
       documentImportPromoDraft.xQuantity
     );
@@ -19210,6 +19358,11 @@
     setValue(
       "document-import-promo-x-price",
       documentImportPromoDraft.xPrice
+    );
+
+    setValue(
+      "document-import-promo-each-price",
+      documentImportPromoDraft.eachPrice
     );
 
     setValue(
@@ -19256,6 +19409,76 @@
       calculateDocumentImportPromoGroup(
         draftGroup
       );
+
+    if (bundleCallout) {
+      const participatingQuantity =
+        draftGroup?.members?.reduce(
+          (sum, member) =>
+            sum +
+            (Number(member.quantity) || 0),
+          0
+        ) || 0;
+
+      const count =
+        Number(draftGroup?.promoCount);
+
+      let requiredQuantity =
+        null;
+
+      if (
+        draftGroup?.type === "X_FOR_Y" ||
+        draftGroup?.type === "X_AT_Y_EACH"
+      ) {
+        const x =
+          Number(draftGroup.xQuantity);
+
+        if (
+          Number.isInteger(count) &&
+          count > 0 &&
+          Number.isFinite(x) &&
+          x > 0
+        ) {
+          requiredQuantity =
+            count * x;
+        }
+
+      } else if (
+        draftGroup?.type === "BUY_X_GET_Y"
+      ) {
+        const buy =
+          Number(draftGroup.buyQuantity);
+
+        const free =
+          Number(draftGroup.freeQuantity);
+
+        if (
+          Number.isInteger(count) &&
+          count > 0 &&
+          Number.isInteger(buy) &&
+          buy > 0 &&
+          Number.isInteger(free) &&
+          free > 0
+        ) {
+          requiredQuantity =
+            count * (buy + free);
+        }
+      }
+
+      bundleCallout.innerHTML =
+        requiredQuantity === null
+          ? (
+              "<strong>Bundle check:</strong> " +
+              escapeHtml(
+                `${formatPlainNumber(participatingQuantity)} participating unit${participatingQuantity === 1 ? "" : "s"} currently selected.`
+              )
+            )
+          : (
+              "<strong>Bundle check:</strong> " +
+              escapeHtml(
+                `${formatPlainNumber(count)} promo ${count === 1 ? "bundle" : "bundles"} require ${formatPlainNumber(requiredQuantity)} participating units. You currently selected ${formatPlainNumber(participatingQuantity)}.`
+              )
+            );
+    }
 
     if (
       calculation.valid
