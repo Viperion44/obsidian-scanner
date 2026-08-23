@@ -1273,6 +1273,27 @@
       opacity: .78;
     }
 
+    .document-import-row.saved {
+      border-color: rgba(119, 225, 146, 0.48);
+      opacity: .68;
+    }
+
+    .document-import-row.saved .document-import-fields,
+    .document-import-row.saved .document-import-price-grid,
+    .document-import-row.saved .document-import-derived {
+      pointer-events: none;
+    }
+
+    .document-import-save-status.success {
+      background: rgba(24, 76, 42, 0.94);
+      color: #eaffef;
+    }
+
+    .document-import-save-status.error {
+      background: rgba(94, 29, 35, 0.95);
+      color: #fff0f0;
+    }
+
     .document-import-row-head {
       display: flex;
       align-items: center;
@@ -1612,7 +1633,7 @@
       position: fixed;
       top: calc(14px + env(safe-area-inset-top));
       left: 50%;
-      z-index: 2000;
+      z-index: 5000;
       width: min(calc(100% - 28px), 520px);
       padding: 13px 15px;
       border: 1px solid rgba(119, 225, 146, 0.55);
@@ -7184,7 +7205,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2d — Generic visual row-region parser. Production remains index.html.
+    V6 Stage 3J.2e — Reliable document batch save + visible feedback. Production remains index.html.
   </div>
 
 </div>
@@ -7245,6 +7266,14 @@
 
       <div id="document-import-list" class="document-import-list"></div>
     </div>
+
+    <div
+      id="document-import-save-status"
+      class="document-import-progress document-import-save-status hidden"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
 
     <div class="change-actions">
       <button
@@ -7892,10 +7921,10 @@
 
 <script>
 
-  // V6 Stage 3J.2d — generic visual row-region parser.
-  // Repeating quantity/price signals establish visual product-row territories.
-  // Wrapped fields and indented child details are assigned to the nearest row
-  // before product / quantity / price classification happens.
+  // V6 Stage 3J.2e — reliable document batch save + visible feedback.
+  // Keeps the 3J.2d visual row-region parser unchanged. Imported rows now show
+  // in-dialog save progress, surface errors above overlays, avoid duplicate
+  // retries after partial saves, and run canonical learning truly non-blocking.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -16719,8 +16748,18 @@
     progress?.classList.add("hidden");
     review.classList.remove("hidden");
 
+    const savedRows =
+      documentImportRows.filter(
+        row =>
+          row.importSaved === true
+      );
+
     const selectedRows =
-      documentImportRows.filter(row => row.include);
+      documentImportRows.filter(
+        row =>
+          row.include &&
+          row.importSaved !== true
+      );
 
     const selectedTotal =
       roundMoney(
@@ -16743,6 +16782,14 @@
       " • " +
       escapeHtml(
         `${selectedRows.length} selected`
+      ) +
+      (
+        savedRows.length
+          ? " • " +
+            escapeHtml(
+              `${savedRows.length} already added this attempt`
+            )
+          : ""
       ) +
       (
         unavailableCount
@@ -16777,6 +16824,7 @@
         .map((row, index) => {
           const computed = documentImportComputedValues(row);
           const unavailableClass = row.unavailable ? " unavailable" : "";
+          const savedClass = row.importSaved === true ? " saved" : "";
 
           const knownRecord =
             knownProductRecordAtCurrentStore(
@@ -16810,16 +16858,19 @@
                 ? '<div class="ocr-candidate-note">Canonical product already known</div>'
                 : '<div class="ocr-candidate-note">New/unmatched product — can be confirmed now and assigned a barcode later.</div>';
 
-          const status = row.unavailable
-            ? '<span class="document-import-status unavailable">NOT CHARGED / UNAVAILABLE</span>'
-            : '<span class="document-import-status">PURCHASE CANDIDATE</span>';
+          const status = row.importSaved === true
+            ? '<span class="document-import-status">✓ ADDED TO TRIP</span>'
+            : row.unavailable
+              ? '<span class="document-import-status unavailable">NOT CHARGED / UNAVAILABLE</span>'
+              : '<span class="document-import-status">PURCHASE CANDIDATE</span>';
 
           return (
-            '<div class="document-import-row' + unavailableClass + '">' +
+            '<div class="document-import-row' + unavailableClass + savedClass + '">' +
               '<div class="document-import-row-head">' +
                 '<label class="document-import-include">' +
                   '<input type="checkbox" ' +
                     (row.include ? "checked " : "") +
+                    (row.importSaved === true ? "disabled " : "") +
                     'onchange="updateDocumentImportField(' + index + ', \'include\', this.checked, true)">' +
                   "Include" +
                 "</label>" +
@@ -17039,6 +17090,7 @@
       }
 
       hideStatus();
+      clearDocumentImportSaveStatus();
       renderDocumentImportReview();
 
       showSuccessToast(
@@ -17064,6 +17116,65 @@
   }
 
 
+  function setDocumentImportSaveStatus(
+    message,
+    type = "working"
+  ) {
+    const box =
+      document.getElementById(
+        "document-import-save-status"
+      );
+
+    if (!box) {
+      return;
+    }
+
+    box.classList.remove(
+      "hidden",
+      "success",
+      "error"
+    );
+
+    if (
+      type === "success" ||
+      type === "error"
+    ) {
+      box.classList.add(
+        type
+      );
+    }
+
+    box.textContent =
+      String(
+        message || ""
+      );
+  }
+
+
+  function clearDocumentImportSaveStatus() {
+    const box =
+      document.getElementById(
+        "document-import-save-status"
+      );
+
+    if (!box) {
+      return;
+    }
+
+    box.textContent =
+      "";
+
+    box.classList.add(
+      "hidden"
+    );
+
+    box.classList.remove(
+      "success",
+      "error"
+    );
+  }
+
+
   function cancelDocumentImport() {
     if (documentImportBusy) return;
 
@@ -17081,25 +17192,47 @@
     };
 
     hideStatus();
+    clearDocumentImportSaveStatus();
   }
 
 
   async function saveReviewedDocumentItems() {
-    if (documentImportBusy) return;
+    if (documentImportBusy) {
+      return;
+    }
 
     const selectedRows =
       documentImportRows
-        .filter(row => row.include)
-        .map(row => ({
-          ...row,
-          product: String(row.product || "").trim()
-        }));
+        .map(
+          (
+            row,
+            sourceIndex
+          ) => ({
+            ...row,
+            sourceIndex,
+            product:
+              String(
+                row.product || ""
+              ).trim()
+          })
+        )
+        .filter(
+          row =>
+            row.include &&
+            row.importSaved !== true
+        );
 
     if (!selectedRows.length) {
       showErrorToast(
-        "No products selected",
-        "Choose at least one imported product before adding items to the trip."
+        "No unsaved products selected",
+        "Choose at least one imported product that has not already been added."
       );
+
+      setDocumentImportSaveStatus(
+        "Nothing new is selected to add.",
+        "error"
+      );
+
       return;
     }
 
@@ -17109,41 +17242,91 @@
           "Product name required",
           "Every selected imported row needs a product name."
         );
+
+        setDocumentImportSaveStatus(
+          "A selected row is missing its product name.",
+          "error"
+        );
+
         return;
       }
 
-      if (!documentImportComputedValues(row).valid) {
+      if (
+        !documentImportComputedValues(
+          row
+        ).valid
+      ) {
         showErrorToast(
           "Check imported prices",
           "Every selected row needs a valid positive quantity and price."
         );
+
+        setDocumentImportSaveStatus(
+          `Check quantity and price for ${row.product}.`,
+          "error"
+        );
+
         return;
       }
     }
 
-    documentImportBusy = true;
+    documentImportBusy =
+      true;
 
     const saveButton =
       document.getElementById(
         "document-import-save-button"
       );
 
+    const cancelButton =
+      document.getElementById(
+        "document-import-cancel-button"
+      );
+
     if (saveButton) {
-      saveButton.disabled = true;
-      saveButton.textContent = "ADDING ITEMS…";
+      saveButton.disabled =
+        true;
+
+      saveButton.textContent =
+        `ADDING 0 / ${selectedRows.length}…`;
     }
+
+    if (cancelButton) {
+      cancelButton.disabled =
+        true;
+    }
+
+    setDocumentImportSaveStatus(
+      `Adding ${selectedRows.length} reviewed product${selectedRows.length === 1 ? "" : "s"} to the active trip…`
+    );
 
     setStatus(
       `Adding ${selectedRows.length} imported item${selectedRows.length === 1 ? "" : "s"}...`,
       "working"
     );
 
-    let added = 0;
+    let added =
+      0;
+
+    let saveSucceeded =
+      false;
 
     try {
-      for (const row of selectedRows) {
+      for (
+        const row
+        of selectedRows
+      ) {
+        const itemNumber =
+          added + 1;
+
+        setDocumentImportSaveStatus(
+          `Adding ${itemNumber} of ${selectedRows.length}: ${row.product}`
+        );
+
         const computed =
-          documentImportComputedValues(row);
+          documentImportComputedValues(
+            row
+          );
 
         const prior =
           knownProductRecordAtCurrentStore(
@@ -17151,97 +17334,250 @@
           );
 
         await writeShoppingItem({
-          product: row.product,
-          barcode: "",
-          amount: Number(row.quantity),
+          product:
+            row.product,
+          barcode:
+            "",
+          amount:
+            Number(
+              row.quantity
+            ),
           previousPrice:
-            prior && isUsableNumber(prior.price)
-              ? Number(prior.price)
+            prior &&
+            isUsableNumber(
+              prior.price
+            )
+              ? Number(
+                  prior.price
+                )
               : "",
-          effectiveUnitPrice: computed.unitPrice,
-          actualLineTotal: computed.lineTotal,
-          store: activeTrip.store,
+          effectiveUnitPrice:
+            computed.unitPrice,
+          actualLineTotal:
+            computed.lineTotal,
+          store:
+            activeTrip.store,
           notes:
             `Imported from order document: ${documentImportMeta.filename || "document"}` +
             (
-              String(row.details || "").trim()
+              String(
+                row.details || ""
+              ).trim()
                 ? ` | Detected details: ${String(row.details || "").trim()}`
                 : ""
             ),
-          shelfUnitPrice: computed.unitPrice,
-          promoApplied: "NO",
-          promoType: "",
-          promoDetails: "",
-          regularLineTotal: computed.lineTotal,
-          savings: 0,
-          promoQuantity: "",
-          promoTotal: ""
+          shelfUnitPrice:
+            computed.unitPrice,
+          promoApplied:
+            "NO",
+          promoType:
+            "",
+          promoDetails:
+            "",
+          regularLineTotal:
+            computed.lineTotal,
+          savings:
+            0,
+          promoQuantity:
+            "",
+          promoTotal:
+            ""
         });
 
-        // The row is already safely stored at this point. Canonical learning is
-        // intentionally non-blocking, just like ordinary item entry.
-        await learnCanonicalIdentityAfterShoppingWrite(
-          row.product,
-          "",
-          null,
-          null
-        );
+        if (
+          documentImportRows[
+            row.sourceIndex
+          ]
+        ) {
+          documentImportRows[
+            row.sourceIndex
+          ].importSaved =
+            true;
+        }
 
-        added += 1;
+        added +=
+          1;
+
+        if (saveButton) {
+          saveButton.textContent =
+            `ADDING ${added} / ${selectedRows.length}…`;
+        }
+
+        setDocumentImportSaveStatus(
+          `Added ${added} of ${selectedRows.length}: ${row.product}`
+        );
 
         setStatus(
           `Adding imported items… ${added} of ${selectedRows.length}`,
           "working"
         );
+
+        // The shopping row is already stored. Canonical learning is intentionally
+        // detached so it cannot block or trap the document-import confirmation.
+        Promise
+          .resolve()
+          .then(
+            () =>
+              learnCanonicalIdentityAfterShoppingWrite(
+                row.product,
+                "",
+                null,
+                null
+              )
+          )
+          .catch(
+            error => {
+              console.warn(
+                "V6 imported product identity learning failed",
+                row.product,
+                error
+              );
+            }
+          );
       }
 
-      hide("document-import-overlay");
+      saveSucceeded =
+        true;
+
+      setDocumentImportSaveStatus(
+        `${added} reviewed product${added === 1 ? "" : "s"} added successfully.`,
+        "success"
+      );
+
+      hide(
+        "document-import-overlay"
+      );
+
       hideStatus();
 
-      await refreshTripSummary();
+      let summaryRefreshFailed =
+        false;
+
+      try {
+        await refreshTripSummary();
+      } catch (error) {
+        summaryRefreshFailed =
+          true;
+
+        console.warn(
+          "V6 document import saved, but trip summary refresh failed",
+          error
+        );
+      }
 
       showSuccessToast(
         "Order items added",
-        `${added} reviewed product${added === 1 ? "" : "s"} were added to this trip.`
+        `${added} reviewed product${added === 1 ? "" : "s"} were added to this trip.` +
+        (
+          summaryRefreshFailed
+            ? " The rows are saved; the visible trip summary may need a refresh."
+            : ""
+        )
       );
 
-      documentImportRows = [];
+      documentImportRows =
+        [];
+
       documentImportMeta = {
-        filename: "",
-        sourceType: "",
-        parser: "",
-        subtotal: "",
-        total: "",
-        rawText: "",
-        layoutRows: []
+        filename:
+          "",
+        sourceType:
+          "",
+        parser:
+          "",
+        subtotal:
+          "",
+        total:
+          "",
+        rawText:
+          "",
+        layoutRows:
+          []
       };
 
-      document.getElementById(
-        "active-trip-panel"
-      )?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+      clearDocumentImportSaveStatus();
+
+      document
+        .getElementById(
+          "active-trip-panel"
+        )
+        ?.scrollIntoView({
+          behavior:
+            "smooth",
+          block:
+            "start"
+        });
+
     } catch (error) {
       hideStatus();
+
+      const message =
+        error?.message ||
+        String(
+          error ||
+          "Unknown save error"
+        );
+
+      setDocumentImportSaveStatus(
+        added
+          ? (
+              `Import stopped after ${added} of ${selectedRows.length} products. ` +
+              "Those rows are already marked as added and will NOT be duplicated if you retry. " +
+              message
+            )
+          : (
+              "No products were added. " +
+              message
+            ),
+        "error"
+      );
 
       showErrorToast(
         "Document import stopped",
         added
-          ? `${added} item${added === 1 ? "" : "s"} were already added before the error. Review the active trip before retrying. ${error?.message || ""}`
-          : error?.message || "No imported items were added."
+          ? `${added} item${added === 1 ? "" : "s"} were already added. They will be skipped automatically if you retry. ${message}`
+          : `No imported items were added. ${message}`
       );
-    } finally {
-      documentImportBusy = false;
 
-      if (saveButton) {
-        saveButton.textContent = "ADD REVIEWED ITEMS TO TRIP";
+      if (added) {
+        refreshTripSummary()
+          .catch(
+            refreshError => {
+              console.warn(
+                "V6 partial document import summary refresh failed",
+                refreshError
+              );
+            }
+          );
       }
 
-      renderDocumentImportReview();
+    } finally {
+      documentImportBusy =
+        false;
+
+      if (cancelButton) {
+        cancelButton.disabled =
+          false;
+      }
+
+      if (saveButton) {
+        saveButton.textContent =
+          "ADD REVIEWED ITEMS TO TRIP";
+      }
+
+      // Success deliberately leaves the review closed.
+      // Failure leaves it open, visibly explains the problem, and retry
+      // automatically skips rows that already made it into the trip.
+      if (
+        !saveSucceeded &&
+        appLayerVisible(
+          "document-import-overlay"
+        )
+      ) {
+        renderDocumentImportReview();
+      }
     }
   }
-
 
   function beginOcrCapture() {
     if (!activeTrip) {
