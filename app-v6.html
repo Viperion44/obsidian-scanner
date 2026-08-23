@@ -37,6 +37,11 @@
   ></script>
 
   <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+    defer
+  ></script>
+
+  <script
     src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
     defer
   ></script>
@@ -1192,6 +1197,176 @@
       color: #9fa6b1;
       font-size: 13px;
       line-height: 1.45;
+    }
+
+    .document-import-card {
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid rgba(139,92,246,.42);
+      border-radius: 13px;
+      background: rgba(139,92,246,.1);
+    }
+
+    .document-import-button {
+      width: 100%;
+      margin: 0;
+      background: #5b3d77;
+    }
+
+    .document-import-hint {
+      margin-top: 8px;
+      color: #b7bdc8;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .document-import-dialog {
+      width: min(96vw, 980px);
+      max-width: 980px;
+      max-height: 90vh;
+      overflow: auto;
+    }
+
+    .document-import-summary {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #191d25;
+      color: #d8dce3;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .document-import-summary strong {
+      color: #fff;
+    }
+
+    .document-import-tools {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .document-import-tools button {
+      margin: 0;
+      padding: 11px 8px;
+      background: #3b414d;
+      font-size: 12px;
+    }
+
+    .document-import-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 13px;
+    }
+
+    .document-import-row {
+      padding: 12px;
+      border: 1px solid #454b58;
+      border-radius: 11px;
+      background: #20242d;
+    }
+
+    .document-import-row.unavailable {
+      border-color: #704047;
+      opacity: .78;
+    }
+
+    .document-import-row-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .document-import-include {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .document-import-include input {
+      width: auto;
+      margin: 0;
+    }
+
+    .document-import-status {
+      color: #aeb4c0;
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .document-import-status.unavailable {
+      color: #ff9aa2;
+      font-weight: 800;
+    }
+
+    .document-import-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(86px, .7fr) minmax(90px, .8fr);
+      gap: 9px;
+    }
+
+    .document-import-price-grid {
+      display: grid;
+      grid-template-columns: minmax(100px, 1fr) minmax(130px, 1fr);
+      gap: 9px;
+      margin-top: 9px;
+    }
+
+    .document-import-derived {
+      margin-top: 9px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .document-import-derived-box {
+      padding: 9px 10px;
+      border-radius: 9px;
+      background: #171a21;
+      color: #bfc5cf;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .document-import-derived-box strong {
+      display: block;
+      margin-top: 3px;
+      color: #fff;
+      font-size: 15px;
+    }
+
+    .document-import-progress {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #2c2536;
+      color: #d7c6e9;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .document-import-warning {
+      margin-top: 10px;
+      padding: 10px 11px;
+      border-radius: 9px;
+      background: #4a381d;
+      color: #ffe0a3;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 650px) {
+      .document-import-fields,
+      .document-import-price-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .ocr-entry-card {
@@ -4867,6 +5042,29 @@
 
     </div>
 
+    <div id="document-import-card" class="document-import-card hidden">
+      <button
+        id="document-import-button"
+        class="document-import-button"
+        type="button"
+        onclick="beginDocumentImport()"
+      >
+        📄 IMPORT ORDER / RECEIPT
+      </button>
+
+      <div class="document-import-hint">
+        PDF, JPG, PNG or BMP. Multi-page PDFs are supported. The app will extract candidate products and stop at a fixing/confirmation screen before saving anything.
+      </div>
+    </div>
+
+    <input
+      id="document-import-input"
+      class="hidden"
+      type="file"
+      accept="application/pdf,image/jpeg,image/png,image/bmp"
+      onchange="handleDocumentImportSelected(event)"
+    >
+
     <div class="ocr-entry-card">
       <button
         id="trip-ocr-button"
@@ -6986,7 +7184,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.1 — OCR recognition foundation + trip-end toast cleanup. Production remains index.html.
+    V6 Stage 3J.2 — Online order document import. Production remains index.html.
   </div>
 
 </div>
@@ -7007,6 +7205,68 @@
     id="app-toast-detail"
     class="app-toast-detail hidden"
   ></div>
+</div>
+
+<div
+  id="document-import-overlay"
+  class="change-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="document-import-title"
+>
+  <div class="change-dialog document-import-dialog">
+    <div id="document-import-title" class="change-title">
+      📄 Review Imported Order
+    </div>
+
+    <div class="change-body">
+      Nothing has been saved yet. Fix product names, quantities and prices below. For each row, confirm whether the detected price means the <b>line total</b> or the <b>unit price</b>.
+    </div>
+
+    <div id="document-import-progress" class="document-import-progress hidden">
+      Reading document…
+    </div>
+
+    <div id="document-import-review" class="hidden">
+      <div id="document-import-summary" class="document-import-summary"></div>
+
+      <div class="document-import-tools">
+        <button type="button" onclick="applyDocumentPriceMeaningToAll('LINE_TOTAL')">
+          ALL PRICES = LINE TOTAL
+        </button>
+        <button type="button" onclick="applyDocumentPriceMeaningToAll('UNIT_PRICE')">
+          ALL PRICES = UNIT PRICE
+        </button>
+      </div>
+
+      <div id="document-import-warning" class="document-import-warning">
+        Imported values are suggestions. Check them before saving, especially quantities, decimal separators and line-total/unit-price interpretation.
+      </div>
+
+      <div id="document-import-list" class="document-import-list"></div>
+    </div>
+
+    <div class="change-actions">
+      <button
+        id="document-import-cancel-button"
+        class="change-cancel"
+        type="button"
+        onclick="cancelDocumentImport()"
+      >
+        CANCEL
+      </button>
+
+      <button
+        id="document-import-save-button"
+        class="change-history"
+        type="button"
+        onclick="saveReviewedDocumentItems()"
+        disabled
+      >
+        ADD REVIEWED ITEMS TO TRIP
+      </button>
+    </div>
+  </div>
 </div>
 
 <div
@@ -7632,9 +7892,9 @@
 
 <script>
 
-  // V6 Stage 3J.1 — OCR recognition foundation + trip-end toast cleanup.
-  // Photo OCR can prefill reviewable product / price / barcode candidates.
-  // Successful trip endings now use floating/fading success toasts.
+  // V6 Stage 3J.2 — Online order document import.
+  // ONLINE trips can now accept PDF/JPG/PNG/BMP order documents, extract multiple
+  // product rows, and require a full editable confirmation before any row is saved.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -7658,6 +7918,17 @@
 
   let ocrRecognitionBusy = false;
   let ocrLastRecognizedText = "";
+
+  let documentImportBusy = false;
+  let documentImportRows = [];
+  let documentImportMeta = {
+    filename: "",
+    sourceType: "",
+    parser: "",
+    subtotal: "",
+    total: "",
+    rawText: ""
+  };
 
   // V6 Stage 3E.2 — Management preview retailer picker state.
   // This has its own request/timer state so Management preview never hijacks
@@ -10134,6 +10405,7 @@
     const title = document.getElementById("trip-product-picker-title");
     const note = document.getElementById("trip-product-picker-note");
     const searchButton = document.getElementById("trip-product-search-button");
+    const documentImportCard = document.getElementById("document-import-card");
 
     if (physical) {
       physical.classList.toggle("hidden", mode !== "NEAR");
@@ -10141,6 +10413,13 @@
 
     if (picker) {
       picker.classList.remove("hidden");
+    }
+
+    if (documentImportCard) {
+      documentImportCard.classList.toggle(
+        "hidden",
+        mode !== "ONLINE"
+      );
     }
 
     const source = resolveProductSearchSourceForActiveTrip();
@@ -14035,6 +14314,924 @@
           record.product ||
           record.store
       );
+  }
+
+
+  function beginDocumentImport() {
+    if (!activeTrip) {
+      showErrorToast("No active trip", "Start or resume an Online Store trip first.");
+      return;
+    }
+
+    if (getActiveTripMode() !== "ONLINE") {
+      showErrorToast(
+        "Online Store only",
+        "Multi-item order documents are currently imported through Online Store trips."
+      );
+      return;
+    }
+
+    if (documentImportBusy) return;
+
+    const input = document.getElementById("document-import-input");
+    if (!input) return;
+
+    input.value = "";
+    input.click();
+  }
+
+
+  function normalizeDocumentMoney(value) {
+    const raw = String(value ?? "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/\$/g, "");
+
+    if (!raw) return null;
+
+    let normalized = raw;
+
+    if (raw.includes(",") && raw.includes(".")) {
+      // 1,839.00
+      normalized = raw.replace(/,/g, "");
+    } else if (raw.includes(",") && !raw.includes(".")) {
+      const pieces = raw.split(",");
+      normalized =
+        pieces.length === 2 && pieces[1].length === 2
+          ? pieces[0] + "." + pieces[1]
+          : raw.replace(/,/g, "");
+    }
+
+    const number = Number(normalized);
+    return Number.isFinite(number) ? number : null;
+  }
+
+
+  function cleanImportedProductName(value) {
+    return String(value || "")
+      .replace(/\bitem\s+image\b/ig, " ")
+      .replace(/\s+/g, " ")
+      .replace(/^[•\-–—:]+|[•\-–—:]+$/g, "")
+      .trim();
+  }
+
+
+  function documentLineShouldBeIgnored(line) {
+    const value = normalizeOcrLine(line);
+    if (!value) return true;
+
+    return (
+      /^Artículo\s+Cant\.?\s+Precio$/i.test(value) ||
+      /^Art[ií]culo$/i.test(value) ||
+      /^Cant\.?$/i.test(value) ||
+      /^Precio$/i.test(value) ||
+      /^item\s*image$/i.test(value) ||
+      /^Resumen del pedido$/i.test(value) ||
+      /^Ajustes de cargos$/i.test(value) ||
+      /^Cargo final$/i.test(value) ||
+      /^Subtotal\b/i.test(value) ||
+      /^I\.?V\.?A\.?\b/i.test(value) ||
+      /^Ahorro\b/i.test(value) ||
+      /^Costo de env[ií]o\b/i.test(value) ||
+      /^Total pagado\b/i.test(value) ||
+      /^Pedido#?\b/i.test(value) ||
+      /^TC#?\b/i.test(value) ||
+      /^TR#?\b/i.test(value) ||
+      /Gmail\s*-\s*Tu pedido/i.test(value) ||
+      /^https?:\/\//i.test(value) ||
+      /^\d{1,2}\/\d{1,2}\/\d{2,4},?\s/i.test(value) ||
+      /^Tu pedido #?\d+/i.test(value) ||
+      /^Walmart Mexico/i.test(value) ||
+      /^Walmart México/i.test(value) ||
+      /^Reply-To:/i.test(value) ||
+      /^To:/i.test(value) ||
+      /^Fri,|^Mon,|^Tue,|^Wed,|^Thu,|^Sat,|^Sun,/i.test(value) ||
+      /^Para ver el detalle completo/i.test(value) ||
+      /^La informaci[oó]n del c[oó]digo de barras/i.test(value) ||
+      /^¿Tienes preguntas\?/i.test(value) ||
+      /^Visita nuestro centro de ayuda/i.test(value) ||
+      /^Encu[eé]ntranos en:/i.test(value)
+    );
+  }
+
+
+  function parseDocumentSummaryValues(textValue) {
+    const text = String(textValue || "");
+
+    const findMoney = labels => {
+      for (const label of labels) {
+        const match = text.match(
+          new RegExp(
+            label + String.raw`\s*\$?\s*([\d.,]+)`,
+            "i"
+          )
+        );
+        if (match) {
+          const value = normalizeDocumentMoney(match[1]);
+          if (value !== null) return roundMoney(value);
+        }
+      }
+      return "";
+    };
+
+    return {
+      subtotal:
+        findMoney([
+          "Subtotal"
+        ]),
+      total:
+        findMoney([
+          "Total\\s+pagado",
+          "Total\\s+paid",
+          "Grand\\s+total",
+          "Total"
+        ])
+    };
+  }
+
+
+  function parseImportedDocumentRows(textValue) {
+    const lines = String(textValue || "")
+      .split(/\r?\n/)
+      .map(normalizeOcrLine)
+      .filter(Boolean);
+
+    const rows = [];
+    let productBuffer = [];
+    let unavailable = false;
+    let sawWalmartSections = false;
+
+    const rowPattern =
+      /^(.*?)(\d+(?:[.,]\d+)?)\s*(pzas?|pza|pz|kg|kgs|g|gr|l|lt|lts|ml|unidad(?:es)?)\s+\$?\s*([\d.,]+)\s*$/i;
+
+    const qtyPriceOnlyPattern =
+      /^(\d+(?:[.,]\d+)?)\s*(pzas?|pza|pz|kg|kgs|g|gr|l|lt|lts|ml|unidad(?:es)?)\s+\$?\s*([\d.,]+)\s*$/i;
+
+    for (const rawLine of lines) {
+      const line = normalizeOcrLine(rawLine);
+
+      if (/^Art[ií]culos no disponibles/i.test(line)) {
+        unavailable = true;
+        sawWalmartSections = true;
+        productBuffer = [];
+        continue;
+      }
+
+      if (/^Art[ií]culos disponibles/i.test(line)) {
+        unavailable = false;
+        sawWalmartSections = true;
+        productBuffer = [];
+        continue;
+      }
+
+      if (/^Estos art[ií]culos no se cobrar[aá]n/i.test(line)) {
+        unavailable = true;
+        continue;
+      }
+
+      if (documentLineShouldBeIgnored(line)) {
+        continue;
+      }
+
+      let match = line.match(rowPattern);
+
+      if (match) {
+        const left = cleanImportedProductName(match[1]);
+        const qty = normalizeDocumentMoney(match[2]);
+        const unit = String(match[3] || "").trim().toLowerCase();
+        const price = normalizeDocumentMoney(match[4]);
+
+        const name = cleanImportedProductName(
+          [...productBuffer, left]
+            .filter(Boolean)
+            .join(" ")
+        );
+
+        productBuffer = [];
+
+        if (
+          name &&
+          qty !== null &&
+          qty > 0 &&
+          price !== null &&
+          price >= 0
+        ) {
+          rows.push({
+            include: !unavailable,
+            unavailable,
+            product: name,
+            quantity: qty,
+            quantityUnit: unit || "pzas",
+            detectedPrice: roundMoney(price),
+            priceMeaning: "LINE_TOTAL",
+            source: sawWalmartSections ? "Walmart-like order" : "Document"
+          });
+        }
+        continue;
+      }
+
+      match = line.match(qtyPriceOnlyPattern);
+
+      if (match && productBuffer.length) {
+        const qty = normalizeDocumentMoney(match[1]);
+        const unit = String(match[2] || "").trim().toLowerCase();
+        const price = normalizeDocumentMoney(match[3]);
+        const name = cleanImportedProductName(productBuffer.join(" "));
+        productBuffer = [];
+
+        if (
+          name &&
+          qty !== null &&
+          qty > 0 &&
+          price !== null &&
+          price >= 0
+        ) {
+          rows.push({
+            include: !unavailable,
+            unavailable,
+            product: name,
+            quantity: qty,
+            quantityUnit: unit || "pzas",
+            detectedPrice: roundMoney(price),
+            priceMeaning: "LINE_TOTAL",
+            source: sawWalmartSections ? "Walmart-like order" : "Document"
+          });
+        }
+        continue;
+      }
+
+      const looksLikeNarrative =
+        line.length > 120 ||
+        /^(Tu pedido ser[aá]|Lamentamos que|Revisa a continuaci[oó]n|Nuestra firme intenci[oó]n|Sin embargo|De suceder|Nos reservamos|Walmart México y Centroamérica)/i.test(line);
+
+      const looksLikeProductText =
+        !looksLikeNarrative &&
+        /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(line) &&
+        !/\b(?:Agotado|disponible|no disponible)\b/i.test(line);
+
+      if (looksLikeProductText) {
+        productBuffer.push(
+          cleanImportedProductName(line)
+        );
+
+        if (productBuffer.length > 4) {
+          productBuffer = productBuffer.slice(-4);
+        }
+      }
+    }
+
+    return {
+      rows,
+      parser:
+        sawWalmartSections
+          ? "Walmart-style order parser"
+          : "Generic quantity/price parser"
+    };
+  }
+
+
+  async function extractPdfTextWithLayout(file) {
+    if (!window.pdfjsLib) {
+      throw new Error("PDF reader library did not load.");
+    }
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    const bytes = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+    const pageTexts = [];
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+      setDocumentImportProgress(
+        `Reading PDF page ${pageNumber} of ${pdf.numPages}…`
+      );
+
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+
+      const groups = [];
+      const tolerance = 3.2;
+
+      content.items.forEach(item => {
+        const value = normalizeOcrLine(item.str || "");
+        if (!value) return;
+
+        const x = Number(item.transform?.[4] || 0);
+        const y = Number(item.transform?.[5] || 0);
+
+        let group = groups.find(entry => Math.abs(entry.y - y) <= tolerance);
+
+        if (!group) {
+          group = { y, items: [] };
+          groups.push(group);
+        }
+
+        group.items.push({ x, value });
+      });
+
+      groups.sort((a, b) => b.y - a.y);
+
+      const lines = groups.map(group =>
+        group.items
+          .sort((a, b) => a.x - b.x)
+          .map(item => item.value)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim()
+      ).filter(Boolean);
+
+      pageTexts.push(lines.join("\n"));
+    }
+
+    return {
+      text: pageTexts.join("\n"),
+      pages: pdf.numPages,
+      pdf
+    };
+  }
+
+
+  async function ocrPdfPages(pdf) {
+    const pageTexts = [];
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+      setDocumentImportProgress(
+        `OCR fallback: reading PDF page ${pageNumber} of ${pdf.numPages}…`
+      );
+
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 1.8 });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+
+      await page.render({
+        canvasContext: context,
+        viewport
+      }).promise;
+
+      const result = await Tesseract.recognize(canvas, "eng+spa");
+      pageTexts.push(String(result?.data?.text || ""));
+    }
+
+    return pageTexts.join("\n");
+  }
+
+
+  async function extractDocumentText(file) {
+    const type = String(file?.type || "").toLowerCase();
+    const name = String(file?.name || "").toLowerCase();
+
+    if (type === "application/pdf" || name.endsWith(".pdf")) {
+      const extracted = await extractPdfTextWithLayout(file);
+      let textValue = String(extracted.text || "").trim();
+      let sourceType = "PDF text";
+
+      if (textValue.replace(/\s+/g, "").length < 80) {
+        if (!window.Tesseract) {
+          throw new Error(
+            "This PDF appears image-only, and the OCR engine is unavailable."
+          );
+        }
+
+        textValue = await ocrPdfPages(extracted.pdf);
+        sourceType = "PDF OCR";
+      }
+
+      return {
+        text: textValue,
+        sourceType,
+        pageCount: extracted.pages
+      };
+    }
+
+    if (!window.Tesseract) {
+      throw new Error("OCR engine did not load.");
+    }
+
+    setDocumentImportProgress("Running OCR on image…");
+
+    const result = await Tesseract.recognize(file, "eng+spa", {
+      logger: message => {
+        if (!message?.status) return;
+        const percent =
+          Number.isFinite(message.progress)
+            ? ` ${Math.round(message.progress * 100)}%`
+            : "";
+        setDocumentImportProgress(
+          `${message.status}${percent}`
+        );
+      }
+    });
+
+    return {
+      text: String(result?.data?.text || "").trim(),
+      sourceType: "Image OCR",
+      pageCount: 1
+    };
+  }
+
+
+  function setDocumentImportProgress(message) {
+    const progress = document.getElementById("document-import-progress");
+    const review = document.getElementById("document-import-review");
+    const saveButton = document.getElementById("document-import-save-button");
+
+    progress?.classList.remove("hidden");
+    review?.classList.add("hidden");
+
+    if (progress) {
+      progress.textContent = message || "Reading document…";
+    }
+
+    if (saveButton) {
+      saveButton.disabled = true;
+    }
+  }
+
+
+  function documentImportComputedValues(row) {
+    const quantity = Number(row?.quantity);
+    const detected = Number(row?.detectedPrice);
+
+    if (
+      !Number.isFinite(quantity) ||
+      quantity <= 0 ||
+      !Number.isFinite(detected) ||
+      detected < 0
+    ) {
+      return {
+        valid: false,
+        unitPrice: null,
+        lineTotal: null
+      };
+    }
+
+    if (row.priceMeaning === "UNIT_PRICE") {
+      return {
+        valid: true,
+        unitPrice: roundMoneyMore(detected),
+        lineTotal: roundMoney(detected * quantity)
+      };
+    }
+
+    return {
+      valid: true,
+      unitPrice: roundMoneyMore(detected / quantity),
+      lineTotal: roundMoney(detected)
+    };
+  }
+
+
+  function escapeDocumentImportAttribute(value) {
+    return escapeHtml(String(value ?? "")).replace(/"/g, "&quot;");
+  }
+
+
+  function renderDocumentImportReview() {
+    const list = document.getElementById("document-import-list");
+    const summary = document.getElementById("document-import-summary");
+    const progress = document.getElementById("document-import-progress");
+    const review = document.getElementById("document-import-review");
+    const saveButton = document.getElementById("document-import-save-button");
+
+    if (!list || !summary || !review) return;
+
+    progress?.classList.add("hidden");
+    review.classList.remove("hidden");
+
+    const selectedRows =
+      documentImportRows.filter(row => row.include);
+
+    const selectedTotal =
+      roundMoney(
+        selectedRows.reduce((sum, row) => {
+          const computed = documentImportComputedValues(row);
+          return sum + (computed.valid ? computed.lineTotal : 0);
+        }, 0)
+      );
+
+    const unavailableCount =
+      documentImportRows.filter(row => row.unavailable).length;
+
+    summary.innerHTML =
+      "<strong>" +
+      escapeHtml(documentImportMeta.filename || "Imported document") +
+      "</strong><br>" +
+      escapeHtml(
+        `${documentImportRows.length} candidate product row${documentImportRows.length === 1 ? "" : "s"} detected`
+      ) +
+      " • " +
+      escapeHtml(
+        `${selectedRows.length} selected`
+      ) +
+      (
+        unavailableCount
+          ? " • " + escapeHtml(`${unavailableCount} unavailable/not charged`)
+          : ""
+      ) +
+      "<br>Selected product total: <strong>" +
+      escapeHtml(formatMoney(selectedTotal)) +
+      "</strong>" +
+      (
+        isUsableNumber(documentImportMeta.subtotal)
+          ? "<br>Detected document subtotal: <strong>" +
+            escapeHtml(formatMoney(documentImportMeta.subtotal)) +
+            "</strong>"
+          : ""
+      ) +
+      (
+        isUsableNumber(documentImportMeta.total)
+          ? "<br>Detected document total paid: <strong>" +
+            escapeHtml(formatMoney(documentImportMeta.total)) +
+            "</strong>"
+          : ""
+      ) +
+      "<br><span class=\"muted\">" +
+      escapeHtml(
+        `${documentImportMeta.sourceType || "Document"} • ${documentImportMeta.parser || "Parser"}`
+      ) +
+      "</span>";
+
+    list.innerHTML =
+      documentImportRows
+        .map((row, index) => {
+          const computed = documentImportComputedValues(row);
+          const unavailableClass = row.unavailable ? " unavailable" : "";
+          const status = row.unavailable
+            ? '<span class="document-import-status unavailable">NOT CHARGED / UNAVAILABLE</span>'
+            : '<span class="document-import-status">PURCHASE CANDIDATE</span>';
+
+          return (
+            '<div class="document-import-row' + unavailableClass + '">' +
+              '<div class="document-import-row-head">' +
+                '<label class="document-import-include">' +
+                  '<input type="checkbox" ' +
+                    (row.include ? "checked " : "") +
+                    'onchange="updateDocumentImportField(' + index + ', \'include\', this.checked, true)">' +
+                  "Include" +
+                "</label>" +
+                status +
+              "</div>" +
+
+              '<div class="document-import-fields">' +
+                "<div>" +
+                  "<label>Product name</label>" +
+                  '<input type="text" value="' +
+                    escapeDocumentImportAttribute(row.product) +
+                    '" oninput="updateDocumentImportField(' + index + ', \'product\', this.value, false)">' +
+                "</div>" +
+                "<div>" +
+                  "<label>Amount</label>" +
+                  '<input type="number" inputmode="decimal" min="0" step="0.01" value="' +
+                    escapeDocumentImportAttribute(row.quantity) +
+                    '" onchange="updateDocumentImportField(' + index + ', \'quantity\', this.value, true)">' +
+                "</div>" +
+                "<div>" +
+                  "<label>Unit</label>" +
+                  '<input type="text" value="' +
+                    escapeDocumentImportAttribute(row.quantityUnit || "pzas") +
+                    '" oninput="updateDocumentImportField(' + index + ', \'quantityUnit\', this.value, false)">' +
+                "</div>" +
+              "</div>" +
+
+              '<div class="document-import-price-grid">' +
+                "<div>" +
+                  "<label>Detected price</label>" +
+                  '<input type="number" inputmode="decimal" min="0" step="0.01" value="' +
+                    escapeDocumentImportAttribute(row.detectedPrice) +
+                    '" onchange="updateDocumentImportField(' + index + ', \'detectedPrice\', this.value, true)">' +
+                "</div>" +
+                "<div>" +
+                  "<label>This price means…</label>" +
+                  '<select onchange="updateDocumentImportField(' + index + ', \'priceMeaning\', this.value, true)">' +
+                    '<option value="LINE_TOTAL"' +
+                      (row.priceMeaning === "LINE_TOTAL" ? " selected" : "") +
+                      ">Line total</option>" +
+                    '<option value="UNIT_PRICE"' +
+                      (row.priceMeaning === "UNIT_PRICE" ? " selected" : "") +
+                      ">Unit price</option>" +
+                  "</select>" +
+                "</div>" +
+              "</div>" +
+
+              '<div class="document-import-derived">' +
+                '<div class="document-import-derived-box">Calculated unit price<strong>' +
+                  escapeHtml(computed.valid ? formatMoney(computed.unitPrice) : "—") +
+                "</strong></div>" +
+                '<div class="document-import-derived-box">Calculated line total<strong>' +
+                  escapeHtml(computed.valid ? formatMoney(computed.lineTotal) : "—") +
+                "</strong></div>" +
+              "</div>" +
+            "</div>"
+          );
+        })
+        .join("");
+
+    if (saveButton) {
+      saveButton.disabled =
+        documentImportBusy ||
+        !selectedRows.length ||
+        selectedRows.some(row =>
+          !String(row.product || "").trim() ||
+          !documentImportComputedValues(row).valid
+        );
+    }
+  }
+
+
+  function updateDocumentImportField(index, field, value, rerender) {
+    const row = documentImportRows[index];
+    if (!row) return;
+
+    if (field === "include") {
+      row.include = Boolean(value);
+    } else if (field === "quantity" || field === "detectedPrice") {
+      const parsed = normalizeDocumentMoney(value);
+      row[field] = parsed === null ? "" : parsed;
+    } else if (field === "priceMeaning") {
+      row.priceMeaning =
+        value === "UNIT_PRICE"
+          ? "UNIT_PRICE"
+          : "LINE_TOTAL";
+    } else {
+      row[field] = String(value ?? "");
+    }
+
+    if (rerender) {
+      renderDocumentImportReview();
+    }
+  }
+
+
+  function applyDocumentPriceMeaningToAll(meaning) {
+    const normalized =
+      meaning === "UNIT_PRICE"
+        ? "UNIT_PRICE"
+        : "LINE_TOTAL";
+
+    documentImportRows.forEach(row => {
+      row.priceMeaning = normalized;
+    });
+
+    renderDocumentImportReview();
+  }
+
+
+  async function handleDocumentImportSelected(event) {
+    const file = event?.target?.files?.[0];
+
+    if (!file || documentImportBusy) return;
+
+    if (getActiveTripMode() !== "ONLINE") {
+      showErrorToast(
+        "Online Store only",
+        "Start an Online Store trip before importing an order document."
+      );
+      return;
+    }
+
+    documentImportBusy = true;
+    documentImportRows = [];
+    documentImportMeta = {
+      filename: file.name || "Imported document",
+      sourceType: "",
+      parser: "",
+      subtotal: "",
+      total: "",
+      rawText: ""
+    };
+
+    show("document-import-overlay");
+    setDocumentImportProgress("Reading document…");
+    setStatus("Reading order document...", "working");
+
+    try {
+      const extracted = await extractDocumentText(file);
+      const rawText = String(extracted.text || "").trim();
+
+      if (!rawText) {
+        throw new Error("No readable text was found in that document.");
+      }
+
+      const parsed = parseImportedDocumentRows(rawText);
+      const totals = parseDocumentSummaryValues(rawText);
+
+      documentImportRows = parsed.rows;
+      documentImportMeta = {
+        filename: file.name || "Imported document",
+        sourceType:
+          `${extracted.sourceType}${extracted.pageCount > 1 ? ` • ${extracted.pageCount} pages` : ""}`,
+        parser: parsed.parser,
+        subtotal: totals.subtotal,
+        total: totals.total,
+        rawText
+      };
+
+      if (!documentImportRows.length) {
+        throw new Error(
+          "The document text was read, but no product rows with quantity and price could be identified yet."
+        );
+      }
+
+      hideStatus();
+      renderDocumentImportReview();
+
+      showSuccessToast(
+        "Document read",
+        `${documentImportRows.length} candidate product rows are ready for review. Nothing has been saved yet.`
+      );
+    } catch (error) {
+      hideStatus();
+      hide("document-import-overlay");
+
+      showErrorToast(
+        "Document import could not be prepared",
+        error?.message ||
+          String(error || "The document could not be read.")
+      );
+    } finally {
+      documentImportBusy = false;
+
+      if (event?.target) {
+        event.target.value = "";
+      }
+    }
+  }
+
+
+  function cancelDocumentImport() {
+    if (documentImportBusy) return;
+
+    hide("document-import-overlay");
+
+    documentImportRows = [];
+    documentImportMeta = {
+      filename: "",
+      sourceType: "",
+      parser: "",
+      subtotal: "",
+      total: "",
+      rawText: ""
+    };
+
+    hideStatus();
+  }
+
+
+  async function saveReviewedDocumentItems() {
+    if (documentImportBusy) return;
+
+    const selectedRows =
+      documentImportRows
+        .filter(row => row.include)
+        .map(row => ({
+          ...row,
+          product: String(row.product || "").trim()
+        }));
+
+    if (!selectedRows.length) {
+      showErrorToast(
+        "No products selected",
+        "Choose at least one imported product before adding items to the trip."
+      );
+      return;
+    }
+
+    for (const row of selectedRows) {
+      if (!row.product) {
+        showErrorToast(
+          "Product name required",
+          "Every selected imported row needs a product name."
+        );
+        return;
+      }
+
+      if (!documentImportComputedValues(row).valid) {
+        showErrorToast(
+          "Check imported prices",
+          "Every selected row needs a valid positive quantity and price."
+        );
+        return;
+      }
+    }
+
+    documentImportBusy = true;
+
+    const saveButton =
+      document.getElementById(
+        "document-import-save-button"
+      );
+
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.textContent = "ADDING ITEMS…";
+    }
+
+    setStatus(
+      `Adding ${selectedRows.length} imported item${selectedRows.length === 1 ? "" : "s"}...`,
+      "working"
+    );
+
+    let added = 0;
+
+    try {
+      for (const row of selectedRows) {
+        const computed =
+          documentImportComputedValues(row);
+
+        const prior =
+          knownProductRecordAtCurrentStore(
+            row.product
+          );
+
+        await writeShoppingItem({
+          product: row.product,
+          barcode: "",
+          amount: Number(row.quantity),
+          previousPrice:
+            prior && isUsableNumber(prior.price)
+              ? Number(prior.price)
+              : "",
+          effectiveUnitPrice: computed.unitPrice,
+          actualLineTotal: computed.lineTotal,
+          store: activeTrip.store,
+          notes:
+            `Imported from order document: ${documentImportMeta.filename || "document"}`,
+          shelfUnitPrice: computed.unitPrice,
+          promoApplied: "NO",
+          promoType: "",
+          promoDetails: "",
+          regularLineTotal: computed.lineTotal,
+          savings: 0,
+          promoQuantity: "",
+          promoTotal: ""
+        });
+
+        // The row is already safely stored at this point. Canonical learning is
+        // intentionally non-blocking, just like ordinary item entry.
+        await learnCanonicalIdentityAfterShoppingWrite(
+          row.product,
+          "",
+          null,
+          null
+        );
+
+        added += 1;
+
+        setStatus(
+          `Adding imported items… ${added} of ${selectedRows.length}`,
+          "working"
+        );
+      }
+
+      hide("document-import-overlay");
+      hideStatus();
+
+      await refreshTripSummary();
+
+      showSuccessToast(
+        "Order items added",
+        `${added} reviewed product${added === 1 ? "" : "s"} were added to this trip.`
+      );
+
+      documentImportRows = [];
+      documentImportMeta = {
+        filename: "",
+        sourceType: "",
+        parser: "",
+        subtotal: "",
+        total: "",
+        rawText: ""
+      };
+
+      document.getElementById(
+        "active-trip-panel"
+      )?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    } catch (error) {
+      hideStatus();
+
+      showErrorToast(
+        "Document import stopped",
+        added
+          ? `${added} item${added === 1 ? "" : "s"} were already added before the error. Review the active trip before retrying. ${error?.message || ""}`
+          : error?.message || "No imported items were added."
+      );
+    } finally {
+      documentImportBusy = false;
+
+      if (saveButton) {
+        saveButton.textContent = "ADD REVIEWED ITEMS TO TRIP";
+      }
+
+      renderDocumentImportReview();
+    }
   }
 
 
