@@ -7205,7 +7205,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2e — Reliable document batch save + visible feedback. Production remains index.html.
+    V6 Stage 3J.2f — Quota-safe document batch write + clean review exit. Production remains index.html.
   </div>
 
 </div>
@@ -7283,6 +7283,15 @@
         onclick="cancelDocumentImport()"
       >
         CANCEL
+      </button>
+
+      <button
+        id="document-import-return-button"
+        class="change-forward hidden"
+        type="button"
+        onclick="returnToTripFromDocumentImport()"
+      >
+        RETURN TO ACTIVE TRIP
       </button>
 
       <button
@@ -7921,10 +7930,10 @@
 
 <script>
 
-  // V6 Stage 3J.2e — reliable document batch save + visible feedback.
-  // Keeps the 3J.2d visual row-region parser unchanged. Imported rows now show
-  // in-dialog save progress, surface errors above overlays, avoid duplicate
-  // retries after partial saves, and run canonical learning truly non-blocking.
+  // V6 Stage 3J.2f — quota-safe document batch write + clean review exit.
+  // Keeps the successful 3J.2d visual row-region parser unchanged.
+  // Reviewed document rows are written to Shopping List in two Sheets write
+  // requests total (data + formulas), instead of two+ writes per product.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -17091,6 +17100,17 @@
 
       hideStatus();
       clearDocumentImportSaveStatus();
+      setDocumentImportReturnVisible(
+        false
+      );
+
+      // Preparation is complete BEFORE the review renders.
+      // Otherwise renderDocumentImportReview() sees documentImportBusy=true
+      // and incorrectly disables ADD REVIEWED ITEMS TO TRIP until a checkbox
+      // happens to trigger another render.
+      documentImportBusy =
+        false;
+
       renderDocumentImportReview();
 
       showSuccessToast(
@@ -17113,6 +17133,25 @@
         event.target.value = "";
       }
     }
+  }
+
+
+  function setDocumentImportReturnVisible(
+    visible
+  ) {
+    const button =
+      document.getElementById(
+        "document-import-return-button"
+      );
+
+    if (!button) {
+      return;
+    }
+
+    button.classList.toggle(
+      "hidden",
+      !visible
+    );
   }
 
 
@@ -17175,6 +17214,77 @@
   }
 
 
+  function returnToTripFromDocumentImport() {
+    if (documentImportBusy) {
+      return;
+    }
+
+    const savedCount =
+      documentImportRows.filter(
+        row =>
+          row.importSaved === true
+      ).length;
+
+    hide(
+      "document-import-overlay"
+    );
+
+    hideStatus();
+    clearDocumentImportSaveStatus();
+    setDocumentImportReturnVisible(
+      false
+    );
+
+    documentImportRows =
+      [];
+
+    documentImportMeta = {
+      filename:
+        "",
+      sourceType:
+        "",
+      parser:
+        "",
+      subtotal:
+        "",
+      total:
+        "",
+      rawText:
+        "",
+      layoutRows:
+        []
+    };
+
+    refreshTripSummary()
+      .catch(
+        error => {
+          console.warn(
+            "V6 return-from-document-import summary refresh failed",
+            error
+          );
+        }
+      );
+
+    showSuccessToast(
+      "Back to active trip",
+      savedCount
+        ? `${savedCount} imported product${savedCount === 1 ? "" : "s"} already saved remain in the trip. Unsaved import candidates were discarded.`
+        : "The document review was closed. No additional import candidates were saved."
+    );
+
+    document
+      .getElementById(
+        "active-trip-panel"
+      )
+      ?.scrollIntoView({
+        behavior:
+          "smooth",
+        block:
+          "start"
+      });
+  }
+
+
   function cancelDocumentImport() {
     if (documentImportBusy) return;
 
@@ -17193,6 +17303,9 @@
 
     hideStatus();
     clearDocumentImportSaveStatus();
+    setDocumentImportReturnVisible(
+      false
+    );
   }
 
 
@@ -17273,6 +17386,10 @@
     documentImportBusy =
       true;
 
+    setDocumentImportReturnVisible(
+      false
+    );
+
     const saveButton =
       document.getElementById(
         "document-import-save-button"
@@ -17288,7 +17405,7 @@
         true;
 
       saveButton.textContent =
-        `ADDING 0 / ${selectedRows.length}…`;
+        `ADDING ${selectedRows.length} ITEMS…`;
     }
 
     if (cancelButton) {
@@ -17297,11 +17414,11 @@
     }
 
     setDocumentImportSaveStatus(
-      `Adding ${selectedRows.length} reviewed product${selectedRows.length === 1 ? "" : "s"} to the active trip…`
+      `Preparing ${selectedRows.length} reviewed product${selectedRows.length === 1 ? "" : "s"} for one quota-safe Shopping List batch…`
     );
 
     setStatus(
-      `Adding ${selectedRows.length} imported item${selectedRows.length === 1 ? "" : "s"}...`,
+      `Preparing ${selectedRows.length} imported items...`,
       "working"
     );
 
@@ -17312,129 +17429,111 @@
       false;
 
     try {
-      for (
-        const row
-        of selectedRows
-      ) {
-        const itemNumber =
-          added + 1;
-
-        setDocumentImportSaveStatus(
-          `Adding ${itemNumber} of ${selectedRows.length}: ${row.product}`
-        );
-
-        const computed =
-          documentImportComputedValues(
-            row
-          );
-
-        const prior =
-          knownProductRecordAtCurrentStore(
-            row.product
-          );
-
-        await writeShoppingItem({
-          product:
-            row.product,
-          barcode:
-            "",
-          amount:
-            Number(
-              row.quantity
-            ),
-          previousPrice:
-            prior &&
-            isUsableNumber(
-              prior.price
-            )
-              ? Number(
-                  prior.price
-                )
-              : "",
-          effectiveUnitPrice:
-            computed.unitPrice,
-          actualLineTotal:
-            computed.lineTotal,
-          store:
-            activeTrip.store,
-          notes:
-            `Imported from order document: ${documentImportMeta.filename || "document"}` +
-            (
-              String(
-                row.details || ""
-              ).trim()
-                ? ` | Detected details: ${String(row.details || "").trim()}`
-                : ""
-            ),
-          shelfUnitPrice:
-            computed.unitPrice,
-          promoApplied:
-            "NO",
-          promoType:
-            "",
-          promoDetails:
-            "",
-          regularLineTotal:
-            computed.lineTotal,
-          savings:
-            0,
-          promoQuantity:
-            "",
-          promoTotal:
-            ""
-        });
-
-        if (
-          documentImportRows[
-            row.sourceIndex
-          ]
-        ) {
-          documentImportRows[
-            row.sourceIndex
-          ].importSaved =
-            true;
-        }
-
-        added +=
-          1;
-
-        if (saveButton) {
-          saveButton.textContent =
-            `ADDING ${added} / ${selectedRows.length}…`;
-        }
-
-        setDocumentImportSaveStatus(
-          `Added ${added} of ${selectedRows.length}: ${row.product}`
-        );
-
-        setStatus(
-          `Adding imported items… ${added} of ${selectedRows.length}`,
-          "working"
-        );
-
-        // The shopping row is already stored. Canonical learning is intentionally
-        // detached so it cannot block or trap the document-import confirmation.
-        Promise
-          .resolve()
-          .then(
-            () =>
-              learnCanonicalIdentityAfterShoppingWrite(
-                row.product,
-                "",
-                null,
-                null
-              )
-          )
-          .catch(
-            error => {
-              console.warn(
-                "V6 imported product identity learning failed",
-                row.product,
-                error
+      const prepared =
+        selectedRows.map(
+          row => {
+            const computed =
+              documentImportComputedValues(
+                row
               );
-            }
-          );
-      }
+
+            const prior =
+              knownProductRecordAtCurrentStore(
+                row.product
+              );
+
+            return {
+              sourceIndex:
+                row.sourceIndex,
+
+              item: {
+                product:
+                  row.product,
+                barcode:
+                  "",
+                amount:
+                  Number(
+                    row.quantity
+                  ),
+                previousPrice:
+                  prior &&
+                  isUsableNumber(
+                    prior.price
+                  )
+                    ? Number(
+                        prior.price
+                      )
+                    : "",
+                effectiveUnitPrice:
+                  computed.unitPrice,
+                actualLineTotal:
+                  computed.lineTotal,
+                store:
+                  activeTrip.store,
+                notes:
+                  `Imported from order document: ${documentImportMeta.filename || "document"}` +
+                  (
+                    String(
+                      row.details || ""
+                    ).trim()
+                      ? ` | Detected details: ${String(row.details || "").trim()}`
+                      : ""
+                  ),
+                shelfUnitPrice:
+                  computed.unitPrice,
+                promoApplied:
+                  "NO",
+                promoType:
+                  "",
+                promoDetails:
+                  "",
+                regularLineTotal:
+                  computed.lineTotal,
+                savings:
+                  0,
+                promoQuantity:
+                  "",
+                promoTotal:
+                  ""
+              }
+            };
+          }
+        );
+
+      setDocumentImportSaveStatus(
+        `Writing ${selectedRows.length} Shopping List rows in one batch…`
+      );
+
+      setStatus(
+        `Writing ${selectedRows.length} imported items in one batch...`,
+        "working"
+      );
+
+      const batchResult =
+        await writeShoppingItemsBatch(
+          prepared.map(
+            entry =>
+              entry.item
+          )
+        );
+
+      prepared.forEach(
+        entry => {
+          if (
+            documentImportRows[
+              entry.sourceIndex
+            ]
+          ) {
+            documentImportRows[
+              entry.sourceIndex
+            ].importSaved =
+              true;
+          }
+        }
+      );
+
+      added =
+        prepared.length;
 
       saveSucceeded =
         true;
@@ -17460,8 +17559,27 @@
           true;
 
         console.warn(
-          "V6 document import saved, but trip summary refresh failed",
+          "V6 document batch saved, but trip summary refresh failed",
           error
+        );
+      }
+
+      const warningParts =
+        [];
+
+      if (
+        batchResult.formulaWarning
+      ) {
+        warningParts.push(
+          "Price-delta formulas could not all be refreshed, but the imported product rows are saved."
+        );
+      }
+
+      if (
+        summaryRefreshFailed
+      ) {
+        warningParts.push(
+          "The visible trip summary may need a refresh."
         );
       }
 
@@ -17469,12 +17587,21 @@
         "Order items added",
         `${added} reviewed product${added === 1 ? "" : "s"} were added to this trip.` +
         (
-          summaryRefreshFailed
-            ? " The rows are saved; the visible trip summary may need a refresh."
+          warningParts.length
+            ? " " +
+              warningParts.join(
+                " "
+              )
             : ""
         )
       );
 
+      // IMPORTANT:
+      // Do not launch one canonical/alias write sequence per imported product
+      // here. That was competing with Shopping List writes for Google's
+      // per-user write quota. Canonical learning remains available elsewhere
+      // in the normal confirmed-item/barcode workflows and can be batch-learned
+      // in a later dedicated stage.
       documentImportRows =
         [];
 
@@ -17496,6 +17623,9 @@
       };
 
       clearDocumentImportSaveStatus();
+      setDocumentImportReturnVisible(
+        false
+      );
 
       document
         .getElementById(
@@ -17519,37 +17649,30 @@
         );
 
       setDocumentImportSaveStatus(
-        added
-          ? (
-              `Import stopped after ${added} of ${selectedRows.length} products. ` +
-              "Those rows are already marked as added and will NOT be duplicated if you retry. " +
-              message
-            )
-          : (
-              "No products were added. " +
-              message
-            ),
+        (
+          added
+            ? `${added} product${added === 1 ? "" : "s"} were already saved. `
+            : "The Shopping List batch did not complete. "
+        ) +
+        message +
+        " You may retry, or RETURN TO ACTIVE TRIP without cancelling the shopping trip.",
         "error"
       );
 
       showErrorToast(
         "Document import stopped",
-        added
-          ? `${added} item${added === 1 ? "" : "s"} were already added. They will be skipped automatically if you retry. ${message}`
-          : `No imported items were added. ${message}`
+        (
+          added
+            ? `${added} imported item${added === 1 ? "" : "s"} are already in the trip. `
+            : ""
+        ) +
+        message
       );
 
-      if (added) {
-        refreshTripSummary()
-          .catch(
-            refreshError => {
-              console.warn(
-                "V6 partial document import summary refresh failed",
-                refreshError
-              );
-            }
-          );
-      }
+      // "Cancel" is no longer the only way out after a save problem.
+      setDocumentImportReturnVisible(
+        true
+      );
 
     } finally {
       documentImportBusy =
@@ -17565,9 +17688,6 @@
           "ADD REVIEWED ITEMS TO TRIP";
       }
 
-      // Success deliberately leaves the review closed.
-      // Failure leaves it open, visibly explains the problem, and retry
-      // automatically skips rows that already made it into the trip.
       if (
         !saveSucceeded &&
         appLayerVisible(
@@ -17575,6 +17695,11 @@
         )
       ) {
         renderDocumentImportReview();
+
+        // renderDocumentImportReview() does not own this error-state control.
+        setDocumentImportReturnVisible(
+          true
+        );
       }
     }
   }
@@ -20864,6 +20989,205 @@
         "Could not add item."
       );
     }
+  }
+
+
+  async function findEmptyShoppingRows(
+    sheetInfo,
+    count
+  ) {
+    const needed =
+      Math.max(
+        0,
+        Number(
+          count
+        ) || 0
+      );
+
+    if (!needed) {
+      return [];
+    }
+
+    const result =
+      await sheetsGetValues(
+        `'${SHOPPING_SHEET}'!A${SHOP_FIRST_ROW}:R${sheetInfo.rowCount}`,
+        "FORMATTED_VALUE"
+      );
+
+    const rows =
+      result.values ||
+      [];
+
+    const emptyRows =
+      [];
+
+    for (
+      let rowNumber =
+        SHOP_FIRST_ROW;
+
+      rowNumber <=
+        sheetInfo.rowCount;
+
+      rowNumber++
+    ) {
+      const row =
+        rows[
+          rowNumber -
+          SHOP_FIRST_ROW
+        ] || [];
+
+      if (
+        isShoppingRowEmpty(
+          row
+        )
+      ) {
+        emptyRows.push(
+          rowNumber
+        );
+
+        if (
+          emptyRows.length >=
+            needed
+        ) {
+          break;
+        }
+      }
+    }
+
+    if (
+      emptyRows.length <
+        needed
+    ) {
+      throw new Error(
+        `Only ${emptyRows.length} empty Shopping List row${emptyRows.length === 1 ? "" : "s"} are available, but ${needed} are needed for this import.`
+      );
+    }
+
+    return emptyRows;
+  }
+
+
+  async function writeShoppingItemsBatch(
+    items
+  ) {
+    const safeItems =
+      Array.isArray(
+        items
+      )
+        ? items
+        : [];
+
+    if (!safeItems.length) {
+      return {
+        rows:
+          [],
+        formulaWarning:
+          ""
+      };
+    }
+
+    // One sheet-info read + one Shopping List read, regardless of item count.
+    const sheetInfo =
+      await getShoppingSheetInfo();
+
+    const targetRows =
+      await findEmptyShoppingRows(
+        sheetInfo,
+        safeItems.length
+      );
+
+    // One RAW write request for every imported row.
+    // B:R contains 17 columns. I is intentionally blank here and receives
+    // the price-delta formula in one separate USER_ENTERED batch request.
+    const rawUpdates =
+      safeItems.map(
+        (
+          item,
+          index
+        ) => {
+          const row =
+            targetRows[
+              index
+            ];
+
+          return {
+            range:
+              `'${SHOPPING_SHEET}'!B${row}:R${row}`,
+
+            values:
+              [[
+                item.product,
+                item.barcode,
+                item.amount,
+                isUsableNumber(
+                  item.previousPrice
+                )
+                  ? Number(
+                      item.previousPrice
+                    )
+                  : "",
+                item.effectiveUnitPrice,
+                item.actualLineTotal,
+                item.store,
+                "",
+                item.notes,
+                item.shelfUnitPrice,
+                item.promoApplied,
+                item.promoType,
+                item.promoDetails,
+                item.regularLineTotal,
+                item.savings,
+                item.promoQuantity,
+                item.promoTotal
+              ]]
+          };
+        }
+      );
+
+    await sheetsValuesBatchUpdate(
+      rawUpdates,
+      "RAW"
+    );
+
+    const formulaUpdates =
+      targetRows.map(
+        row => ({
+          range:
+            `'${SHOPPING_SHEET}'!I${row}`,
+
+          values:
+            [[
+              `=IF(OR(E${row}="",F${row}=""),"",F${row}-E${row})`
+            ]]
+        })
+      );
+
+    let formulaWarning =
+      "";
+
+    try {
+      // Second and final Sheets write request for the whole imported order.
+      await sheetsValuesBatchUpdate(
+        formulaUpdates,
+        "USER_ENTERED"
+      );
+    } catch (error) {
+      // Product rows themselves are already safely present.
+      formulaWarning =
+        error?.message ||
+        "Price-delta formulas could not be written.";
+
+      console.warn(
+        "V6 document batch rows saved, but price-delta formulas failed",
+        error
+      );
+    }
+
+    return {
+      rows:
+        targetRows,
+      formulaWarning
+    };
   }
 
 
