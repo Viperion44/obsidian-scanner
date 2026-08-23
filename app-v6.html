@@ -32,6 +32,11 @@
   ></script>
 
   <script
+    src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"
+    defer
+  ></script>
+
+  <script
     src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
     defer
   ></script>
@@ -1187,6 +1192,47 @@
       color: #9fa6b1;
       font-size: 13px;
       line-height: 1.45;
+    }
+
+    .ocr-entry-card {
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid rgba(139,92,246,.38);
+      border-radius: 13px;
+      background: rgba(139,92,246,.08);
+    }
+
+    .ocr-entry-button {
+      width: 100%;
+      margin: 0;
+      background: #4b3564;
+    }
+
+    .ocr-entry-hint,
+    .ocr-candidate-note,
+    .ocr-progress {
+      margin-top: 8px;
+      color: #aeb4c0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .ocr-progress strong {
+      color: #fff;
+    }
+
+    .ocr-review-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .ocr-review-text {
+      min-height: 118px;
+      resize: vertical;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.4;
     }
 
     /* V4 Management */
@@ -4821,6 +4867,29 @@
 
     </div>
 
+    <div class="ocr-entry-card">
+      <button
+        id="trip-ocr-button"
+        class="ocr-entry-button"
+        type="button"
+        onclick="beginOcrCapture()"
+      >
+        📷 READ LABEL / PRICE (OCR)
+      </button>
+      <div class="ocr-entry-hint">
+        Take or choose a product photo. OCR will suggest a product name, shelf price, and—when visible—a barcode number. Nothing is saved until you review and add the item.
+      </div>
+    </div>
+
+    <input
+      id="ocr-image-input"
+      class="hidden"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      onchange="handleOcrImageSelected(event)"
+    >
+
   </div>
 
   <div
@@ -6917,7 +6986,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3I.8 — Per-method balance + Remote barcode assignment. Production remains index.html.
+    V6 Stage 3J.1 — OCR recognition foundation + trip-end toast cleanup. Production remains index.html.
   </div>
 
 </div>
@@ -6938,6 +7007,55 @@
     id="app-toast-detail"
     class="app-toast-detail hidden"
   ></div>
+</div>
+
+<div
+  id="ocr-review-overlay"
+  class="change-overlay hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="ocr-review-title"
+>
+  <div class="change-dialog">
+    <div id="ocr-review-title" class="change-title">📷 OCR Product Review</div>
+    <div class="change-body">
+      Review the recognized information before using it. OCR can misread packaging, prices, or printed barcode digits.
+    </div>
+
+    <div id="ocr-progress" class="ocr-progress hidden">
+      <strong>Recognizing image…</strong>
+      <span id="ocr-progress-detail">Preparing OCR.</span>
+    </div>
+
+    <div id="ocr-review-fields" class="ocr-review-grid hidden">
+      <div>
+        <label for="ocr-product-candidate">Product name candidate</label>
+        <input id="ocr-product-candidate" type="text" autocomplete="off">
+      </div>
+      <div>
+        <label for="ocr-price-candidate">Shelf price candidate</label>
+        <input id="ocr-price-candidate" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Optional">
+      </div>
+      <div id="ocr-barcode-candidate-wrap">
+        <label for="ocr-barcode-candidate">Barcode candidate</label>
+        <input id="ocr-barcode-candidate" type="text" inputmode="numeric" autocomplete="off" placeholder="Optional">
+        <div class="ocr-candidate-note">
+          Barcode assignment is available for Near Me and Remote trips. Online remains protected.
+        </div>
+      </div>
+      <div>
+        <label for="ocr-recognized-text">Recognized text</label>
+        <textarea id="ocr-recognized-text" class="ocr-review-text" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="change-actions">
+      <button class="change-cancel" type="button" onclick="cancelOcrReview()">CANCEL</button>
+      <button id="ocr-use-button" class="change-history" type="button" onclick="useOcrCandidates()" disabled>
+        USE RECOGNIZED INFO
+      </button>
+    </div>
+  </div>
 </div>
 
 <div
@@ -7514,9 +7632,9 @@
 
 <script>
 
-  // V6 Stage 3I.8 — per-method balance + Remote barcode assignment.
-  // Mixed-payment cards now show the live unassigned balance themselves, while
-  // the final balance banner remains. Remote may now assign/change barcodes too.
+  // V6 Stage 3J.1 — OCR recognition foundation + trip-end toast cleanup.
+  // Photo OCR can prefill reviewable product / price / barcode candidates.
+  // Successful trip endings now use floating/fading success toasts.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -7537,6 +7655,9 @@
   let productCatalogMetadataHeadersReady = false;
 
   let knownProductSuggestionResults = [];
+
+  let ocrRecognitionBusy = false;
+  let ocrLastRecognizedText = "";
 
   // V6 Stage 3E.2 — Management preview retailer picker state.
   // This has its own request/timer state so Management preview never hijacks
@@ -13917,6 +14038,198 @@
   }
 
 
+  function beginOcrCapture() {
+    if (!activeTrip) {
+      showErrorToast("No active trip", "Start or resume a shopping trip before using OCR.");
+      return;
+    }
+    if (ocrRecognitionBusy) return;
+
+    const input = document.getElementById("ocr-image-input");
+    if (!input) {
+      showErrorToast("OCR unavailable", "The image picker could not be opened.");
+      return;
+    }
+    input.value = "";
+    input.click();
+  }
+
+  function normalizeOcrLine(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function extractOcrPriceCandidate(textValue) {
+    const candidates = [];
+    String(textValue || "").split(/\r?\n/).map(normalizeOcrLine).filter(Boolean).forEach(line => {
+      const currencyMarked = /(?:\$|MXN|M\.?N\.?)/i.test(line);
+      const contextMarked = /precio|price|oferta|promo|especial/i.test(line);
+      const matches = line.match(/\d{1,5}(?:[.,]\d{2})/g) || [];
+      matches.forEach(raw => {
+        const value = Number(raw.replace(",", "."));
+        if (Number.isFinite(value) && value >= 0 && value < 100000) {
+          candidates.push({ value, score: (currencyMarked ? 10 : 0) + (contextMarked ? 4 : 0) });
+        }
+      });
+    });
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates.length ? roundMoney(candidates[0].value) : "";
+  }
+
+  function extractOcrBarcodeCandidate(textValue) {
+    const lines = String(textValue || "").split(/\r?\n/);
+    for (const line of lines) {
+      const compact = String(line || "").replace(/[^\d]/g, "");
+      if (compact.length >= 8 && compact.length <= 14) return compact;
+    }
+    return "";
+  }
+
+  function extractOcrProductCandidate(textValue) {
+    const rejected = /^(?:precio|price|total|subtotal|oferta|promo|promocion|promoción|descuento|ahorro|iva|mxn|pesos?|contenido|neto)$/i;
+    const ranked = String(textValue || "")
+      .split(/\r?\n/)
+      .map(normalizeOcrLine)
+      .filter(line => {
+        if (line.length < 3 || line.length > 90 || rejected.test(line)) return false;
+        return (line.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length >= 3;
+      })
+      .map((line, index) => {
+        const letters = (line.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length;
+        const digits = (line.match(/\d/g) || []).length;
+        const pricePenalty = /(?:\$|MXN|precio|price|total|oferta|promo)/i.test(line) ? 18 : 0;
+        return { line, score: letters * 2 - digits - pricePenalty - index * 0.35 };
+      })
+      .sort((a, b) => b.score - a.score);
+    return ranked[0]?.line || "";
+  }
+
+  function setOcrReviewProgress(detail) {
+    document.getElementById("ocr-progress")?.classList.remove("hidden");
+    document.getElementById("ocr-review-fields")?.classList.add("hidden");
+    const detailBox = document.getElementById("ocr-progress-detail");
+    if (detailBox) detailBox.textContent = detail || "Recognizing image…";
+    const useButton = document.getElementById("ocr-use-button");
+    if (useButton) useButton.disabled = true;
+  }
+
+  function showOcrReviewResults(textValue) {
+    const product = extractOcrProductCandidate(textValue);
+    const price = extractOcrPriceCandidate(textValue);
+    const barcode = extractOcrBarcodeCandidate(textValue);
+    const mode = getActiveTripMode();
+    const canUseBarcode = mode === "NEAR" || mode === "REMOTE";
+
+    document.getElementById("ocr-progress")?.classList.add("hidden");
+    document.getElementById("ocr-review-fields")?.classList.remove("hidden");
+    document.getElementById("ocr-product-candidate").value = product;
+    document.getElementById("ocr-price-candidate").value = isUsableNumber(price) ? price : "";
+
+    const barcodeInput = document.getElementById("ocr-barcode-candidate");
+    const barcodeWrap = document.getElementById("ocr-barcode-candidate-wrap");
+    if (barcodeInput) {
+      barcodeInput.value = canUseBarcode ? barcode : "";
+      barcodeInput.disabled = !canUseBarcode;
+    }
+    barcodeWrap?.classList.toggle("hidden", !canUseBarcode);
+
+    document.getElementById("ocr-recognized-text").value = String(textValue || "").trim();
+
+    const useButton = document.getElementById("ocr-use-button");
+    if (useButton) {
+      useButton.disabled = !(product || isUsableNumber(price) || (canUseBarcode && barcode));
+    }
+  }
+
+  async function handleOcrImageSelected(event) {
+    const file = event?.target?.files?.[0];
+    if (!file || ocrRecognitionBusy) return;
+
+    if (!window.Tesseract) {
+      showErrorToast("OCR library unavailable", "The OCR engine did not load. Check the connection and reload the app.");
+      return;
+    }
+
+    ocrRecognitionBusy = true;
+    pauseScanner();
+    show("ocr-review-overlay");
+    setOcrReviewProgress("Loading OCR engine…");
+    setStatus("Reading product photo...", "working");
+
+    try {
+      const result = await Tesseract.recognize(file, "eng+spa", {
+        logger: message => {
+          if (!message?.status) return;
+          const percent = Number.isFinite(message.progress) ? ` ${Math.round(message.progress * 100)}%` : "";
+          setOcrReviewProgress(`${message.status}${percent}`);
+        }
+      });
+
+      const recognizedText = String(result?.data?.text || "").trim();
+      if (!recognizedText) throw new Error("No readable text was found in that image.");
+
+      ocrLastRecognizedText = recognizedText;
+      showOcrReviewResults(recognizedText);
+      hideStatus();
+      showSuccessToast("OCR complete", "Review the detected product information before using it.");
+    } catch (error) {
+      hide("ocr-review-overlay");
+      hideStatus();
+      showErrorToast(
+        "OCR could not read that image",
+        error?.message || String(error || "Try a closer, sharper photo with the label and price clearly visible.")
+      );
+      if (getActiveTripMode() === "NEAR") resumeScanner();
+    } finally {
+      ocrRecognitionBusy = false;
+      if (event?.target) event.target.value = "";
+    }
+  }
+
+  function cancelOcrReview() {
+    if (ocrRecognitionBusy) return;
+    hide("ocr-review-overlay");
+    ocrLastRecognizedText = "";
+    hideStatus();
+    if (getActiveTripMode() === "NEAR") resumeScanner();
+  }
+
+  function useOcrCandidates() {
+    if (!activeTrip || ocrRecognitionBusy) return;
+
+    const product = String(document.getElementById("ocr-product-candidate")?.value || "").trim();
+    const priceRaw = String(document.getElementById("ocr-price-candidate")?.value || "").trim();
+    const mode = getActiveTripMode();
+    const barcode = ["NEAR", "REMOTE"].includes(mode)
+      ? String(document.getElementById("ocr-barcode-candidate")?.value || "").replace(/\s+/g, "").trim()
+      : "";
+    const price = priceRaw ? Number(priceRaw) : null;
+
+    if (!product && !barcode && !(Number.isFinite(price) && price >= 0)) {
+      showErrorToast("Nothing selected", "Keep at least a product name, shelf price, or barcode candidate.");
+      return;
+    }
+
+    hide("ocr-review-overlay");
+    prepareModeAwareProductForm(product, barcode, "OCR photo");
+
+    const shelfPrice = document.getElementById("shelf-price");
+    if (shelfPrice && Number.isFinite(price) && price >= 0) {
+      shelfPrice.value = roundMoney(price);
+      updatePricing();
+    }
+
+    const confirmName = document.getElementById("confirm-name");
+    if (confirmName) confirmName.checked = false;
+
+    ocrLastRecognizedText = "";
+    hideStatus();
+    showSuccessToast(
+      "OCR suggestions loaded",
+      "Confirm the product name and correct any OCR mistakes before adding the item."
+    );
+  }
+
+
   async function startRearCamera() {
 
     if (!window.Html5Qrcode) {
@@ -19785,6 +20098,32 @@
   }
 
 
+  function showTripEndSuccessToast(kind, itemCount = 0, detailOverride = "") {
+    hideStatus();
+
+    if (kind === "cancelled") {
+      showSuccessToast(
+        "Trip cancelled",
+        detailOverride || "The trip was closed successfully. Ready to start another trip."
+      );
+      return;
+    }
+
+    if (Number(itemCount) === 0) {
+      showSuccessToast(
+        "Zero-item trip saved",
+        detailOverride || "The store visit was saved with 0 items. Ready to start another trip."
+      );
+      return;
+    }
+
+    showSuccessToast(
+      "Trip saved",
+      detailOverride || "Ready to start another trip."
+    );
+  }
+
+
   async function confirmCancelTrip() {
 
     if (!activeTrip) {
@@ -19917,11 +20256,10 @@
 
       showHome();
 
-      hideStatus();
-
-      showSuccessToast(
-        "Trip cancelled",
-        "The cancelled trip was closed and will not appear in shopping history or reports."
+      showTripEndSuccessToast(
+        "cancelled",
+        items.length,
+        "The cancelled trip was closed successfully. Ready to start another trip."
       );
 
     } catch (error) {
@@ -20114,9 +20452,13 @@
       );
 
 
-      setStatus(
-        "Trip finished successfully.",
-        "success"
+      hideStatus();
+
+      showSuccessToast(
+        items.length ? "Trip finished" : "Zero-item trip finished",
+        items.length
+          ? "The trip was saved successfully. Review the receipt or tap Done."
+          : "The zero-item store visit was saved successfully. Review the receipt or tap Done."
       );
 
 
@@ -20871,9 +21213,9 @@
 
     showHome();
 
-    setStatus(
-      "Trip saved. Ready to start another trip.",
-      "success"
+    showTripEndSuccessToast(
+      "finished",
+      lastFinishedTripExport?.itemCount || 0
     );
   }
 
