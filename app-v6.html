@@ -4156,18 +4156,26 @@
     .known-product-suggestion-copy {
       min-width: 0;
       flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
     }
 
     .known-product-suggestion-name {
+      min-width: 0;
       font-weight: 800;
       line-height: 1.3;
     }
 
     .known-product-suggestion-meta {
-      margin-top: 3px;
+      margin: 0;
+      max-width: 122px;
       color: #aeb4c0;
       font-size: 11px;
-      line-height: 1.35;
+      line-height: 1.25;
+      text-align: right;
+      justify-self: end;
     }
 
     .online-search-overlay {
@@ -6831,7 +6839,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3I.6 — Management bottom nav + Reports inside Management. Production remains index.html.
+    V6 Stage 3I.6a — Known-product selection regression fix. Production remains index.html.
   </div>
 
 </div>
@@ -7428,9 +7436,9 @@
 
 <script>
 
-  // V6 Stage 3I.6 — Management bottom nav + Reports inside Management.
-  // The 3I.5 typeahead/confirmation cleanup is preserved. Management now owns
-  // the lower-right primary-nav slot, and Reports is launched from Management.
+  // V6 Stage 3I.6a — known-product selection regression fix.
+  // Selecting a local known-product suggestion now restores current-store price
+  // and barcode state, while preserving the 3I.6 Management/Reports navigation.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -15993,6 +16001,171 @@
   }
 
 
+  function knownProductRecordAtCurrentStore(
+    productName
+  ) {
+
+    const normalized =
+      normalizeProductIdentity(
+        productName
+      );
+
+    if (!normalized) {
+      return null;
+    }
+
+    const matches =
+      productDatabase
+        .filter(
+          record =>
+            normalizeProductIdentity(
+              record.product
+            ) ===
+              normalized &&
+            storesMatchForKnownProduct(
+              record.store,
+              activeTrip?.store || ""
+            )
+        )
+        .sort(
+          (a, b) => {
+
+            const aTime =
+              new Date(
+                a.lastPurchased || 0
+              ).getTime();
+
+            const bTime =
+              new Date(
+                b.lastPurchased || 0
+              ).getTime();
+
+            return (
+              (Number.isNaN(bTime) ? 0 : bTime) -
+              (Number.isNaN(aTime) ? 0 : aTime)
+            );
+          }
+        );
+
+    return matches[0] ||
+      null;
+  }
+
+
+  function applyKnownProductSelectionState(
+    productName
+  ) {
+
+    const currentStoreRecord =
+      knownProductRecordAtCurrentStore(
+        productName
+      );
+
+    let knownBarcode =
+      currentStoreRecord?.barcode
+        ? String(
+            currentStoreRecord.barcode
+          ).trim()
+        : preferredKnownBarcodeForProduct(
+            productName
+          );
+
+    if (
+      getActiveTripMode() !==
+        "NEAR" &&
+      !currentBarcode
+    ) {
+      // Remote/Online preserve their protected barcode behavior. A previously
+      // known identity may remain linked internally without exposing editing.
+      knownBarcode =
+        knownBarcode || "";
+    }
+
+    if (
+      knownBarcode
+    ) {
+      currentBarcode =
+        knownBarcode;
+
+      barcodeMatches =
+        productDatabase.filter(
+          record =>
+            String(
+              record.barcode || ""
+            ).trim() ===
+              currentBarcode
+        );
+
+      exactStoreMatch =
+        barcodeMatches.find(
+          record =>
+            storesMatchForKnownProduct(
+              record.store,
+              activeTrip?.store || ""
+            )
+        ) || null;
+    } else {
+      currentBarcode =
+        "";
+
+      barcodeMatches =
+        [];
+
+      exactStoreMatch =
+        null;
+    }
+
+    previousPriceAtStore =
+      currentStoreRecord &&
+      isUsableNumber(
+        currentStoreRecord.price
+      )
+        ? currentStoreRecord.price
+        : exactStoreMatch &&
+          isUsableNumber(
+            exactStoreMatch.price
+          )
+          ? exactStoreMatch.price
+          : "";
+
+    const previousPrice =
+      document.getElementById(
+        "previous-price"
+      );
+
+    if (previousPrice) {
+      previousPrice.textContent =
+        isUsableNumber(
+          previousPriceAtStore
+        )
+          ? formatMoney(
+              previousPriceAtStore
+            )
+          : "No previous price linked yet for this product at this store";
+    }
+
+    refreshBarcodeReviewDisplay();
+
+    configureBarcodeAssignmentControl();
+
+    const editableBarcode =
+      document.getElementById(
+        "editable-barcode"
+      );
+
+    if (
+      editableBarcode &&
+      getActiveTripMode() ===
+        "NEAR"
+    ) {
+      editableBarcode.value =
+        currentBarcode || "";
+    }
+
+    renderBarcodeReuseWarning();
+  }
+
+
   function selectKnownProductSuggestion(
     index
   ) {
@@ -16013,6 +16186,10 @@
 
     input.value =
       result.name;
+
+    applyKnownProductSelectionState(
+      result.name
+    );
 
     document.getElementById(
       "confirm-name"
@@ -16089,14 +16266,23 @@
       }
     }
 
+    const priceDetail =
+      isUsableNumber(
+        previousPriceAtStore
+      )
+        ? ` Last known price here: ${formatMoney(previousPriceAtStore)}.`
+        : "";
+
     showSuccessToast(
       "Known product selected",
-      result.imageUrl
-        ? "Saved product information and image are available for this item."
-        : "Saved product information is available for this item."
+      (
+        result.imageUrl
+          ? "Saved product information and image are available for this item."
+          : "Saved product information is available for this item."
+      ) +
+      priceDetail
     );
   }
-
 
   function productNameChanged() {
 
