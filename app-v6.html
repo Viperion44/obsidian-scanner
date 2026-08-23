@@ -7184,7 +7184,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2 — Online order document import. Production remains index.html.
+    V6 Stage 3J.2a — PDF table-row reconstruction fix. Production remains index.html.
   </div>
 
 </div>
@@ -7892,9 +7892,9 @@
 
 <script>
 
-  // V6 Stage 3J.2 — Online order document import.
-  // ONLINE trips can now accept PDF/JPG/PNG/BMP order documents, extract multiple
-  // product rows, and require a full editable confirmation before any row is saved.
+  // V6 Stage 3J.2a — PDF table-row reconstruction fix.
+  // Text PDFs now preserve x/y layout and reconstruct product / quantity / price
+  // rows before review. The 3J.2 import/review/save workflow is otherwise unchanged.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -7927,7 +7927,8 @@
     parser: "",
     subtotal: "",
     total: "",
-    rawText: ""
+    rawText: "",
+    layoutRows: []
   };
 
   // V6 Stage 3E.2 — Management preview retailer picker state.
@@ -14370,6 +14371,8 @@
   function cleanImportedProductName(value) {
     return String(value || "")
       .replace(/\bitem\s+image\b/ig, " ")
+      .replace(/\bitem\b/ig, " ")
+      .replace(/\bimage\b/ig, " ")
       .replace(/\s+/g, " ")
       .replace(/^[•\-–—:]+|[•\-–—:]+$/g, "")
       .trim();
@@ -14446,6 +14449,405 @@
           "Grand\\s+total",
           "Total"
         ])
+    };
+  }
+
+
+  function cleanPdfTableCell(value) {
+    return cleanImportedProductName(
+      String(value || "")
+        .replace(/\bitem\b/ig, " ")
+        .replace(/\bimage\b/ig, " ")
+        .replace(/\s+/g, " ")
+    );
+  }
+
+
+  function parseQuantityUnitFromText(value) {
+    const match =
+      String(value || "")
+        .trim()
+        .match(
+          /(\d+(?:[.,]\d+)?)\s*(pzas?|pza|pz|kg|kgs|g|gr|l|lt|lts|ml|unidad(?:es)?)/i
+        );
+
+    if (!match) {
+      return null;
+    }
+
+    const quantity =
+      normalizeDocumentMoney(
+        match[1]
+      );
+
+    if (
+      quantity === null ||
+      quantity <= 0
+    ) {
+      return null;
+    }
+
+    return {
+      quantity,
+      unit:
+        String(
+          match[2] || ""
+        )
+          .trim()
+          .toLowerCase()
+    };
+  }
+
+
+  function parsePriceFromText(value) {
+    const matches =
+      String(value || "")
+        .match(
+          /\$?\s*([\d.,]+)/g
+        ) || [];
+
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const cleaned =
+        String(matches[i] || "")
+          .replace(
+            /\$/g,
+            ""
+          )
+          .trim();
+
+      const parsed =
+        normalizeDocumentMoney(
+          cleaned
+        );
+
+      if (
+        parsed !== null &&
+        parsed >= 0
+      ) {
+        return roundMoney(
+          parsed
+        );
+      }
+    }
+
+    return null;
+  }
+
+
+  function sectionStateFromPdfText(value, currentState) {
+    const text =
+      normalizeOcrLine(
+        value
+      );
+
+    if (
+      /Art[ií]culos no disponibles/i.test(
+        text
+      ) ||
+      /Estos art[ií]culos no se cobrar[aá]n/i.test(
+        text
+      )
+    ) {
+      return "UNAVAILABLE";
+    }
+
+    if (
+      /Art[ií]culos disponibles/i.test(
+        text
+      )
+    ) {
+      return "AVAILABLE";
+    }
+
+    return currentState;
+  }
+
+
+  function parsePdfLayoutRows(layoutRows) {
+    if (
+      !Array.isArray(
+        layoutRows
+      ) ||
+      !layoutRows.length
+    ) {
+      return {
+        rows: [],
+        parser:
+          "PDF layout table parser"
+      };
+    }
+
+    const result = [];
+    let sectionState =
+      "AVAILABLE";
+
+    let pendingProductLines = [];
+
+    const flushPendingProduct =
+      () => {
+        pendingProductLines =
+          pendingProductLines
+            .map(
+              cleanPdfTableCell
+            )
+            .filter(
+              Boolean
+            )
+            .slice(
+              -4
+            );
+      };
+
+    for (
+      const row of layoutRows
+    ) {
+
+      const items =
+        Array.isArray(
+          row?.items
+        )
+          ? row.items
+          : [];
+
+      const rowText =
+        items
+          .map(
+            item =>
+              String(
+                item?.value || ""
+              )
+          )
+          .join(
+            " "
+          )
+          .replace(
+            /\s+/g,
+            " "
+          )
+          .trim();
+
+      sectionState =
+        sectionStateFromPdfText(
+          rowText,
+          sectionState
+        );
+
+      if (
+        !rowText ||
+        documentLineShouldBeIgnored(
+          rowText
+        ) ||
+        /Art[ií]culos (?:no disponibles|disponibles)/i.test(
+          rowText
+        ) ||
+        /Estos art[ií]culos no se cobrar[aá]n/i.test(
+          rowText
+        )
+      ) {
+        continue;
+      }
+
+      const sorted =
+        items
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(
+                a.x || 0
+              ) -
+              Number(
+                b.x || 0
+              )
+          );
+
+      if (
+        !sorted.length
+      ) {
+        continue;
+      }
+
+      const maxX =
+        Math.max(
+          ...sorted.map(
+            item =>
+              Number(
+                item.x || 0
+              )
+          )
+        );
+
+      const minX =
+        Math.min(
+          ...sorted.map(
+            item =>
+              Number(
+                item.x || 0
+              )
+          )
+        );
+
+      const width =
+        Math.max(
+          1,
+          maxX - minX
+        );
+
+      const productBoundary =
+        minX +
+        width * 0.57;
+
+      const quantityBoundary =
+        minX +
+        width * 0.77;
+
+      const productParts = [];
+      const quantityParts = [];
+      const priceParts = [];
+
+      sorted.forEach(
+        item => {
+
+          const x =
+            Number(
+              item.x || 0
+            );
+
+          const value =
+            normalizeOcrLine(
+              item.value
+            );
+
+          if (!value) {
+            return;
+          }
+
+          if (
+            x >=
+              quantityBoundary
+          ) {
+            priceParts.push(
+              value
+            );
+          } else if (
+            x >=
+              productBoundary
+          ) {
+            quantityParts.push(
+              value
+            );
+          } else {
+            productParts.push(
+              value
+            );
+          }
+        }
+      );
+
+      const productText =
+        cleanPdfTableCell(
+          productParts.join(
+            " "
+          )
+        );
+
+      const quantityText =
+        quantityParts.join(
+          " "
+        );
+
+      const priceText =
+        priceParts.join(
+          " "
+        );
+
+      const quantity =
+        parseQuantityUnitFromText(
+          quantityText
+        );
+
+      const price =
+        parsePriceFromText(
+          priceText
+        );
+
+      if (
+        quantity &&
+        price !== null
+      ) {
+
+        const mergedProduct =
+          cleanPdfTableCell(
+            [
+              ...pendingProductLines,
+              productText
+            ]
+              .filter(
+                Boolean
+              )
+              .join(
+                " "
+              )
+          );
+
+        pendingProductLines =
+          [];
+
+        if (
+          mergedProduct
+        ) {
+          result.push({
+            include:
+              sectionState !==
+                "UNAVAILABLE",
+            unavailable:
+              sectionState ===
+                "UNAVAILABLE",
+            product:
+              mergedProduct,
+            quantity:
+              quantity.quantity,
+            quantityUnit:
+              quantity.unit ||
+              "pzas",
+            detectedPrice:
+              price,
+            priceMeaning:
+              "LINE_TOTAL",
+            source:
+              "PDF table layout"
+          });
+        }
+
+        continue;
+      }
+
+      const onlyProductLike =
+        productText &&
+        !quantityText &&
+        !priceText &&
+        /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(
+          productText
+        ) &&
+        !/^(?:Art[ií]culo|Cant\.?|Precio)$/i.test(
+          productText
+        );
+
+      if (
+        onlyProductLike
+      ) {
+        pendingProductLines.push(
+          productText
+        );
+
+        flushPendingProduct();
+      }
+    }
+
+    return {
+      rows:
+        result,
+      parser:
+        "PDF layout table parser"
     };
   }
 
@@ -14601,6 +15003,7 @@
     const bytes = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
     const pageTexts = [];
+    const allLayoutRows = [];
 
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
       setDocumentImportProgress(
@@ -14619,38 +15022,103 @@
 
         const x = Number(item.transform?.[4] || 0);
         const y = Number(item.transform?.[5] || 0);
+        const width = Number(item.width || 0);
 
-        let group = groups.find(entry => Math.abs(entry.y - y) <= tolerance);
+        let group =
+          groups.find(
+            entry =>
+              Math.abs(
+                entry.y - y
+              ) <= tolerance
+          );
 
         if (!group) {
-          group = { y, items: [] };
-          groups.push(group);
+          group = {
+            y,
+            pageNumber,
+            items: []
+          };
+
+          groups.push(
+            group
+          );
         }
 
-        group.items.push({ x, value });
+        group.items.push({
+          x,
+          y,
+          width,
+          value
+        });
       });
 
-      groups.sort((a, b) => b.y - a.y);
+      groups.sort(
+        (a, b) =>
+          b.y - a.y
+      );
 
-      const lines = groups.map(group =>
-        group.items
-          .sort((a, b) => a.x - b.x)
-          .map(item => item.value)
-          .join(" ")
-          .replace(/\s+/g, " ")
-          .trim()
-      ).filter(Boolean);
+      const lines =
+        groups
+          .map(
+            group =>
+              group.items
+                .slice()
+                .sort(
+                  (a, b) =>
+                    a.x - b.x
+                )
+                .map(
+                  item =>
+                    item.value
+                )
+                .join(
+                  " "
+                )
+                .replace(
+                  /\s+/g,
+                  " "
+                )
+                .trim()
+          )
+          .filter(
+            Boolean
+          );
 
-      pageTexts.push(lines.join("\n"));
+      pageTexts.push(
+        lines.join(
+          "\n"
+        )
+      );
+
+      groups.forEach(
+        group =>
+          allLayoutRows.push({
+            pageNumber,
+            y:
+              group.y,
+            items:
+              group.items
+                .slice()
+                .sort(
+                  (a, b) =>
+                    a.x - b.x
+                )
+          })
+      );
     }
 
     return {
-      text: pageTexts.join("\n"),
-      pages: pdf.numPages,
-      pdf
+      text:
+        pageTexts.join(
+          "\n"
+        ),
+      pages:
+        pdf.numPages,
+      pdf,
+      layoutRows:
+        allLayoutRows
     };
   }
-
 
   async function ocrPdfPages(pdf) {
     const pageTexts = [];
@@ -14704,7 +15172,11 @@
       return {
         text: textValue,
         sourceType,
-        pageCount: extracted.pages
+        pageCount: extracted.pages,
+        layoutRows:
+          sourceType === "PDF text"
+            ? extracted.layoutRows || []
+            : []
       };
     }
 
@@ -14730,7 +15202,8 @@
     return {
       text: String(result?.data?.text || "").trim(),
       sourceType: "Image OCR",
-      pageCount: 1
+      pageCount: 1,
+      layoutRows: []
     };
   }
 
@@ -15002,7 +15475,8 @@
       parser: "",
       subtotal: "",
       total: "",
-      rawText: ""
+      rawText: "",
+      layoutRows: []
     };
 
     show("document-import-overlay");
@@ -15017,18 +15491,55 @@
         throw new Error("No readable text was found in that document.");
       }
 
-      const parsed = parseImportedDocumentRows(rawText);
-      const totals = parseDocumentSummaryValues(rawText);
+      const layoutParsed =
+        Array.isArray(
+          extracted.layoutRows
+        ) &&
+        extracted.layoutRows.length
+          ? parsePdfLayoutRows(
+              extracted.layoutRows
+            )
+          : {
+              rows: [],
+              parser: ""
+            };
 
-      documentImportRows = parsed.rows;
+      const fallbackParsed =
+        layoutParsed.rows.length
+          ? null
+          : parseImportedDocumentRows(
+              rawText
+            );
+
+      const parsed =
+        layoutParsed.rows.length
+          ? layoutParsed
+          : fallbackParsed;
+
+      const totals =
+        parseDocumentSummaryValues(
+          rawText
+        );
+
+      documentImportRows =
+        parsed.rows;
+
       documentImportMeta = {
-        filename: file.name || "Imported document",
+        filename:
+          file.name ||
+          "Imported document",
         sourceType:
           `${extracted.sourceType}${extracted.pageCount > 1 ? ` • ${extracted.pageCount} pages` : ""}`,
-        parser: parsed.parser,
-        subtotal: totals.subtotal,
-        total: totals.total,
-        rawText
+        parser:
+          parsed.parser,
+        subtotal:
+          totals.subtotal,
+        total:
+          totals.total,
+        rawText,
+        layoutRows:
+          extracted.layoutRows ||
+          []
       };
 
       if (!documentImportRows.length) {
@@ -15075,7 +15586,8 @@
       parser: "",
       subtotal: "",
       total: "",
-      rawText: ""
+      rawText: "",
+      layoutRows: []
     };
 
     hideStatus();
@@ -15205,7 +15717,8 @@
         parser: "",
         subtotal: "",
         total: "",
-        rawText: ""
+        rawText: "",
+        layoutRows: []
       };
 
       document.getElementById(
