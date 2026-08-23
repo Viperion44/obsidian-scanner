@@ -7184,7 +7184,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2c — Quantity/price-anchored PDF parser. Production remains index.html.
+    V6 Stage 3J.2d — Generic visual row-region parser. Production remains index.html.
   </div>
 
 </div>
@@ -7892,9 +7892,10 @@
 
 <script>
 
-  // V6 Stage 3J.2c — quantity/price-anchored PDF parser.
-  // Each detected quantity + price row now anchors its own nearby product-name
-  // fragments, avoiding first/last-row loss and cross-row name carryover.
+  // V6 Stage 3J.2d — generic visual row-region parser.
+  // Repeating quantity/price signals establish visual product-row territories.
+  // Wrapped fields and indented child details are assigned to the nearest row
+  // before product / quantity / price classification happens.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -14567,298 +14568,1730 @@
     if (!Array.isArray(layoutRows) || !layoutRows.length) {
       return {
         rows: [],
-        parser: "PDF quantity/price-anchored table parser"
+        parser: "PDF visual row-region parser"
       };
     }
 
     const rowsByPage = new Map();
 
     layoutRows.forEach(row => {
-      const page = Number(row?.pageNumber || 1);
-      if (!rowsByPage.has(page)) rowsByPage.set(page, []);
-      rowsByPage.get(page).push(row);
+      const pageNumber =
+        Number(
+          row?.pageNumber || 1
+        );
+
+      if (!rowsByPage.has(pageNumber)) {
+        rowsByPage.set(
+          pageNumber,
+          []
+        );
+      }
+
+      rowsByPage
+        .get(pageNumber)
+        .push(row);
     });
 
     const results = [];
-    let carriedSectionState = "AVAILABLE";
-
-    const narrativeReject =
-      /^(?:Lamentamos|Tu pedido|Revisa|Como soluci[oó]n|Nuestra firme intenci[oó]n|Sin embargo|De suceder|Nos reservamos|Estos art[ií]culos|Art[ií]culos disponibles|Art[ií]culos no disponibles|Resumen del pedido|Ajustes de cargos|Cargo final|Subtotal|I\.?V\.?A\.?|Ahorro|Costo de env[ií]o|Total pagado|Para ver el detalle completo|La informaci[oó]n del c[oó]digo de barras|¿Tienes preguntas\?|Visita nuestro centro de ayuda|Encu[eé]ntranos en)/i;
-
-    const isProductFragment = value => {
-      const cleaned = cleanPdfTableCell(value);
-      if (!cleaned) return false;
-
-      if (
-        cleaned.length < 2 ||
-        cleaned.length > 105 ||
-        narrativeReject.test(cleaned) ||
-        /^(?:Art[ií]culo|Cant\.?|Precio|Agotado|Disponible|No disponible)$/i.test(cleaned)
-      ) {
-        return false;
-      }
-
-      return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(cleaned);
-    };
+    let carriedSectionState =
+      "AVAILABLE";
 
     const median = values => {
-      if (!values.length) return null;
-      const sorted = values.slice().sort((a, b) => a - b);
-      const middle = Math.floor(sorted.length / 2);
-      return sorted.length % 2
-        ? sorted[middle]
-        : (sorted[middle - 1] + sorted[middle]) / 2;
+      const usable =
+        (values || [])
+          .filter(
+            value =>
+              Number.isFinite(
+                Number(value)
+              )
+          )
+          .map(
+            Number
+          );
+
+      if (!usable.length) {
+        return null;
+      }
+
+      usable.sort(
+        (a, b) =>
+          a - b
+      );
+
+      const middle =
+        Math.floor(
+          usable.length / 2
+        );
+
+      return (
+        usable.length % 2
+          ? usable[middle]
+          : (
+              usable[middle - 1] +
+              usable[middle]
+            ) / 2
+      );
     };
 
-    for (const [pageNumber, rawPageRows] of rowsByPage.entries()) {
-      const pageRows = rawPageRows
-        .slice()
-        .sort((a, b) => Number(b.y || 0) - Number(a.y || 0));
+    const normalizeFieldText =
+      value =>
+        normalizeOcrLine(
+          String(
+            value || ""
+          )
+        );
 
-      let articleX = null;
-      let qtyX = null;
-      let priceX = null;
+    const genericNoisePattern =
+      /^(?:item|image|art[ií]culo|producto|product|description|descripci[oó]n|cant\.?|cantidad|qty\.?|quantity|precio|price|importe|amount|total|disponible|available|agotado|unavailable|out of stock|not available)$/i;
 
-      for (const row of pageRows) {
-        const items = (Array.isArray(row?.items) ? row.items : [])
-          .map(item => ({
-            x: Number(item?.x || 0),
-            value: normalizeOcrLine(item?.value || "")
-          }))
-          .filter(item => item.value);
+    const narrativeOrSummaryPattern =
+      /^(?:lamentamos|tu pedido|your order|order #|pedido #|revisa|review your|como soluci[oó]n|nuestra firme intenci[oó]n|sin embargo|de suceder|nos reservamos|estos art[ií]culos|art[ií]culos disponibles|art[ií]culos no disponibles|available items|unavailable items|items unavailable|items not available|not charged|ajustes de cargos|adjustments|cargo final|final charge|resumen del pedido|order summary|summary|subtotal|i\.?v\.?a\.?|iva|tax|impuesto|ahorro|savings|discount|descuento|costo de env[ií]o|shipping|delivery fee|total pagado|total paid|payment|pago|gmail|mail\.google\.com)/i;
 
-        const article = items.find(item => /^Art[ií]culo$/i.test(item.value));
-        const qty = items.find(item => /^Cant\.?$/i.test(item.value));
-        const price = items.find(item => /^Precio$/i.test(item.value));
+    const footerOrChromePattern =
+      /(?:https?:\/\/|www\.|@\w|^\d+\s*\/\s*\d+$|^\d{1,2}\/\d{1,2}\/\d{2,4}(?:,|\s|$)|^\d{1,2}:\d{2}\s*(?:am|pm)?$)/i;
 
-        if (article && qty && price) {
-          articleX = article.x;
-          qtyX = qty.x;
-          priceX = price.x;
-          break;
+    const unitPattern =
+      "(?:pzas?|pza|pz|pcs?|pc|each|ea|kg|kgs?|kilos?|kilograms?|g|gr|grams?|l|lt|lts|liters?|litres?|ml|oz|lb|lbs|unidad(?:es)?|units?|packs?|paquetes?|cajas?|boxes?|botellas?|bottles?|bolsas?|bags?)";
+
+    const parseFlexibleQuantity =
+      (value, allowBareNumber = false) => {
+
+        const textValue =
+          normalizeFieldText(
+            value
+          );
+
+        const unitMatch =
+          textValue.match(
+            new RegExp(
+              "(\\d+(?:[.,]\\d+)?)\\s*(" +
+              unitPattern +
+              ")\\b",
+              "i"
+            )
+          );
+
+        if (unitMatch) {
+          const quantity =
+            normalizeDocumentMoney(
+              unitMatch[1]
+            );
+
+          if (
+            quantity !== null &&
+            quantity > 0
+          ) {
+            return {
+              quantity,
+              unit:
+                String(
+                  unitMatch[2] || ""
+                )
+                  .trim()
+                  .toLowerCase()
+            };
+          }
         }
-      }
 
-      if (articleX === null || qtyX === null || priceX === null) {
-        const productXs = [];
-        const quantityXs = [];
-        const priceXs = [];
+        if (allowBareNumber) {
+          const bareMatch =
+            textValue.match(
+              /^\s*(\d+(?:[.,]\d+)?)\s*$/
+            );
 
-        pageRows.forEach(row => {
-          const items = Array.isArray(row?.items) ? row.items : [];
+          if (bareMatch) {
+            const quantity =
+              normalizeDocumentMoney(
+                bareMatch[1]
+              );
 
-          items.forEach(item => {
-            const value = normalizeOcrLine(item?.value || "");
-            const x = Number(item?.x || 0);
+            if (
+              quantity !== null &&
+              quantity > 0
+            ) {
+              return {
+                quantity,
+                unit:
+                  "pzas"
+              };
+            }
+          }
+        }
 
-            if (parseQuantityUnitFromText(value)) {
-              quantityXs.push(x);
-              return;
+        return null;
+      };
+
+    const extractMoneyValue =
+      value => {
+
+        const textValue =
+          normalizeFieldText(
+            value
+          );
+
+        const strongMatch =
+          textValue.match(
+            /(?:[$€£¥₹₱]|MXN|USD|EUR|CAD|GBP)\s*([0-9][0-9.,]*)/i
+          );
+
+        if (strongMatch) {
+          const parsed =
+            normalizeDocumentMoney(
+              strongMatch[1]
+            );
+
+          return (
+            parsed === null
+              ? null
+              : roundMoney(
+                  parsed
+                )
+          );
+        }
+
+        const decimalMatches =
+          textValue.match(
+            /(?:^|\s)(\d{1,7}[.,]\d{2})(?=\s|$)/g
+          ) || [];
+
+        for (
+          let i =
+            decimalMatches.length - 1;
+
+          i >= 0;
+
+          i--
+        ) {
+          const parsed =
+            normalizeDocumentMoney(
+              decimalMatches[i]
+            );
+
+          if (
+            parsed !== null &&
+            parsed >= 0
+          ) {
+            return roundMoney(
+              parsed
+            );
+          }
+        }
+
+        return null;
+      };
+
+    const clusterSignalsByX =
+      (
+        signals,
+        tolerance,
+        preferRightmost = false
+      ) => {
+
+        if (
+          !Array.isArray(
+            signals
+          ) ||
+          !signals.length
+        ) {
+          return null;
+        }
+
+        const sorted =
+          signals
+            .slice()
+            .sort(
+              (a, b) =>
+                Number(
+                  a.x || 0
+                ) -
+                Number(
+                  b.x || 0
+                )
+            );
+
+        const clusters = [];
+
+        sorted.forEach(
+          signal => {
+
+            let bestCluster =
+              null;
+
+            let bestDistance =
+              Infinity;
+
+            clusters.forEach(
+              cluster => {
+
+                const center =
+                  median(
+                    cluster.map(
+                      entry =>
+                        entry.x
+                    )
+                  );
+
+                const distance =
+                  Math.abs(
+                    signal.x -
+                    center
+                  );
+
+                if (
+                  distance <= tolerance &&
+                  distance <
+                    bestDistance
+                ) {
+                  bestDistance =
+                    distance;
+
+                  bestCluster =
+                    cluster;
+                }
+              }
+            );
+
+            if (bestCluster) {
+              bestCluster.push(
+                signal
+              );
+            } else {
+              clusters.push(
+                [
+                  signal
+                ]
+              );
+            }
+          }
+        );
+
+        clusters.sort(
+          (a, b) => {
+
+            if (
+              b.length !==
+                a.length
+            ) {
+              return (
+                b.length -
+                a.length
+              );
             }
 
-            if (/\$?\s*\d+(?:[.,]\d{2})\s*$/.test(value)) {
-              priceXs.push(x);
-              return;
+            const centerA =
+              median(
+                a.map(
+                  entry =>
+                    entry.x
+                )
+              ) || 0;
+
+            const centerB =
+              median(
+                b.map(
+                  entry =>
+                    entry.x
+                )
+              ) || 0;
+
+            return (
+              preferRightmost
+                ? centerB -
+                  centerA
+                : centerA -
+                  centerB
+            );
+          }
+        );
+
+        const winner =
+          clusters[0];
+
+        return {
+          center:
+            median(
+              winner.map(
+                entry =>
+                  entry.x
+              )
+            ),
+          count:
+            winner.length,
+          signals:
+            winner
+        };
+      };
+
+    const detectHeaderHints =
+      rows => {
+
+        for (const row of rows) {
+          const items =
+            Array.isArray(
+              row?.items
+            )
+              ? row.items
+              : [];
+
+          let productX =
+            null;
+
+          let quantityX =
+            null;
+
+          let priceX =
+            null;
+
+          items.forEach(
+            item => {
+
+              const value =
+                normalizeFieldText(
+                  item?.value
+                );
+
+              const x =
+                Number(
+                  item?.x || 0
+                );
+
+              if (
+                /^(?:art[ií]culo|producto|product|item|description|descripci[oó]n)$/i.test(
+                  value
+                )
+              ) {
+                productX =
+                  x;
+              } else if (
+                /^(?:cant\.?|cantidad|qty\.?|quantity)$/i.test(
+                  value
+                )
+              ) {
+                quantityX =
+                  x;
+              } else if (
+                /^(?:precio|price|importe|amount|total)$/i.test(
+                  value
+                )
+              ) {
+                priceX =
+                  x;
+              }
             }
+          );
 
-            if (isProductFragment(value)) {
-              productXs.push(x);
-            }
-          });
-        });
+          if (
+            quantityX !== null &&
+            priceX !== null
+          ) {
+            return {
+              productX,
+              quantityX,
+              priceX
+            };
+          }
+        }
 
-        articleX = articleX ?? median(productXs);
-        qtyX = qtyX ?? median(quantityXs);
-        priceX = priceX ?? median(priceXs);
-      }
+        return {
+          productX:
+            null,
+          quantityX:
+            null,
+          priceX:
+            null
+        };
+      };
 
-      if (articleX === null || qtyX === null || priceX === null) {
+    const lineLooksLikeNoise =
+      value => {
+
+        const cleaned =
+          cleanPdfTableCell(
+            value
+          );
+
+        if (!cleaned) {
+          return true;
+        }
+
+        if (
+          genericNoisePattern.test(
+            cleaned
+          ) ||
+          narrativeOrSummaryPattern.test(
+            cleaned
+          ) ||
+          footerOrChromePattern.test(
+            cleaned
+          )
+        ) {
+          return true;
+        }
+
+        return false;
+      };
+
+    for (
+      const [
+        pageNumber,
+        rawPageRows
+      ]
+      of rowsByPage.entries()
+    ) {
+      const pageRows =
+        rawPageRows
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(
+                b.y || 0
+              ) -
+              Number(
+                a.y || 0
+              )
+          );
+
+      if (!pageRows.length) {
         continue;
       }
 
-      const articleQtyBoundary = (articleX + qtyX) / 2;
-      const qtyPriceBoundary = (qtyX + priceX) / 2;
+      const allItems =
+        pageRows
+          .flatMap(
+            row =>
+              Array.isArray(
+                row?.items
+              )
+                ? row.items
+                : []
+          );
 
-      const geometry = pageRows.map((row, index) => {
-        const items = (Array.isArray(row?.items) ? row.items : [])
-          .slice()
-          .sort((a, b) => Number(a?.x || 0) - Number(b?.x || 0));
-
-        const rowText = items
-          .map(item => String(item?.value || ""))
-          .join(" ")
-          .replace(/\s+/g, " ")
-          .trim();
-
-        const productParts = [];
-        const quantityParts = [];
-        const priceParts = [];
-
-        items.forEach(item => {
-          const x = Number(item?.x || 0);
-          const value = normalizeOcrLine(item?.value || "");
-          if (!value) return;
-
-          if (x >= qtyPriceBoundary) {
-            priceParts.push(value);
-          } else if (x >= articleQtyBoundary) {
-            quantityParts.push(value);
-          } else {
-            productParts.push(value);
-          }
-        });
-
-        return {
-          index,
-          pageNumber,
-          y: Number(row?.y || 0),
-          rowText,
-          productText: cleanPdfTableCell(productParts.join(" ")),
-          quantityText: quantityParts.join(" "),
-          priceText: priceParts.join(" ")
-        };
-      });
-
-      let pageSectionState = carriedSectionState;
-
-      geometry.forEach(row => {
-        pageSectionState = sectionStateFromPdfText(
-          row.rowText,
-          pageSectionState
+      const minX =
+        Math.min(
+          ...allItems.map(
+            item =>
+              Number(
+                item?.x || 0
+              )
+          )
         );
-        row.sectionState = pageSectionState;
-      });
 
-      const anchors = geometry
-        .map(row => ({
-          ...row,
-          quantity: parseQuantityUnitFromText(row.quantityText),
-          price: parsePriceFromText(row.priceText)
-        }))
-        .filter(row => row.quantity && row.price !== null);
+      const maxX =
+        Math.max(
+          ...allItems.map(
+            item =>
+              Number(
+                item?.x || 0
+              ) +
+              Number(
+                item?.width || 0
+              )
+          )
+        );
 
-      for (let anchorIndex = 0; anchorIndex < anchors.length; anchorIndex++) {
-        const anchor = anchors[anchorIndex];
+      const pageWidthEstimate =
+        Math.max(
+          1,
+          maxX -
+            minX
+        );
 
-        const currentGeometryIndex = anchor.index;
-        const previousAnchorGeometryIndex =
-          anchorIndex > 0
-            ? anchors[anchorIndex - 1].index
-            : -1;
+      const rowYValues =
+        pageRows
+          .map(
+            row =>
+              Number(
+                row?.y || 0
+              )
+          )
+          .filter(
+            Number.isFinite
+          )
+          .sort(
+            (a, b) =>
+              b - a
+          );
 
-        const nextAnchorGeometryIndex =
-          anchorIndex < anchors.length - 1
-            ? anchors[anchorIndex + 1].index
-            : geometry.length;
+      const smallLineGaps =
+        [];
 
-        const fragments = [];
+      for (
+        let i = 0;
+        i <
+          rowYValues.length - 1;
+        i++
+      ) {
+        const gap =
+          Math.abs(
+            rowYValues[i] -
+            rowYValues[
+              i + 1
+            ]
+          );
 
-        if (isProductFragment(anchor.productText)) {
-          fragments.push({
-            text: cleanPdfTableCell(anchor.productText),
-            y: anchor.y,
-            index: currentGeometryIndex
-          });
-        }
-
-        for (
-          let i = currentGeometryIndex - 1;
-          i > previousAnchorGeometryIndex;
-          i--
+        if (
+          gap > 1 &&
+          gap <=
+            28
         ) {
-          const candidate = geometry[i];
-          if (!candidate) continue;
+          smallLineGaps.push(
+            gap
+          );
+        }
+      }
 
-          if (candidate.sectionState !== anchor.sectionState) break;
+      const baseLineStep =
+        median(
+          smallLineGaps
+        ) ||
+        12;
+
+      const xClusterTolerance =
+        Math.max(
+          18,
+          pageWidthEstimate *
+            0.055
+        );
+
+      const headerHints =
+        detectHeaderHints(
+          pageRows
+        );
+
+      const quantitySignals =
+        [];
+
+      const bareQuantitySignals =
+        [];
+
+      const priceSignals =
+        [];
+
+      pageRows.forEach(
+        (
+          row,
+          rowIndex
+        ) => {
+
+          const items =
+            (Array.isArray(
+              row?.items
+            )
+              ? row.items
+              : [])
+              .slice()
+              .sort(
+                (a, b) =>
+                  Number(
+                    a?.x || 0
+                  ) -
+                  Number(
+                    b?.x || 0
+                  )
+              );
+
+          const rowText =
+            items
+              .map(
+                item =>
+                  normalizeFieldText(
+                    item?.value
+                  )
+              )
+              .filter(
+                Boolean
+              )
+              .join(
+                " "
+              );
+
+          // Quantity signals are detected from actual field-like spans
+          // (number + unit), not from arbitrary product prose containing sizes.
+          // This keeps "Dark roast 1 kg" or "Shampoo 750 ml" from becoming the
+          // quantity column while still recognizing genuine "2 pcs" fields.
+          items.forEach(
+            (
+              item,
+              itemIndex
+            ) => {
+
+              const value =
+                normalizeFieldText(
+                  item?.value
+                );
+
+              const x =
+                Number(
+                  item?.x || 0
+                );
+
+              const compactQuantity =
+                parseFlexibleQuantity(
+                  value,
+                  false
+                );
+
+              if (
+                compactQuantity &&
+                new RegExp(
+                  "^\\s*\\d+(?:[.,]\\d+)?\\s*" +
+                  unitPattern +
+                  "\\s*$",
+                  "i"
+                ).test(
+                  value
+                )
+              ) {
+                quantitySignals.push({
+                  x,
+                  y:
+                    Number(
+                      row?.y || 0
+                    ),
+                  rowIndex,
+                  quantity:
+                    compactQuantity,
+                  text:
+                    value
+                });
+              }
+
+              if (
+                /^\d{1,4}(?:[.,]\d+)?$/.test(
+                  value
+                )
+              ) {
+                bareQuantitySignals.push({
+                  x,
+                  y:
+                    Number(
+                      row?.y || 0
+                    ),
+                  rowIndex,
+                  text:
+                    value
+                });
+
+                const nextItem =
+                  items[
+                    itemIndex + 1
+                  ];
+
+                const nextValue =
+                  normalizeFieldText(
+                    nextItem?.value
+                  );
+
+                if (
+                  nextItem &&
+                  new RegExp(
+                    "^" +
+                    unitPattern +
+                    "$",
+                    "i"
+                  ).test(
+                    nextValue
+                  )
+                ) {
+                  const combined =
+                    parseFlexibleQuantity(
+                      value +
+                      " " +
+                      nextValue,
+                      false
+                    );
+
+                  if (combined) {
+                    quantitySignals.push({
+                      x,
+                      y:
+                        Number(
+                          row?.y || 0
+                        ),
+                      rowIndex,
+                      quantity:
+                        combined,
+                      text:
+                        value +
+                        " " +
+                        nextValue
+                    });
+                  }
+                }
+              }
+
+              const money =
+                extractMoneyValue(
+                  value
+                );
+
+              if (
+                money !== null &&
+                !(
+                  compactQuantity &&
+                  new RegExp(
+                    "^\\s*\\d+(?:[.,]\\d+)?\\s*" +
+                    unitPattern +
+                    "\\s*$",
+                    "i"
+                  ).test(
+                    value
+                  )
+                )
+              ) {
+                priceSignals.push({
+                  x,
+                  y:
+                    Number(
+                      row?.y || 0
+                    ),
+                  rowIndex,
+                  value:
+                    money,
+                  text:
+                    value
+                });
+              }
+            }
+          );
+        }
+      );
+
+      let quantityCluster =
+        clusterSignalsByX(
+          quantitySignals,
+          xClusterTolerance,
+          false
+        );
+
+      let priceCluster =
+        clusterSignalsByX(
+          priceSignals,
+          xClusterTolerance,
+          true
+        );
+
+      if (
+        headerHints.quantityX !==
+          null
+      ) {
+        quantityCluster = {
+          center:
+            headerHints.quantityX,
+          count:
+            quantityCluster?.count ||
+            0,
+          signals:
+            quantityCluster?.signals ||
+            []
+        };
+      }
+
+      if (
+        headerHints.priceX !==
+          null
+      ) {
+        priceCluster = {
+          center:
+            headerHints.priceX,
+          count:
+            priceCluster?.count ||
+            0,
+          signals:
+            priceCluster?.signals ||
+            []
+        };
+      }
+
+      if (
+        !quantityCluster &&
+        bareQuantitySignals.length
+      ) {
+        const candidateBareClusters =
+          [];
+
+        bareQuantitySignals.forEach(
+          signal => {
+
+            if (
+              priceCluster &&
+              Math.abs(
+                signal.x -
+                priceCluster.center
+              ) <=
+                xClusterTolerance
+            ) {
+              return;
+            }
+
+            candidateBareClusters.push(
+              signal
+            );
+          }
+        );
+
+        quantityCluster =
+          clusterSignalsByX(
+            candidateBareClusters,
+            xClusterTolerance,
+            false
+          );
+      }
+
+      if (
+        !quantityCluster ||
+        !priceCluster
+      ) {
+        continue;
+      }
+
+      const quantityColumnTolerance =
+        Math.max(
+          20,
+          xClusterTolerance *
+            0.8
+        );
+
+      const priceColumnTolerance =
+        Math.max(
+          20,
+          xClusterTolerance *
+            0.8
+        );
+
+      const acceptedQuantitySignals =
+        [
+          ...quantitySignals,
+          ...bareQuantitySignals
+            .map(
+              signal => {
+
+                const parsed =
+                  parseFlexibleQuantity(
+                    signal.text,
+                    true
+                  );
+
+                return (
+                  parsed
+                    ? {
+                        ...signal,
+                        quantity:
+                          parsed
+                      }
+                    : null
+                );
+              }
+            )
+            .filter(
+              Boolean
+            )
+        ]
+          .filter(
+            signal =>
+              Math.abs(
+                signal.x -
+                quantityCluster.center
+              ) <=
+                quantityColumnTolerance
+          );
+
+      const acceptedPriceSignals =
+        priceSignals
+          .filter(
+            signal =>
+              Math.abs(
+                signal.x -
+                priceCluster.center
+              ) <=
+                priceColumnTolerance
+          );
+
+      const signalMergeDistance =
+        Math.max(
+          18,
+          baseLineStep *
+            1.9
+        );
+
+      const anchors =
+        [];
+
+      acceptedQuantitySignals
+        .forEach(
+          quantitySignal => {
+
+            const priceSignal =
+              acceptedPriceSignals
+                .slice()
+                .sort(
+                  (a, b) =>
+                    Math.abs(
+                      a.y -
+                      quantitySignal.y
+                    ) -
+                    Math.abs(
+                      b.y -
+                      quantitySignal.y
+                    )
+                )
+                .find(
+                  candidate =>
+                    Math.abs(
+                      candidate.y -
+                      quantitySignal.y
+                    ) <=
+                      signalMergeDistance
+                );
+
+            if (!priceSignal) {
+              return;
+            }
+
+            anchors.push({
+              y:
+                (
+                  quantitySignal.y +
+                  priceSignal.y
+                ) / 2,
+              quantitySignal,
+              priceSignal
+            });
+          }
+        );
+
+      const uniqueAnchors =
+        [];
+
+      anchors
+        .sort(
+          (a, b) =>
+            b.y -
+            a.y
+        )
+        .forEach(
+          anchor => {
+
+            const duplicate =
+              uniqueAnchors.find(
+                existing =>
+                  Math.abs(
+                    existing.y -
+                    anchor.y
+                  ) <=
+                    Math.max(
+                      3,
+                      baseLineStep *
+                        0.35
+                    )
+              );
+
+            if (!duplicate) {
+              uniqueAnchors.push(
+                anchor
+              );
+            }
+          }
+        );
+
+      if (!uniqueAnchors.length) {
+        continue;
+      }
+
+      const anchorGaps =
+        [];
+
+      for (
+        let i = 0;
+        i <
+          uniqueAnchors.length - 1;
+        i++
+      ) {
+        const gap =
+          Math.abs(
+            uniqueAnchors[i].y -
+            uniqueAnchors[
+              i + 1
+            ].y
+          );
+
+        if (gap > 0) {
+          anchorGaps.push(
+            gap
+          );
+        }
+      }
+
+      const medianAnchorGap =
+        median(
+          anchorGaps
+        ) ||
+        Math.max(
+          44,
+          baseLineStep *
+            4
+        );
+
+      const maxBandRadius =
+        Math.max(
+          28,
+          medianAnchorGap *
+            0.62,
+          baseLineStep *
+            2.8
+        );
+
+      let pageSectionState =
+        carriedSectionState;
+
+      const geometry =
+        pageRows.map(
+          (
+            row,
+            rowIndex
+          ) => {
+
+            const items =
+              (Array.isArray(
+                row?.items
+              )
+                ? row.items
+                : [])
+                .slice()
+                .sort(
+                  (a, b) =>
+                    Number(
+                      a?.x || 0
+                    ) -
+                    Number(
+                      b?.x || 0
+                    )
+                );
+
+            const rowText =
+              items
+                .map(
+                  item =>
+                    normalizeFieldText(
+                      item?.value
+                    )
+                )
+                .filter(
+                  Boolean
+                )
+                .join(
+                  " "
+                );
+
+            pageSectionState =
+              sectionStateFromPdfText(
+                rowText,
+                pageSectionState
+              );
+
+            if (
+              /(?:out of stock|not available|unavailable|agotado)/i.test(
+                rowText
+              )
+            ) {
+              pageSectionState =
+                pageSectionState;
+            }
+
+            return {
+              rowIndex,
+              y:
+                Number(
+                  row?.y || 0
+                ),
+              items,
+              rowText,
+              sectionState:
+                pageSectionState
+            };
+          }
+        );
+
+      uniqueAnchors.forEach(
+        (
+          anchor,
+          anchorIndex
+        ) => {
+
+          const previousAnchor =
+            anchorIndex > 0
+              ? uniqueAnchors[
+                  anchorIndex - 1
+                ]
+              : null;
+
+          const nextAnchor =
+            anchorIndex <
+              uniqueAnchors.length - 1
+              ? uniqueAnchors[
+                  anchorIndex + 1
+                ]
+              : null;
+
+          const topBoundary =
+            previousAnchor
+              ? (
+                  previousAnchor.y +
+                  anchor.y
+                ) / 2
+              : anchor.y +
+                maxBandRadius;
+
+          const bottomBoundary =
+            nextAnchor
+              ? (
+                  anchor.y +
+                  nextAnchor.y
+                ) / 2
+              : anchor.y -
+                maxBandRadius;
+
+          const anchorGeometryRow =
+            geometry
+              .slice()
+              .sort(
+                (a, b) =>
+                  Math.abs(
+                    a.y -
+                    anchor.y
+                  ) -
+                  Math.abs(
+                    b.y -
+                    anchor.y
+                  )
+              )[0];
+
+          const anchorSectionState =
+            anchorGeometryRow?.sectionState ||
+            carriedSectionState;
+
+          const bandLines =
+            geometry
+              .filter(
+                line => {
+
+                  if (
+                    line.y >
+                      topBoundary ||
+                    line.y <
+                      bottomBoundary
+                  ) {
+                    return false;
+                  }
+
+                  if (
+                    Math.abs(
+                      line.y -
+                      anchor.y
+                    ) >
+                      maxBandRadius
+                  ) {
+                    return false;
+                  }
+
+                  if (
+                    line.sectionState !==
+                      anchorSectionState
+                  ) {
+                    return false;
+                  }
+
+                  return true;
+                }
+              );
+
+          const quantityFieldFragments =
+            [];
+
+          const priceFieldFragments =
+            [];
+
+          const contentLines =
+            [];
+
+          bandLines.forEach(
+            line => {
+
+              const contentFragments =
+                [];
+
+              line.items.forEach(
+                item => {
+
+                  const value =
+                    normalizeFieldText(
+                      item?.value
+                    );
+
+                  const cleaned =
+                    cleanPdfTableCell(
+                      value
+                    );
+
+                  if (!cleaned) {
+                    return;
+                  }
+
+                  const x =
+                    Number(
+                      item?.x || 0
+                    );
+
+                  if (
+                    Math.abs(
+                      x -
+                      quantityCluster.center
+                    ) <=
+                      quantityColumnTolerance
+                  ) {
+                    quantityFieldFragments.push({
+                      y:
+                        line.y,
+                      x,
+                      value:
+                        cleaned
+                    });
+
+                    return;
+                  }
+
+                  if (
+                    Math.abs(
+                      x -
+                      priceCluster.center
+                    ) <=
+                      priceColumnTolerance
+                  ) {
+                    priceFieldFragments.push({
+                      y:
+                        line.y,
+                      x,
+                      value:
+                        cleaned
+                    });
+
+                    return;
+                  }
+
+                  if (
+                    /^(?:item|image)$/i.test(
+                      cleaned
+                    )
+                  ) {
+                    return;
+                  }
+
+                  contentFragments.push({
+                    x,
+                    value:
+                      cleaned
+                  });
+                }
+              );
+
+              const contentText =
+                contentFragments
+                  .map(
+                    fragment =>
+                      fragment.value
+                  )
+                  .join(
+                    " "
+                  )
+                  .replace(
+                    /\s+/g,
+                    " "
+                  )
+                  .trim();
+
+              if (
+                !contentText ||
+                lineLooksLikeNoise(
+                  contentText
+                )
+              ) {
+                return;
+              }
+
+              contentLines.push({
+                y:
+                  line.y,
+                x:
+                  Math.min(
+                    ...contentFragments.map(
+                      fragment =>
+                        fragment.x
+                    )
+                  ),
+                text:
+                  contentText
+              });
+            }
+          );
+
+          quantityFieldFragments.sort(
+            (a, b) =>
+              (
+                b.y -
+                a.y
+              ) ||
+              (
+                a.x -
+                b.x
+              )
+          );
+
+          priceFieldFragments.sort(
+            (a, b) =>
+              (
+                b.y -
+                a.y
+              ) ||
+              (
+                a.x -
+                b.x
+              )
+          );
+
+          contentLines.sort(
+            (a, b) =>
+              (
+                b.y -
+                a.y
+              ) ||
+              (
+                a.x -
+                b.x
+              )
+          );
+
+          const quantityFieldText =
+            quantityFieldFragments
+              .map(
+                fragment =>
+                  fragment.value
+              )
+              .join(
+                " "
+              );
+
+          const priceFieldText =
+            priceFieldFragments
+              .map(
+                fragment =>
+                  fragment.value
+              )
+              .join(
+                " "
+              );
+
+          const quantity =
+            parseFlexibleQuantity(
+              quantityFieldText,
+              true
+            ) ||
+            anchor.quantitySignal.quantity;
+
+          const detectedPrice =
+            extractMoneyValue(
+              priceFieldText
+            ) ??
+            anchor.priceSignal.value;
 
           if (
-            /^(?:Art[ií]culo\s+Cant\.?\s+Precio|Art[ií]culos disponibles|Art[ií]culos no disponibles|Estos art[ií]culos no se cobrar[aá]n)/i.test(
-              candidate.rowText
-            )
+            !quantity ||
+            detectedPrice === null
           ) {
-            break;
+            return;
           }
 
-          const verticalDistance = Math.abs(candidate.y - anchor.y);
-          if (verticalDistance > 52) break;
-
-          if (candidate.quantityText || candidate.priceText) break;
-
-          if (isProductFragment(candidate.productText)) {
-            fragments.push({
-              text: cleanPdfTableCell(candidate.productText),
-              y: candidate.y,
-              index: candidate.index
-            });
+          if (!contentLines.length) {
+            return;
           }
+
+          const lineStartClusters =
+            [];
+
+          contentLines.forEach(
+            line => {
+
+              let targetCluster =
+                null;
+
+              let targetDistance =
+                Infinity;
+
+              lineStartClusters.forEach(
+                cluster => {
+
+                  const center =
+                    median(
+                      cluster.map(
+                        entry =>
+                          entry.x
+                      )
+                    );
+
+                  const distance =
+                    Math.abs(
+                      line.x -
+                      center
+                    );
+
+                  if (
+                    distance <=
+                      Math.max(
+                        12,
+                        pageWidthEstimate *
+                          0.022
+                      ) &&
+                    distance <
+                      targetDistance
+                  ) {
+                    targetCluster =
+                      cluster;
+
+                    targetDistance =
+                      distance;
+                  }
+                }
+              );
+
+              if (targetCluster) {
+                targetCluster.push(
+                  line
+                );
+              } else {
+                lineStartClusters.push(
+                  [
+                    line
+                  ]
+                );
+              }
+            }
+          );
+
+          lineStartClusters.sort(
+            (a, b) => {
+
+              if (
+                b.length !==
+                  a.length
+              ) {
+                return (
+                  b.length -
+                  a.length
+                );
+              }
+
+              return (
+                (
+                  median(
+                    a.map(
+                      line =>
+                        line.x
+                    )
+                  ) ||
+                  0
+                ) -
+                (
+                  median(
+                    b.map(
+                      line =>
+                        line.x
+                    )
+                  ) ||
+                  0
+                )
+              );
+            }
+          );
+
+          // The parent/main row is the left-most meaningful indentation level.
+          // More-indented text remains attached to the row as child information.
+          const mainIndentX =
+            Math.min(
+              ...contentLines.map(
+                line =>
+                  Number(
+                    line.x || 0
+                  )
+              )
+            );
+
+          const indentThreshold =
+            Math.max(
+              14,
+              pageWidthEstimate *
+                0.025
+            );
+
+          const mainLines =
+            [];
+
+          const childLines =
+            [];
+
+          contentLines.forEach(
+            line => {
+
+              if (
+                line.x >
+                  mainIndentX +
+                  indentThreshold
+              ) {
+                childLines.push(
+                  line.text
+                );
+              } else {
+                mainLines.push(
+                  line.text
+                );
+              }
+            }
+          );
+
+          const dedupeText =
+            values => {
+
+              const seen =
+                new Set();
+
+              return (
+                values
+                  .map(
+                    value =>
+                      cleanPdfTableCell(
+                        value
+                      )
+                  )
+                  .filter(
+                    Boolean
+                  )
+                  .filter(
+                    value => {
+
+                      const key =
+                        normalizeProductIdentity(
+                          value
+                        );
+
+                      if (
+                        !key ||
+                        seen.has(
+                          key
+                        )
+                      ) {
+                        return false;
+                      }
+
+                      seen.add(
+                        key
+                      );
+
+                      return true;
+                    }
+                  )
+              );
+            };
+
+          const cleanMainLines =
+            dedupeText(
+              mainLines
+            );
+
+          const cleanChildLines =
+            dedupeText(
+              childLines
+            );
+
+          let productName =
+            cleanPdfTableCell(
+              cleanMainLines.join(
+                " "
+              )
+            );
+
+          let details =
+            cleanPdfTableCell(
+              cleanChildLines.join(
+                " • "
+              )
+            );
+
+          if (
+            !productName &&
+            details
+          ) {
+            productName =
+              details;
+
+            details =
+              "";
+          }
+
+          if (!productName) {
+            return;
+          }
+
+          const statusText =
+            bandLines
+              .map(
+                line =>
+                  line.rowText
+              )
+              .join(
+                " "
+              );
+
+          const unavailable =
+            anchorSectionState ===
+              "UNAVAILABLE" ||
+            /(?:out of stock|not available|unavailable|agotado|not charged)/i.test(
+              statusText
+            );
+
+          results.push({
+            include:
+              !unavailable,
+            unavailable,
+            product:
+              productName,
+            details,
+            quantity:
+              quantity.quantity,
+            quantityUnit:
+              quantity.unit ||
+              "pzas",
+            detectedPrice:
+              detectedPrice,
+            priceMeaning:
+              "LINE_TOTAL",
+            source:
+              `PDF visual row-region • page ${pageNumber}`
+          });
         }
-
-        for (
-          let i = currentGeometryIndex + 1;
-          i < nextAnchorGeometryIndex;
-          i++
-        ) {
-          const candidate = geometry[i];
-          if (!candidate) continue;
-
-          if (candidate.sectionState !== anchor.sectionState) break;
-
-          const verticalDistance = Math.abs(candidate.y - anchor.y);
-          if (verticalDistance > 30) break;
-
-          if (candidate.quantityText || candidate.priceText) break;
-
-          if (isProductFragment(candidate.productText)) {
-            fragments.push({
-              text: cleanPdfTableCell(candidate.productText),
-              y: candidate.y,
-              index: candidate.index
-            });
-            break;
-          }
-        }
-
-        const orderedFragments = fragments
-          .filter(fragment => fragment.text)
-          .sort((a, b) => b.y - a.y);
-
-        const seen = new Set();
-
-        const productName = cleanPdfTableCell(
-          orderedFragments
-            .map(fragment => fragment.text)
-            .filter(fragment => {
-              const key = normalizeProductIdentity(fragment);
-              if (!key || seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            })
-            .join(" ")
-        );
-
-        if (!productName) continue;
-
-        results.push({
-          include: anchor.sectionState !== "UNAVAILABLE",
-          unavailable: anchor.sectionState === "UNAVAILABLE",
-          product: productName,
-          quantity: anchor.quantity.quantity,
-          quantityUnit: anchor.quantity.unit || "pzas",
-          detectedPrice: anchor.price,
-          priceMeaning: "LINE_TOTAL",
-          source: `PDF quantity/price anchor • page ${pageNumber}`
-        });
-      }
+      );
 
       if (geometry.length) {
         carriedSectionState =
-          geometry[geometry.length - 1].sectionState || carriedSectionState;
+          geometry[
+            geometry.length - 1
+          ].sectionState ||
+          carriedSectionState;
       }
     }
 
     return {
-      rows: results,
-      parser: "PDF quantity/price-anchored table parser"
+      rows:
+        results,
+      parser:
+        "PDF visual row-region parser"
     };
   }
 
@@ -15401,6 +16834,19 @@
                     '" oninput="updateDocumentImportField(' + index + ', \'product\', this.value, false)">' +
                   matchHint +
                 "</div>" +
+                (
+                  row.details
+                    ? (
+                        '<div class="document-import-field">' +
+                          '<label>Details / child information</label>' +
+                          '<input type="text" value="' +
+                            escapeDocumentImportAttribute(row.details) +
+                            '" oninput="updateDocumentImportField(' + index + ', \'details\', this.value, false)">' +
+                          '<div class="ocr-candidate-note">Indented content was attached to this product row rather than treated as a new product.</div>' +
+                        '</div>'
+                      )
+                    : ""
+                ) +
                 "<div>" +
                   "<label>Amount</label>" +
                   '<input type="number" inputmode="decimal" min="0" step="0.01" value="' +
@@ -15716,7 +17162,12 @@
           actualLineTotal: computed.lineTotal,
           store: activeTrip.store,
           notes:
-            `Imported from order document: ${documentImportMeta.filename || "document"}`,
+            `Imported from order document: ${documentImportMeta.filename || "document"}` +
+            (
+              String(row.details || "").trim()
+                ? ` | Detected details: ${String(row.details || "").trim()}`
+                : ""
+            ),
           shelfUnitPrice: computed.unitPrice,
           promoApplied: "NO",
           promoType: "",
