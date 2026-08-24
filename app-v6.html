@@ -7694,7 +7694,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2o — 10-at-a-time product results. Production remains index.html.
+    V6 Stage 3J.2p — Trip toast + Canonical Products search. Production remains index.html.
   </div>
 
 </div>
@@ -8696,11 +8696,11 @@
 
 <script>
 
-  // V6 Stage 3J.2o — universal online-search result viewport + 10-at-a-time reveal.
-  // Keeps 3J.2n live-result verification intact. Near Me, Remote and Online
-  // share this same result overlay: results stay inside a scrollable block,
-  // 10 are revealed at a time, and Walmart can lazily request another native
-  // provider page after the currently loaded page has been exhausted.
+  // V6 Stage 3J.2p — trip-active toast + canonical catalog search.
+  // Keeps 3J.2o's shared 10-at-a-time merchant result viewport intact.
+  // Trip-active guidance now uses the normal floating/fading toast instead of
+  // a persistent green status box, and Canonical Products gains the same
+  // live-search interaction used by the Products management section.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -12019,6 +12019,7 @@
   let managementReturnPanelId = "home-panel";
   let managementProducts = [];
   let managementProductSearchQuery = "";
+  let managementCanonicalSearchQuery = "";
   let managementTrips = [];
   let managementCancelledTrips = [];
   let managementHistoryRows = [];
@@ -13040,9 +13041,11 @@
         resumeScanner();
       }
 
-      setStatus(
-        "Trip active. Scan a barcode, enter one manually, or optionally find a product by name.",
-        "success"
+      hideStatus();
+
+      showSuccessToast(
+        "Trip active",
+        "Scan a barcode, enter one manually, or optionally find a product by name."
       );
 
     } else {
@@ -13053,11 +13056,15 @@
         await stopScanner();
       }
 
-      setStatus(
+      hideStatus();
+
+      showSuccessToast(
         mode === "ONLINE"
-          ? "Online trip active. Find a product from this store's catalog or enter it manually."
-          : "Remote trip active. Find a product by name or enter it manually.",
-        "success"
+          ? "Online trip active"
+          : "Remote trip active",
+        mode === "ONLINE"
+          ? "Find a product from this store's catalog or enter it manually."
+          : "Find a product by name or enter it manually."
       );
     }
   }
@@ -28165,16 +28172,13 @@
 
     restoreActiveTripEntryAfterItem();
 
-    setStatus(
-      getActiveTripMode() === "NEAR"
-        ? "Trip active. Scan, enter a barcode, or find another product by name."
-        : "Trip active. Find another product by name or enter it manually.",
-      "success"
-    );
+    hideStatus();
 
     showSuccessToast(
       "Shopping resumed",
-      "Add the extra item, then return to final review."
+      getActiveTripMode() === "NEAR"
+        ? "Scan, enter a barcode, or find another product by name. Add the extra item, then return to final review."
+        : "Find another product by name or enter it manually. Add the extra item, then return to final review."
     );
   }
 
@@ -28203,11 +28207,13 @@
 
     restoreActiveTripEntryAfterItem();
 
-    setStatus(
+    hideStatus();
+
+    showSuccessToast(
+      "Trip active",
       getActiveTripMode() === "NEAR"
-        ? "Trip active. Continue shopping."
-        : "Trip active. Continue with product search or manual entry.",
-      "success"
+        ? "Continue shopping."
+        : "Continue with product search or manual entry."
     );
   }
 
@@ -39227,6 +39233,39 @@
   }
 
 
+  function managementCanonicalSearchChanged(
+    value
+  ) {
+    managementCanonicalSearchQuery =
+      String(
+        value || ""
+      );
+
+    showManagementCanonicalProducts(
+      false
+    );
+
+    const input =
+      document.getElementById(
+        "management-canonical-search"
+      );
+
+    if (input) {
+      input.focus({
+        preventScroll:
+          true
+      });
+
+      try {
+        input.setSelectionRange(
+          input.value.length,
+          input.value.length
+        );
+      } catch (_) {}
+    }
+  }
+
+
   function showManagementProducts(
     shouldScroll = true
   ) {
@@ -39950,78 +39989,301 @@
     }
   }
 
-  function showManagementCanonicalProducts(shouldScroll = true) {
+  function showManagementCanonicalProducts(
+    shouldScroll = true
+  ) {
 
-    hide("management-matcher-lab");
-    hide("management-online-search-preview");
-    hide("management-promo-lab");
+    hide(
+      "management-matcher-lab"
+    );
 
-    cancelManagementPromoGroupEdit(true);
+    hide(
+      "management-online-search-preview"
+    );
 
-    cancelManagementProductEdit(true);
-    cancelManagementCanonicalEdit(true);
-    cancelManagementPaymentEdit(true);
-    cancelManagementStoreEdit(true);
+    hide(
+      "management-promo-lab"
+    );
 
-    const box = document.getElementById("management-content");
+    cancelManagementPromoGroupEdit(
+      true
+    );
 
-    if (!productCatalog.length) {
+    cancelManagementProductEdit(
+      true
+    );
+
+    cancelManagementCanonicalEdit(
+      true
+    );
+
+    cancelManagementPaymentEdit(
+      true
+    );
+
+    cancelManagementStoreEdit(
+      true
+    );
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    const query =
+      normalizeProductIdentity(
+        managementCanonicalSearchQuery
+      );
+
+    const canonicalEntries =
+      productCatalog
+        .map(
+          (
+            record,
+            originalIndex
+          ) => {
+            const aliases =
+              productAliases.filter(
+                alias =>
+                  String(
+                    alias.productId ||
+                    ""
+                  ).trim() ===
+                  String(
+                    record.productId ||
+                    ""
+                  ).trim()
+              );
+
+            const searchable =
+              [
+                record.canonicalName,
+                record.productId,
+                record.brand,
+                record.variant,
+                record.size,
+                record.unit,
+                record.notes,
+                record.imageUrl,
+                record.sourceName,
+                record.sourceId,
+                record.sourceUrl,
+                ...aliases.flatMap(
+                  alias => [
+                    alias.aliasType,
+                    alias.aliasValue,
+                    alias.barcode,
+                    alias.source,
+                    alias.storeId
+                  ]
+                )
+              ]
+                .filter(
+                  value =>
+                    String(
+                      value ??
+                      ""
+                    ).trim()
+                )
+                .join(
+                  " "
+                );
+
+            return {
+              record,
+              originalIndex,
+              aliases,
+              searchable
+            };
+          }
+        )
+        .filter(
+          entry => {
+            if (!query) {
+              return true;
+            }
+
+            return normalizeProductIdentity(
+              entry.searchable
+            ).includes(
+              query
+            );
+          }
+        )
+        .sort(
+          (
+            a,
+            b
+          ) =>
+            String(
+              a.record.canonicalName ||
+              a.record.productId
+            )
+              .localeCompare(
+                String(
+                  b.record.canonicalName ||
+                  b.record.productId
+                )
+              )
+        );
+
+    const activeCount =
+      productCatalog.filter(
+        record =>
+          record.active !==
+          false
+      ).length;
+
+    const searchHtml =
+      '<div class="management-product-search-wrap">' +
+        '<input id="management-canonical-search" type="search" autocomplete="off" placeholder="Search canonical product, Product ID, barcode, brand, store or source" value="' +
+          escapeHtml(
+            managementCanonicalSearchQuery
+          ) +
+          '" oninput="managementCanonicalSearchChanged(this.value)">' +
+        '<div class="management-product-search-summary">' +
+          escapeHtml(
+            `${canonicalEntries.length} shown of ${productCatalog.length} canonical product${productCatalog.length === 1 ? "" : "s"} • ${activeCount} active`
+          ) +
+        '</div>' +
+      '</div>';
+
+    if (
+      !productCatalog.length
+    ) {
       box.innerHTML =
         '<div class="management-section-title">Canonical Products</div>' +
+        searchHtml +
         '<div class="canonical-management-summary">The catalog is connected, but no canonical products have been learned yet. The first confirmed shopping item will create one automatically.</div>' +
         '<div class="management-empty">No canonical product records are stored yet.</div>';
-      if (shouldScroll) scrollManagementContentIntoView();
+
+      if (
+        shouldScroll
+      ) {
+        scrollManagementContentIntoView();
+      }
+
       return;
     }
-
-    const rows = productCatalog
-      .map((record, originalIndex) => ({record, originalIndex}))
-      .sort((a,b) => String(a.record.canonicalName || a.record.productId).localeCompare(String(b.record.canonicalName || b.record.productId)));
-
-    const activeCount = productCatalog.filter(record => record.active !== false).length;
 
     box.innerHTML =
       '<div class="management-section-title">Canonical Products</div>' +
       '<div class="canonical-management-summary">' +
-        escapeHtml(`${productCatalog.length} canonical product${productCatalog.length === 1 ? "" : "s"} loaded • ${activeCount} active. Names and descriptive fields can be corrected here without changing Product IDs.`) +
+        escapeHtml(
+          `${productCatalog.length} canonical product${productCatalog.length === 1 ? "" : "s"} loaded • ${activeCount} active. Names and descriptive fields can be corrected here without changing Product IDs.`
+        ) +
       '</div>' +
-      rows.map(entry => {
-        const record = entry.record;
-        const aliases = productAliases.filter(alias => String(alias.productId || "").trim() === String(record.productId || "").trim());
-        const detail = [record.brand, record.variant, [record.size, record.unit].filter(value => String(value ?? "").trim()).join(" ")].filter(Boolean).join(" • ");
+      searchHtml +
+      (
+        canonicalEntries.length
+          ? canonicalEntries
+              .map(
+                entry => {
+                  const record =
+                    entry.record;
 
-        const referenceDetail =
-          [
-            record.imageUrl
-              ? "Image saved"
-              : "",
-            record.sourceName ||
-              record.sourceId ||
-              ""
-          ]
-          .filter(Boolean)
-          .join(" • ");
+                  const aliases =
+                    entry.aliases;
 
-        return (
-          '<div class="management-row">' +
-            '<div class="management-row-top">' +
-              '<div class="management-row-name">' + escapeHtml(record.canonicalName || "Unnamed canonical product") + '</div>' +
-              '<button class="management-edit-button" type="button" onclick="editManagementCanonicalProduct(' + entry.originalIndex + ')">EDIT</button>' +
-            '</div>' +
-            '<div class="management-row-meta">' +
-              escapeHtml(record.productId || "No Product ID") +
-              (detail ? ' • ' + escapeHtml(detail) : '') +
-              ' • ' + escapeHtml(`${aliases.length} alias${aliases.length === 1 ? "" : "es"}`) +
-              (referenceDetail ? ' • ' + escapeHtml(referenceDetail) : '') +
-              (record.active === false ? ' • INACTIVE' : '') +
-            '</div>' +
-          '</div>'
-        );
-      }).join("");
+                  const detail =
+                    [
+                      record.brand,
+                      record.variant,
+                      [
+                        record.size,
+                        record.unit
+                      ]
+                        .filter(
+                          value =>
+                            String(
+                              value ??
+                              ""
+                            ).trim()
+                        )
+                        .join(
+                          " "
+                        )
+                    ]
+                      .filter(Boolean)
+                      .join(
+                        " • "
+                      );
 
-    if (shouldScroll) scrollManagementContentIntoView();
+                  const referenceDetail =
+                    [
+                      record.imageUrl
+                        ? "Image saved"
+                        : "",
+                      record.sourceName ||
+                        record.sourceId ||
+                        ""
+                    ]
+                      .filter(Boolean)
+                      .join(
+                        " • "
+                      );
+
+                  return (
+                    '<div class="management-row">' +
+                      '<div class="management-row-top">' +
+                        '<div class="management-row-name">' +
+                          escapeHtml(
+                            record.canonicalName ||
+                            "Unnamed canonical product"
+                          ) +
+                        '</div>' +
+                        '<button class="management-edit-button" type="button" onclick="editManagementCanonicalProduct(' +
+                          entry.originalIndex +
+                        ')">EDIT</button>' +
+                      '</div>' +
+                      '<div class="management-row-meta">' +
+                        escapeHtml(
+                          record.productId ||
+                          "No Product ID"
+                        ) +
+                        (
+                          detail
+                            ? ' • ' +
+                              escapeHtml(
+                                detail
+                              )
+                            : ''
+                        ) +
+                        ' • ' +
+                        escapeHtml(
+                          `${aliases.length} alias${aliases.length === 1 ? "" : "es"}`
+                        ) +
+                        (
+                          referenceDetail
+                            ? ' • ' +
+                              escapeHtml(
+                                referenceDetail
+                              )
+                            : ''
+                        ) +
+                        (
+                          record.active ===
+                            false
+                            ? ' • INACTIVE'
+                            : ''
+                        ) +
+                      '</div>' +
+                    '</div>'
+                  );
+                }
+              )
+              .join(
+                ""
+              )
+          : '<div class="management-empty">No canonical products match that search.</div>'
+      );
+
+    if (
+      shouldScroll
+    ) {
+      scrollManagementContentIntoView();
+    }
   }
-
 
   function editManagementCanonicalProduct(index) {
 
