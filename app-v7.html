@@ -7188,11 +7188,11 @@
       <button
         class="management-action"
         type="button"
-        onclick="showManagementObsidianBridge()"
+        onclick="showManagementObsidianExportPreview()"
       >
-        <span class="management-action-icon">📅</span>
-        <span class="management-action-title">Obsidian Bridge</span>
-        <span class="management-action-desc">Test creation of a Full Calendar shopping event in the Obsidian vault.</span>
+        <span class="management-action-icon">🟪</span>
+        <span class="management-action-title">Obsidian Export</span>
+        <span class="management-action-desc">Preview the Full Calendar note generated from the latest finished trip.</span>
       </button>
 
       <button
@@ -7704,7 +7704,7 @@
   </div>
 
   <div class="help">
-    V7 Stage 4A — Obsidian calendar bridge probe. Production remains index.html.
+    V7 Stage 4A.1 — Obsidian export payload preview. Production remains index.html.
   </div>
 
 </div>
@@ -8706,7 +8706,7 @@
 
 <script>
 
-  // V7 Stage 4A — Obsidian calendar bridge probe.
+  // V7 Stage 4A.1 — Obsidian export payload preview.
   // Keeps 3J.2q native provider pagination, 3J.2p trip-active toasts,
   // and Canonical Products search intact.
   // Adds frontend source identity + canonical online merchant homepages for
@@ -12060,6 +12060,11 @@
   let managementCanonicalSearchQuery = "";
   let managementTrips = [];
   let managementCancelledTrips = [];
+
+  // V7 Stage 4A.1: preview only. Nothing here writes to Obsidian or Sheets.
+  let obsidianExportPreviewTrip = null;
+  let obsidianExportPreviewMarkdown = "";
+  let obsidianExportPreviewFilename = "";
   let managementHistoryRows = [];
   let managementPaymentMethods = [];
   let managementStores = [];
@@ -41690,6 +41695,787 @@
   }
 
 
+  function obsidianYamlQuote(
+    value
+  ) {
+
+    return (
+      '"' +
+      String(
+        value ?? ""
+      )
+        .replace(
+          /\\/g,
+          "\\\\"
+        )
+        .replace(
+          /"/g,
+          '\\"'
+        )
+        .replace(
+          /\r?\n/g,
+          " "
+        ) +
+      '"'
+    );
+  }
+
+
+  function obsidianMarkdownCell(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .replace(
+        /\r?\n/g,
+        "<br>"
+      )
+      .replace(
+        /\|/g,
+        "\\|"
+      )
+      .trim();
+  }
+
+
+  function obsidianTripDateParts(
+    value
+  ) {
+
+    if (!value) {
+      return null;
+    }
+
+    const date =
+      new Date(
+        value
+      );
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return null;
+    }
+
+    const year =
+      date.getFullYear();
+
+    const month =
+      String(
+        date.getMonth() +
+        1
+      ).padStart(
+        2,
+        "0"
+      );
+
+    const day =
+      String(
+        date.getDate()
+      ).padStart(
+        2,
+        "0"
+      );
+
+    const hours =
+      String(
+        date.getHours()
+      ).padStart(
+        2,
+        "0"
+      );
+
+    const minutes =
+      String(
+        date.getMinutes()
+      ).padStart(
+        2,
+        "0"
+      );
+
+    return {
+      date:
+        `${year}-${month}-${day}`,
+      time:
+        `${hours}:${minutes}`
+    };
+  }
+
+
+  function obsidianSafeFilenamePart(
+    value
+  ) {
+
+    return String(
+      value || "Shopping"
+    )
+      .trim()
+      .replace(
+        /[<>:"/\\|?*\u0000-\u001F]/g,
+        "-"
+      )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .replace(
+        /\.+$/g,
+        ""
+      )
+      .slice(
+        0,
+        70
+      ) ||
+      "Shopping";
+  }
+
+
+  function buildObsidianShoppingMarkdown(
+    rawTrip
+  ) {
+
+    const trip =
+      normalizeTripForPdf(
+        rawTrip
+      );
+
+    const start =
+      obsidianTripDateParts(
+        trip.start
+      );
+
+    const end =
+      obsidianTripDateParts(
+        trip.end
+      );
+
+    if (
+      !start ||
+      !end
+    ) {
+      throw new Error(
+        "This trip does not have usable start and end timestamps."
+      );
+    }
+
+    const store =
+      String(
+        trip.store ||
+        "Shopping"
+      ).trim() ||
+      "Shopping";
+
+    const title =
+      `${store} — Shopping`;
+
+    const frontmatter =
+      [
+        "---",
+        `title: ${obsidianYamlQuote(title)}`,
+        `date: ${start.date}`,
+        (
+          end.date !==
+          start.date
+            ? `endDate: ${end.date}`
+            : ""
+        ),
+        `startTime: ${start.time}`,
+        `endTime: ${end.time}`,
+        "completed: true",
+        `tripId: ${obsidianYamlQuote(trip.tripId || "")}`,
+        `store: ${obsidianYamlQuote(store)}`,
+        `total: ${Number(trip.finalTotal || 0).toFixed(2)}`,
+        `shipping: ${Number(trip.shippingFee || 0).toFixed(2)}`,
+        `savings: ${Number(trip.savings || 0).toFixed(2)}`,
+        "---"
+      ]
+        .filter(
+          line =>
+            line !== ""
+        )
+        .join(
+          "\n"
+        );
+
+    const duration =
+      trip.start &&
+      trip.end
+        ? formatDuration(
+            trip.start,
+            trip.end
+          )
+        : "";
+
+    const itemRows =
+      trip.items.length
+        ? trip.items
+            .map(
+              item => {
+
+                const promoText =
+                  String(
+                    item.promoApplied || ""
+                  ).toUpperCase() ===
+                    "YES"
+                    ? [
+                        item.promoType,
+                        item.promoDetails
+                      ]
+                        .filter(Boolean)
+                        .join(" — ")
+                    : "";
+
+                return [
+                  "| ☑",
+                  obsidianMarkdownCell(
+                    item.product ||
+                    "Unnamed item"
+                  ),
+                  obsidianMarkdownCell(
+                    item.barcode
+                      ? `\`${item.barcode}\``
+                      : ""
+                  ),
+                  obsidianMarkdownCell(
+                    isUsableNumber(
+                      item.amount
+                    )
+                      ? formatPlainNumber(
+                          item.amount
+                        )
+                      : ""
+                  ),
+                  obsidianMarkdownCell(
+                    isUsableNumber(
+                      item.shelfUnitPrice
+                    )
+                      ? formatMoney(
+                          item.shelfUnitPrice
+                        )
+                      : ""
+                  ),
+                  obsidianMarkdownCell(
+                    isUsableNumber(
+                      item.effectiveUnitPrice
+                    )
+                      ? formatMoney(
+                          item.effectiveUnitPrice
+                        )
+                      : ""
+                  ),
+                  obsidianMarkdownCell(
+                    formatMoney(
+                      item.lineTotal || 0
+                    )
+                  ),
+                  obsidianMarkdownCell(
+                    promoText
+                  ),
+                  obsidianMarkdownCell(
+                    item.notes || ""
+                  ),
+                  "|"
+                ].join(
+                  " | "
+                );
+              }
+            )
+            .join(
+              "\n"
+            )
+        : "| — | No purchased items |  |  |  |  | $0.00 |  |  |";
+
+    const payments =
+      Array.isArray(
+        trip.payments
+      )
+        ? trip.payments
+        : [];
+
+    const paymentSection =
+      payments.length
+        ? [
+            "",
+            "## Payment",
+            "",
+            "| Method | Owner | Type | Applied | Cash given | Change |",
+            "|---|---|---|---:|---:|---:|",
+            ...payments.map(
+              payment =>
+                [
+                  "|",
+                  obsidianMarkdownCell(
+                    payment.nickname ||
+                    "Payment method"
+                  ),
+                  "|",
+                  obsidianMarkdownCell(
+                    payment.owner || ""
+                  ),
+                  "|",
+                  obsidianMarkdownCell(
+                    payment.type || ""
+                  ),
+                  "|",
+                  obsidianMarkdownCell(
+                    isUsableNumber(
+                      payment.amountApplied
+                    )
+                      ? formatMoney(
+                          payment.amountApplied
+                        )
+                      : ""
+                  ),
+                  "|",
+                  obsidianMarkdownCell(
+                    isUsableNumber(
+                      payment.cashTendered
+                    )
+                      ? formatMoney(
+                          payment.cashTendered
+                        )
+                      : ""
+                  ),
+                  "|",
+                  obsidianMarkdownCell(
+                    isUsableNumber(
+                      payment.change
+                    )
+                      ? formatMoney(
+                          payment.change
+                        )
+                      : ""
+                  ),
+                  "|"
+                ].join(
+                  " "
+                )
+            )
+          ].join(
+            "\n"
+          )
+        : "";
+
+    const summaryLines =
+      [
+        `- **Items:** ${trip.itemCount}`,
+        `- **Regular value:** ${formatMoney(trip.regularTotal || 0)}`,
+        `- **Savings:** ${formatMoney(trip.savings || 0)}`,
+        (
+          Number(
+            trip.shippingFee || 0
+          ) > 0
+            ? `- **Shipment / delivery:** ${formatMoney(trip.shippingFee)}`
+            : ""
+        ),
+        (
+          isUsableNumber(
+            trip.budget
+          )
+            ? `- **Budget:** ${formatMoney(trip.budget)}`
+            : ""
+        ),
+        `- **Final total:** ${formatMoney(trip.finalTotal || 0)}`
+      ]
+        .filter(Boolean)
+        .join(
+          "\n"
+        );
+
+    const body =
+      [
+        `# ${title}`,
+        "",
+        `**Trip:** \`${trip.tripId || ""}\``,
+        `**Started:** ${start.date} ${start.time}`,
+        `**Finished:** ${end.date} ${end.time}`,
+        (
+          duration
+            ? `**Duration:** ${duration}`
+            : ""
+        ),
+        "",
+        "## Shopping",
+        "",
+        "| Done | Product | Barcode | Qty | Shelf / unit | Effective / unit | Line total | Promotion | Notes |",
+        "|:---:|---|---|---:|---:|---:|---:|---|---|",
+        itemRows,
+        "",
+        "## Summary",
+        "",
+        summaryLines,
+        paymentSection,
+        "",
+        "---",
+        "",
+        "Generated by Obsidian Shopping."
+      ]
+        .filter(
+          line =>
+            line !== null &&
+            line !== undefined
+        )
+        .join(
+          "\n"
+        );
+
+    const filename =
+      [
+        start.date,
+        obsidianSafeFilenamePart(
+          store
+        ),
+        obsidianSafeFilenamePart(
+          trip.tripId ||
+          "trip"
+        )
+      ].join(
+        " - "
+      ) +
+      ".md";
+
+    return {
+      trip,
+      markdown:
+        `${frontmatter}\n\n${body}`,
+      filename,
+      targetPath:
+        `Shopping/Full Note/${filename}`
+    };
+  }
+
+
+  async function loadLatestTripForObsidianPreview() {
+
+    const [
+      tripsResult,
+      tripsFormattedResult,
+      historyResult,
+      historyDatesResult,
+      tripPaymentsResult
+    ] =
+      await Promise.all(
+        [
+          sheetsGetValues(
+            `'${TRIPS_SHEET}'!A2:J`,
+            "UNFORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${TRIPS_SHEET}'!A2:J`,
+            "FORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${TRIP_HISTORY_SHEET}'!A2:Q`,
+            "UNFORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${TRIP_HISTORY_SHEET}'!B2:B`,
+            "FORMATTED_VALUE"
+          ),
+          sheetsGetValues(
+            `'${TRIP_PAYMENTS_SHEET}'!A2:L`,
+            "UNFORMATTED_VALUE"
+          )
+        ]
+      );
+
+    const trips =
+      buildHistoryTrips(
+        tripsResult.values || [],
+        historyResult.values || [],
+        historyDatesResult.values || [],
+        tripsFormattedResult.values || [],
+        tripPaymentsResult.values || [],
+        false
+      )
+        .filter(
+          trip =>
+            trip.hasTripRecord &&
+            !trip.cancelled &&
+            String(
+              trip.status || "FINISHED"
+            ).toUpperCase() !==
+              "CANCELLED"
+        );
+
+    if (
+      !trips.length
+    ) {
+      throw new Error(
+        "No finished trip with a matching Trips record is available yet."
+      );
+    }
+
+    return trips[0];
+  }
+
+
+  function renderObsidianExportPreview(
+    payload
+  ) {
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    obsidianExportPreviewTrip =
+      payload.trip;
+
+    obsidianExportPreviewMarkdown =
+      payload.markdown;
+
+    obsidianExportPreviewFilename =
+      payload.filename;
+
+    box.innerHTML =
+      '<div class="management-section-title">Obsidian Export</div>' +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Stage 4A.1</div>' +
+        '<div class="management-row-meta">Preview only. Nothing is written to Obsidian or Google Sheets.</div>' +
+      '</div>' +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Latest finished trip</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            `${payload.trip.store || "Unknown store"} • ${payload.trip.tripId || ""} • ${formatMoney(payload.trip.finalTotal || 0)}`
+          ) +
+        '</div>' +
+      '</div>' +
+      '<div class="management-row">' +
+        '<div class="management-row-name">Future PC bridge target</div>' +
+        '<div class="management-row-meta">' +
+          escapeHtml(
+            `ModoCalendario/${payload.targetPath}`
+          ) +
+        '</div>' +
+      '</div>' +
+      '<label for="obsidian-export-preview-markdown" style="display:block;margin-top:16px;font-weight:800;">Generated Markdown</label>' +
+      '<textarea id="obsidian-export-preview-markdown" rows="18" readonly spellcheck="false" style="width:100%;margin-top:8px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.45;">' +
+        escapeHtml(
+          payload.markdown
+        ) +
+      '</textarea>' +
+      '<div class="management-editor-actions" style="margin-top:14px;">' +
+        '<button class="management-cancel-button" type="button" onclick="copyObsidianExportPreview()">COPY MARKDOWN</button>' +
+        '<button class="management-save-button" type="button" onclick="downloadObsidianExportPreview()">DOWNLOAD .MD</button>' +
+      '</div>';
+
+    scrollManagementContentIntoView();
+  }
+
+
+  async function showManagementObsidianExportPreview() {
+
+    hide(
+      "management-matcher-lab"
+    );
+    hide(
+      "management-online-search-preview"
+    );
+    hide(
+      "management-promo-lab"
+    );
+
+    cancelManagementPromoGroupEdit(
+      true
+    );
+    cancelManagementStoreEdit(
+      true
+    );
+    cancelManagementProductEdit(
+      true
+    );
+    cancelManagementCanonicalEdit(
+      true
+    );
+    cancelManagementPaymentEdit(
+      true
+    );
+
+    const box =
+      document.getElementById(
+        "management-content"
+      );
+
+    box.innerHTML =
+      '<div class="management-section-title">Obsidian Export</div>' +
+      '<div class="management-empty">Building a Full Calendar note from the latest finished trip...</div>';
+
+    scrollManagementContentIntoView();
+
+    try {
+
+      const latestTrip =
+        await loadLatestTripForObsidianPreview();
+
+      const payload =
+        buildObsidianShoppingMarkdown(
+          latestTrip
+        );
+
+      renderObsidianExportPreview(
+        payload
+      );
+
+      showSuccessToast(
+        "Obsidian payload ready",
+        "The latest finished trip was converted to a Full Calendar Markdown note."
+      );
+
+    } catch (
+      error
+    ) {
+
+      console.error(
+        error
+      );
+
+      box.innerHTML =
+        '<div class="management-section-title">Obsidian Export</div>' +
+        '<div class="management-empty">' +
+          escapeHtml(
+            error?.message ||
+            "The Obsidian export preview could not be generated."
+          ) +
+        '</div>';
+
+      showErrorToast(
+        "Obsidian preview failed",
+        error?.message ||
+        "The latest finished trip could not be converted."
+      );
+    }
+  }
+
+
+  async function copyObsidianExportPreview() {
+
+    if (
+      !obsidianExportPreviewMarkdown
+    ) {
+      fail(
+        "Generate the Obsidian preview first."
+      );
+      return;
+    }
+
+    try {
+
+      await navigator.clipboard.writeText(
+        obsidianExportPreviewMarkdown
+      );
+
+      showSuccessToast(
+        "Markdown copied",
+        obsidianExportPreviewFilename
+      );
+
+    } catch (_) {
+
+      const textarea =
+        document.getElementById(
+          "obsidian-export-preview-markdown"
+        );
+
+      if (!textarea) {
+        fail(
+          "Clipboard access is unavailable."
+        );
+        return;
+      }
+
+      textarea.focus();
+      textarea.select();
+
+      const copied =
+        document.execCommand(
+          "copy"
+        );
+
+      if (
+        copied
+      ) {
+        showSuccessToast(
+          "Markdown copied",
+          obsidianExportPreviewFilename
+        );
+      } else {
+        fail(
+          "Clipboard access is unavailable. You can still select the preview manually."
+        );
+      }
+    }
+  }
+
+
+  function downloadObsidianExportPreview() {
+
+    if (
+      !obsidianExportPreviewMarkdown
+    ) {
+      fail(
+        "Generate the Obsidian preview first."
+      );
+      return;
+    }
+
+    const blob =
+      new Blob(
+        [
+          obsidianExportPreviewMarkdown
+        ],
+        {
+          type:
+            "text/markdown;charset=utf-8"
+        }
+      );
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+    const anchor =
+      document.createElement(
+        "a"
+      );
+
+    anchor.href =
+      url;
+
+    anchor.download =
+      obsidianExportPreviewFilename ||
+      "Obsidian Shopping Trip.md";
+
+    document.body.appendChild(
+      anchor
+    );
+
+    anchor.click();
+    anchor.remove();
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(
+          url
+        ),
+      1000
+    );
+
+    showSuccessToast(
+      "Markdown file prepared",
+      anchor.download
+    );
+  }
+
+
+
+
   function showManagementHistoryAudit() {
 
     hide("management-matcher-lab");
@@ -41798,227 +42584,6 @@
 
     scrollManagementContentIntoView();
   }
-
-
-  function showManagementObsidianBridge() {
-
-    hide("management-matcher-lab");
-    hide("management-online-search-preview");
-    hide("management-promo-lab");
-
-    cancelManagementPromoGroupEdit(true);
-    cancelManagementStoreEdit(true);
-    cancelManagementProductEdit(true);
-    cancelManagementCanonicalEdit(true);
-    cancelManagementPaymentEdit(true);
-
-    const box =
-      document.getElementById(
-        "management-content"
-      );
-
-    box.innerHTML =
-      '<div class="management-section-title">Obsidian Bridge</div>' +
-      '<div class="management-row">' +
-        '<div class="management-row-name">Vault</div>' +
-        '<div class="management-row-meta">ModoCalendario</div>' +
-      '</div>' +
-      '<div class="management-row">' +
-        '<div class="management-row-name">Full Calendar folder</div>' +
-        '<div class="management-row-meta">Shopping/Full Note</div>' +
-      '</div>' +
-      '<div class="management-row">' +
-        '<div class="management-row-name">Stage 4A test</div>' +
-        '<div class="management-row-meta">Creates one five-minute test event note. It does not change shopping data or finish a trip.</div>' +
-      '</div>' +
-      '<button class="management-save-button" type="button" style="width:100%;margin-top:14px;" onclick="createObsidianBridgeTestEvent()">CREATE TEST CALENDAR EVENT</button>';
-
-    scrollManagementContentIntoView();
-  }
-
-
-  function formatObsidianBridgeLocalDate(
-    value
-  ) {
-
-    const year =
-      value.getFullYear();
-
-    const month =
-      String(
-        value.getMonth() +
-        1
-      ).padStart(
-        2,
-        "0"
-      );
-
-    const day =
-      String(
-        value.getDate()
-      ).padStart(
-        2,
-        "0"
-      );
-
-    return `${year}-${month}-${day}`;
-  }
-
-
-  function formatObsidianBridgeLocalTime(
-    value,
-    includeSeconds =
-      false
-  ) {
-
-    const hours =
-      String(
-        value.getHours()
-      ).padStart(
-        2,
-        "0"
-      );
-
-    const minutes =
-      String(
-        value.getMinutes()
-      ).padStart(
-        2,
-        "0"
-      );
-
-    if (
-      !includeSeconds
-    ) {
-      return `${hours}:${minutes}`;
-    }
-
-    const seconds =
-      String(
-        value.getSeconds()
-      ).padStart(
-        2,
-        "0"
-      );
-
-    return `${hours}:${minutes}:${seconds}`;
-  }
-
-
-  function createObsidianBridgeTestEvent() {
-
-    const vaultName =
-      "ModoCalendario";
-
-    const calendarFolder =
-      "Shopping/Full Note";
-
-    const end =
-      new Date();
-
-    let start =
-      new Date(
-        end.getTime() -
-        5 * 60 * 1000
-      );
-
-    const eventDate =
-      formatObsidianBridgeLocalDate(
-        end
-      );
-
-    if (
-      formatObsidianBridgeLocalDate(
-        start
-      ) !==
-      eventDate
-    ) {
-      start =
-        new Date(
-          end.getFullYear(),
-          end.getMonth(),
-          end.getDate(),
-          0,
-          0,
-          0,
-          0
-        );
-    }
-
-    const startTime =
-      formatObsidianBridgeLocalTime(
-        start
-      );
-
-    const endTime =
-      formatObsidianBridgeLocalTime(
-        end
-      );
-
-    const fileStamp =
-      [
-        eventDate,
-        formatObsidianBridgeLocalTime(
-          end,
-          true
-        ).replace(
-          /:/g,
-          ""
-        )
-      ].join(
-        "-"
-      );
-
-    const fileName =
-      `Obsidian Shopping Bridge Test ${fileStamp}.md`;
-
-    const filePath =
-      `${calendarFolder}/${fileName}`;
-
-    const content =
-      [
-        "---",
-        "title: Obsidian Shopping Bridge Test",
-        `date: ${eventDate}`,
-        `startTime: ${startTime}`,
-        `endTime: ${endTime}`,
-        "completed: true",
-        "---",
-        "",
-        "# Obsidian Shopping Bridge Test",
-        "",
-        "This note was created directly from the Obsidian Shopping PWA.",
-        "",
-        `- Event date: ${eventDate}`,
-        `- Start: ${startTime}`,
-        `- End: ${endTime}`,
-        "- Purpose: prove the PWA → Obsidian → Full Calendar bridge before trip automation.",
-        ""
-      ].join(
-        "\n"
-      );
-
-    const obsidianUri =
-      "obsidian://new" +
-      `?vault=${encodeURIComponent(
-        vaultName
-      )}` +
-      `&file=${encodeURIComponent(
-        filePath
-      )}` +
-      `&content=${encodeURIComponent(
-        content
-      )}`;
-
-    showAppToast(
-      "Opening Obsidian to create the bridge test event."
-    );
-
-    window.location.href =
-      obsidianUri;
-  }
-
-
 
 
   function showManagementAbout() {
