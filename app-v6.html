@@ -4973,6 +4973,42 @@
       display: grid;
       gap: 9px;
       margin-top: 14px;
+      max-height: min(52vh, 520px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 4px;
+      scrollbar-gutter: stable;
+    }
+
+    .online-search-more {
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+      padding-top: 6px;
+      padding-bottom: 2px;
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(36, 40, 51, 0),
+          rgba(36, 40, 51, .96) 26%,
+          rgba(36, 40, 51, 1)
+        );
+    }
+
+    .online-search-more button {
+      width: 100%;
+      margin: 0;
+      padding: 12px 10px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .online-search-more-meta {
+      margin-top: 5px;
+      color: #aeb4c0;
+      font-size: 10px;
+      line-height: 1.35;
+      text-align: center;
     }
 
     .online-search-result {
@@ -7658,7 +7694,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2n — Strict live-result verification. Production remains index.html.
+    V6 Stage 3J.2o — 10-at-a-time product results. Production remains index.html.
   </div>
 
 </div>
@@ -8660,11 +8696,11 @@
 
 <script>
 
-  // V6 Stage 3J.2n — strict live-result verification + duplicate cleanup.
-  // Keeps 3J.2m's fresh request/retry/plural-expansion behavior intact.
-  // Live search now requires real retailer-listing evidence instead of trusting
-  // a bare retailerMatch flag, and exact duplicate titles collapse to the
-  // richer verified listing.
+  // V6 Stage 3J.2o — universal online-search result viewport + 10-at-a-time reveal.
+  // Keeps 3J.2n live-result verification intact. Near Me, Remote and Online
+  // share this same result overlay: results stay inside a scrollable block,
+  // 10 are revealed at a time, and Walmart can lazily request another native
+  // provider page after the currently loaded page has been exhausted.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -8683,6 +8719,13 @@
   // cannot overwrite a newer retry.
   let onlineProductSearchRequestSerial = 0;
   let onlineProductSearchAbortController = null;
+
+  // Stage 3J.2o — universal result viewport/pagination state.
+  let onlineProductSearchVisibleCount = 10;
+  let onlineProductSearchBaseQuery = "";
+  let onlineProductSearchProviderPage = 1;
+  let onlineProductSearchProviderHasNext = false;
+  let onlineProductSearchProviderCanPaginate = false;
 
   // Web-result metadata for the currently reviewed item.
   // Stage 3I.1 persists confirmed image/source metadata to Product Catalog.
@@ -10521,7 +10564,8 @@
   async function fetchFreshOnlineProductSearch(
     query,
     requestSerial,
-    signal
+    signal,
+    page = 1
   ) {
     const url =
       new URL(
@@ -10538,6 +10582,20 @@
       "q",
       query
     );
+
+    if (
+      Number.isInteger(
+        Number(page)
+      ) &&
+      Number(page) > 1
+    ) {
+      url.searchParams.set(
+        "page",
+        String(
+          Number(page)
+        )
+      );
+    }
 
     // Browser/edge cache buster. The current Worker ignores this parameter,
     // but every explicit app search still uses a unique URL. Provider-side
@@ -10618,13 +10676,15 @@
   async function fetchFreshOnlineProductSearchWithRetry(
     query,
     requestSerial,
-    signal
+    signal,
+    page = 1
   ) {
     try {
       return await fetchFreshOnlineProductSearch(
         query,
         requestSerial,
-        signal
+        signal,
+        page
       );
 
     } catch (firstError) {
@@ -10656,7 +10716,8 @@
       return await fetchFreshOnlineProductSearch(
         query,
         requestSerial,
-        signal
+        signal,
+        page
       );
     }
   }
@@ -10667,6 +10728,15 @@
 
     onlineProductSearchSource = source;
     onlineProductSearchPreviewResults = [];
+
+    onlineProductSearchVisibleCount = 10;
+    onlineProductSearchBaseQuery =
+      String(
+        query || ""
+      ).trim();
+    onlineProductSearchProviderPage = 1;
+    onlineProductSearchProviderHasNext = false;
+    onlineProductSearchProviderCanPaginate = false;
     document.getElementById("online-product-search-query").value = query;
     document.getElementById("online-product-search-source-box").innerHTML =
       `<strong>${escapeHtml(source.retailerName)}</strong><br>${escapeHtml(source.websiteUrl)}<br><span class="muted">Source adapter: ${escapeHtml(source.id)}</span>`;
@@ -10968,44 +11038,343 @@
   }
 
   function renderOnlineProductSearchResults() {
-    const host = document.getElementById("online-product-search-results");
+    const host =
+      document.getElementById(
+        "online-product-search-results"
+      );
+
     if (!host) return;
 
-    if (!onlineProductSearchPreviewResults.length) {
-      host.innerHTML = '<div class="management-empty">No matching products were returned for this search.</div>';
+    if (
+      !onlineProductSearchPreviewResults.length
+    ) {
+      host.innerHTML =
+        '<div class="management-empty">No matching products were returned for this search.</div>';
+
       return;
     }
 
-    host.innerHTML = onlineProductSearchPreviewResults.map((result, index) => {
-      const sourceName = String(result.source || onlineProductSearchSource?.retailerName || "Retailer").trim();
-      const priceText = formatOnlineSearchPrice(result);
-      const oldNumeric = Number(result.oldPrice);
-      const oldPriceText = Number.isFinite(oldNumeric) && oldNumeric > Number(result.price)
-        ? ` • Was ${formatMoney(oldNumeric)}`
-        : "";
-      const deliveryText = String(result.delivery || "").trim();
-      const ratingNumeric = Number(result.rating);
-      const reviewsNumeric = Number(result.reviews);
-      const ratingText = Number.isFinite(ratingNumeric) && ratingNumeric > 0
-        ? ` • ★ ${ratingNumeric}${Number.isFinite(reviewsNumeric) && reviewsNumeric > 0 ? ` (${reviewsNumeric})` : ""}`
-        : "";
-      const imageHtml = result.image
-        ? `<img src="${escapeHtml(result.image)}" alt="" loading="lazy" style="width:72px;height:72px;object-fit:contain;border-radius:9px;background:#fff;flex:0 0 72px;">`
-        : "";
-
-      return (
-        `<div class="online-search-result">` +
-          `<div style="display:flex;gap:11px;align-items:flex-start;">` +
-            imageHtml +
-            `<div style="min-width:0;flex:1;">` +
-              `<div class="online-search-result-name">${escapeHtml(result.title)}</div>` +
-              `<div class="online-search-result-meta"><strong>${escapeHtml(priceText)}</strong>${escapeHtml(oldPriceText)} • ${escapeHtml(sourceName)}${escapeHtml(ratingText)}${deliveryText ? ` • ${escapeHtml(deliveryText)}` : ""}</div>` +
-            `</div>` +
-          `</div>` +
-          `<button type="button" onclick="useOnlineProductSearchResult(${index})">USE THIS PRODUCT</button>` +
-        `</div>`
+    const visibleCount =
+      Math.min(
+        Math.max(
+          10,
+          Number(
+            onlineProductSearchVisibleCount
+          ) || 10
+        ),
+        onlineProductSearchPreviewResults.length
       );
-    }).join("");
+
+    const visibleResults =
+      onlineProductSearchPreviewResults.slice(
+        0,
+        visibleCount
+      );
+
+    const cards =
+      visibleResults
+        .map(
+          (
+            result,
+            index
+          ) => {
+            const sourceName =
+              String(
+                result.source ||
+                onlineProductSearchSource?.retailerName ||
+                "Retailer"
+              ).trim();
+
+            const priceText =
+              formatOnlineSearchPrice(
+                result
+              );
+
+            const oldNumeric =
+              Number(
+                result.oldPrice
+              );
+
+            const oldPriceText =
+              Number.isFinite(
+                oldNumeric
+              ) &&
+              oldNumeric >
+                Number(
+                  result.price
+                )
+                ? ` • Was ${formatMoney(oldNumeric)}`
+                : "";
+
+            const deliveryText =
+              String(
+                result.delivery ||
+                ""
+              ).trim();
+
+            const ratingNumeric =
+              Number(
+                result.rating
+              );
+
+            const reviewsNumeric =
+              Number(
+                result.reviews
+              );
+
+            const ratingText =
+              Number.isFinite(
+                ratingNumeric
+              ) &&
+              ratingNumeric >
+                0
+                ? ` • ★ ${ratingNumeric}${Number.isFinite(reviewsNumeric) && reviewsNumeric > 0 ? ` (${reviewsNumeric})` : ""}`
+                : "";
+
+            const imageHtml =
+              result.image
+                ? `<img src="${escapeHtml(result.image)}" alt="" loading="lazy" style="width:72px;height:72px;object-fit:contain;border-radius:9px;background:#fff;flex:0 0 72px;">`
+                : "";
+
+            return (
+              `<div class="online-search-result">` +
+                `<div style="display:flex;gap:11px;align-items:flex-start;">` +
+                  imageHtml +
+                  `<div style="min-width:0;flex:1;">` +
+                    `<div class="online-search-result-name">${escapeHtml(result.title)}</div>` +
+                    `<div class="online-search-result-meta"><strong>${escapeHtml(priceText)}</strong>${escapeHtml(oldPriceText)} • ${escapeHtml(sourceName)}${escapeHtml(ratingText)}${deliveryText ? ` • ${escapeHtml(deliveryText)}` : ""}</div>` +
+                  `</div>` +
+                `</div>` +
+                `<button type="button" onclick="useOnlineProductSearchResult(${index})">USE THIS PRODUCT</button>` +
+              `</div>`
+            );
+          }
+        )
+        .join(
+          ""
+        );
+
+    const hiddenLoaded =
+      Math.max(
+        0,
+        onlineProductSearchPreviewResults.length -
+        visibleCount
+      );
+
+    const canSeeMore =
+      hiddenLoaded >
+        0 ||
+      (
+        onlineProductSearchProviderHasNext &&
+        onlineProductSearchProviderCanPaginate
+      );
+
+    let moreHtml =
+      "";
+
+    if (canSeeMore) {
+      const nextLoadedCount =
+        Math.min(
+          10,
+          hiddenLoaded
+        );
+
+      const buttonText =
+        hiddenLoaded >
+          0
+          ? (
+              nextLoadedCount ===
+                10
+                ? "SEE 10 MORE RESULTS"
+                : `SEE ${nextLoadedCount} MORE RESULT${nextLoadedCount === 1 ? "" : "S"}`
+            )
+          : "SEE MORE RESULTS";
+
+      const meta =
+        hiddenLoaded >
+          0
+          ? `Showing ${visibleCount} of ${onlineProductSearchPreviewResults.length} loaded results.`
+          : `Showing all ${onlineProductSearchPreviewResults.length} loaded results. More are available from ${onlineProductSearchSource?.retailerName || "the retailer"}.`;
+
+      moreHtml =
+        `<div class="online-search-more">` +
+          `<button id="online-product-search-more-button" type="button" onclick="showMoreOnlineProductSearchResults()">${escapeHtml(buttonText)}</button>` +
+          `<div class="online-search-more-meta">${escapeHtml(meta)}</div>` +
+        `</div>`;
+    }
+
+    host.innerHTML =
+      cards +
+      moreHtml;
+  }
+
+
+  async function showMoreOnlineProductSearchResults() {
+    const host =
+      document.getElementById(
+        "online-product-search-results"
+      );
+
+    const button =
+      document.getElementById(
+        "online-product-search-more-button"
+      );
+
+    if (!host) return;
+
+    const previousScrollTop =
+      host.scrollTop;
+
+    const hiddenLoaded =
+      Math.max(
+        0,
+        onlineProductSearchPreviewResults.length -
+        onlineProductSearchVisibleCount
+      );
+
+    if (
+      hiddenLoaded >
+        0
+    ) {
+      onlineProductSearchVisibleCount =
+        Math.min(
+          onlineProductSearchVisibleCount +
+          10,
+          onlineProductSearchPreviewResults.length
+        );
+
+      renderOnlineProductSearchResults();
+
+      requestAnimationFrame(
+        () => {
+          host.scrollTop =
+            previousScrollTop;
+        }
+      );
+
+      return;
+    }
+
+    if (
+      !onlineProductSearchProviderHasNext ||
+      !onlineProductSearchProviderCanPaginate ||
+      !onlineProductSearchBaseQuery ||
+      !onlineProductSearchSource
+    ) {
+      return;
+    }
+
+    if (button) {
+      button.disabled =
+        true;
+
+      button.textContent =
+        "LOADING MORE…";
+    }
+
+    if (
+      onlineProductSearchAbortController
+    ) {
+      try {
+        onlineProductSearchAbortController.abort();
+      } catch (_) {}
+    }
+
+    const requestSerial =
+      ++onlineProductSearchRequestSerial;
+
+    const controller =
+      new AbortController();
+
+    onlineProductSearchAbortController =
+      controller;
+
+    const nextPage =
+      onlineProductSearchProviderPage +
+      1;
+
+    try {
+      const pageResult =
+        await fetchFreshOnlineProductSearchWithRetry(
+          onlineProductSearchBaseQuery,
+          requestSerial,
+          controller.signal,
+          nextPage
+        );
+
+      if (
+        controller.signal.aborted ||
+        requestSerial !==
+          onlineProductSearchRequestSerial
+      ) {
+        return;
+      }
+
+      onlineProductSearchPreviewResults =
+        mergeOnlineProductSearchResults([
+          onlineProductSearchPreviewResults,
+          pageResult.products
+        ]);
+
+      onlineProductSearchProviderPage =
+        Number(
+          pageResult.data?.pagination?.current ||
+          nextPage
+        ) ||
+        nextPage;
+
+      onlineProductSearchProviderHasNext =
+        Boolean(
+          pageResult.data?.pagination?.hasNext
+        );
+
+      onlineProductSearchVisibleCount =
+        Math.min(
+          onlineProductSearchVisibleCount +
+          10,
+          onlineProductSearchPreviewResults.length
+        );
+
+      renderOnlineProductSearchResults();
+
+      requestAnimationFrame(
+        () => {
+          host.scrollTop =
+            previousScrollTop;
+        }
+      );
+
+    } catch (error) {
+      if (
+        controller.signal.aborted ||
+        requestSerial !==
+          onlineProductSearchRequestSerial ||
+        error?.name ===
+          "AbortError"
+      ) {
+        return;
+      }
+
+      showErrorToast(
+        "More results unavailable",
+        String(
+          error?.message ||
+          error ||
+          "The next retailer-results page could not be loaded."
+        )
+      );
+
+      renderOnlineProductSearchResults();
+
+    } finally {
+      if (
+        requestSerial ===
+          onlineProductSearchRequestSerial
+      ) {
+        onlineProductSearchAbortController =
+          null;
+      }
+    }
   }
 
   async function runOnlineProductSearchPreview() {
@@ -11082,6 +11451,21 @@
     onlineProductSearchPreviewResults =
       [];
 
+    onlineProductSearchVisibleCount =
+      10;
+
+    onlineProductSearchBaseQuery =
+      query;
+
+    onlineProductSearchProviderPage =
+      1;
+
+    onlineProductSearchProviderHasNext =
+      false;
+
+    onlineProductSearchProviderCanPaginate =
+      false;
+
     let originalReturnedCount =
       0;
 
@@ -11116,6 +11500,26 @@
 
       originalVerifiedCount =
         primary.products.length;
+
+      onlineProductSearchProviderPage =
+        Number(
+          primary.data?.pagination?.current ||
+          1
+        ) ||
+        1;
+
+      onlineProductSearchProviderHasNext =
+        Boolean(
+          primary.data?.pagination?.hasNext
+        );
+
+      onlineProductSearchProviderCanPaginate =
+        String(
+          primary.data?.engine ||
+          ""
+        )
+          .toLowerCase() ===
+        "walmart";
 
       resultGroups.push(
         primary.products
