@@ -7694,7 +7694,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2q — Native provider pagination. Production remains index.html.
+    V6 Stage 3J.2r — La Comer-family source linking. Production remains index.html.
   </div>
 
 </div>
@@ -8696,8 +8696,12 @@
 
 <script>
 
-  // V6 Stage 3J.2q — native provider pagination.
-  // Keeps 3J.2p trip-active toasts and Canonical Products search intact.
+  // V6 Stage 3J.2r — La Comer-family source linking.
+  // Keeps 3J.2q native provider pagination, 3J.2p trip-active toasts,
+  // and Canonical Products search intact.
+  // Adds frontend source identity + canonical online merchant homepages for
+  // Fresko, City Market, and La Comer so Remote branches and Online merchants
+  // resolve to the already-tested native Worker adapters.
   // The shared 10-at-a-time merchant result viewport can now request the next
   // native provider page from Walmart, Chedraui, Fresko, City Market, and La Comer.
   // Soriana remains intentionally unchanged on its existing fallback behavior.
@@ -8707,7 +8711,10 @@
   const PRODUCT_SEARCH_SOURCE_DEFINITIONS = [
     {id:"WALMART_MX", retailerName:"Walmart México", websiteUrl:"https://www.walmart.com.mx/", domains:["walmart.com.mx"], storeKeywords:["walmart"]},
     {id:"SORIANA_MX", retailerName:"Soriana", websiteUrl:"https://www.soriana.com/", domains:["soriana.com"], storeKeywords:["soriana"]},
-    {id:"CHEDRAUI_MX", retailerName:"Chedraui", websiteUrl:"https://www.chedraui.com.mx/", domains:["chedraui.com.mx"], storeKeywords:["chedraui"]}
+    {id:"CHEDRAUI_MX", retailerName:"Chedraui", websiteUrl:"https://www.chedraui.com.mx/", domains:["chedraui.com.mx"], storeKeywords:["chedraui"]},
+    {id:"FRESKO_MX", retailerName:"Fresko", websiteUrl:"https://www.fresko.com.mx/", domains:["fresko.com.mx","lacomer.com.mx"], storeKeywords:["fresko"], aliases:["Fresko","Fresko en tu casa"]},
+    {id:"CITY_MARKET_MX", retailerName:"City Market", websiteUrl:"https://www.citymarket.com.mx/", domains:["citymarket.com.mx","lacomer.com.mx"], storeKeywords:["city market","citymarket"], aliases:["City Market","CityMarket","City Market en tu casa"]},
+    {id:"LA_COMER_MX", retailerName:"La Comer", websiteUrl:"https://www.lacomer.com.mx/", domains:["lacomer.com.mx"], storeKeywords:["la comer","lacomer"], aliases:["La Comer","La Comer en tu casa","LaComer"]}
   ];
 
   let onlineProductSearchContext = "";
@@ -12087,7 +12094,10 @@
   const BUILT_IN_ONLINE_MERCHANTS = [
     {storeId:"ONLINE-WALMART-MX", name:"Walmart México", type:"Online", websiteUrl:"https://www.walmart.com.mx/", source:"online-builtin", active:true},
     {storeId:"ONLINE-SORIANA-MX", name:"Soriana", type:"Online", websiteUrl:"https://www.soriana.com/", source:"online-builtin", active:true},
-    {storeId:"ONLINE-CHEDRAUI-MX", name:"Chedraui", type:"Online", websiteUrl:"https://www.chedraui.com.mx/", source:"online-builtin", active:true}
+    {storeId:"ONLINE-CHEDRAUI-MX", name:"Chedraui", type:"Online", websiteUrl:"https://www.chedraui.com.mx/", source:"online-builtin", active:true},
+    {storeId:"ONLINE-FRESKO-MX", name:"Fresko", type:"Online", websiteUrl:"https://www.fresko.com.mx/", source:"online-builtin", active:true},
+    {storeId:"ONLINE-CITY-MARKET-MX", name:"City Market", type:"Online", websiteUrl:"https://www.citymarket.com.mx/", source:"online-builtin", active:true},
+    {storeId:"ONLINE-LA-COMER-MX", name:"La Comer", type:"Online", websiteUrl:"https://www.lacomer.com.mx/", source:"online-builtin", active:true}
   ];
   let managementEditingProductIndex = null;
   let managementEditingCanonicalIndex = null;
@@ -13727,7 +13737,10 @@
       const normalizedQuery = normalizeStoreSearchText(query);
       const merged = [];
       const seen = new Set();
-      [...savedOnlineStoreDirectory, ...BUILT_IN_ONLINE_MERCHANTS].forEach(store => {
+      // Known merchant homepages come first so an older saved branch-level
+      // listing cannot override the canonical online merchant (for example,
+      // "Fresko La Herradura" cannot replace the Fresko homepage).
+      [...BUILT_IN_ONLINE_MERCHANTS, ...savedOnlineStoreDirectory].forEach(store => {
         const key = normalizeStore(store.websiteUrl || store.name);
         if (!key || seen.has(key)) return;
         seen.add(key);
