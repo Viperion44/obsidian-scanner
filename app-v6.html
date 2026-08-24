@@ -7658,7 +7658,7 @@
   </div>
 
   <div class="help">
-    V6 Stage 3J.2m — Search CORS recovery. Production remains index.html.
+    V6 Stage 3J.2n — Strict live-result verification. Production remains index.html.
   </div>
 
 </div>
@@ -8660,10 +8660,11 @@
 
 <script>
 
-  // V6 Stage 3J.2m — search CORS recovery.
-  // Keeps 3J.2l's unique fresh request, stale-request abort, retry, plural
-  // expansion, and deduplication. Removes non-simple request headers that can
-  // trigger a CORS preflight unsupported by the frozen 3F.10 Worker.
+  // V6 Stage 3J.2n — strict live-result verification + duplicate cleanup.
+  // Keeps 3J.2m's fresh request/retry/plural-expansion behavior intact.
+  // Live search now requires real retailer-listing evidence instead of trusting
+  // a bare retailerMatch flag, and exact duplicate titles collapse to the
+  // richer verified listing.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
 
@@ -9971,12 +9972,46 @@
   }
 
 
-  function onlineProductSearchResultKey(result) {
-    const url =
+  function onlineProductSearchCanonicalUrl(result) {
+    const raw =
       String(
         result?.url || ""
-      )
-        .trim()
+      ).trim();
+
+    if (!raw) return "";
+
+    try {
+      const parsed =
+        new URL(
+          raw
+        );
+
+      parsed.hash =
+        "";
+
+      // Tracking/query differences must not create duplicate product cards.
+      parsed.search =
+        "";
+
+      return (
+        parsed.protocol +
+        "//" +
+        parsed.hostname
+          .toLowerCase()
+          .replace(
+            /^www\./,
+            ""
+          ) +
+        parsed.pathname
+          .replace(
+            /\/+$/,
+            ""
+          )
+          .toLowerCase()
+      );
+
+    } catch (_) {
+      return raw
         .replace(
           /[#?].*$/,
           ""
@@ -9986,45 +10021,215 @@
           ""
         )
         .toLowerCase();
-
-    if (url) {
-      return (
-        "URL|" +
-        url
-      );
     }
+  }
 
-    const productId =
-      String(
-        result?.productId || ""
-      )
-        .trim();
 
-    if (productId) {
-      return (
-        "ID|" +
-        productId
-      );
-    }
-
-    return (
-      "TITLE|" +
+  function onlineProductSearchExactTitleKey(
+    result
+  ) {
+    const title =
       normalizeProductIdentity(
         result?.title ||
         result?.name ||
         ""
-      ) +
+      );
+
+    if (!title) return "";
+
+    return (
+      title +
       "|" +
       normalizeRetailerSourceMatchText(
         result?.source ||
+        onlineProductSearchSource?.retailerName ||
         ""
       )
     );
   }
 
 
-  function mergeOnlineProductSearchResults(resultGroups) {
+  function onlineProductSearchResultEvidenceScore(
+    result
+  ) {
+    let score =
+      Number(
+        result?.liveEvidenceScore
+      ) || 0;
+
+    if (
+      normalizedOnlineResultPrice(
+        result
+      ) !== null
+    ) {
+      score +=
+        4;
+    }
+
+    if (
+      String(
+        result?.image ||
+        ""
+      ).trim()
+    ) {
+      score +=
+        2;
+    }
+
+    if (
+      String(
+        result?.productId ||
+        ""
+      ).trim()
+    ) {
+      score +=
+        2;
+    }
+
+    if (
+      onlineProductUrlMatchesSelectedRetailer(
+        result?.url
+      )
+    ) {
+      score +=
+        6;
+    }
+
+    return score;
+  }
+
+
+  function richerOnlineProductSearchResult(
+    first,
+    second
+  ) {
+    const firstScore =
+      onlineProductSearchResultEvidenceScore(
+        first
+      );
+
+    const secondScore =
+      onlineProductSearchResultEvidenceScore(
+        second
+      );
+
+    const preferred =
+      secondScore >
+        firstScore
+          ? second
+          : first;
+
+    const alternate =
+      preferred ===
+        first
+          ? second
+          : first;
+
+    const preferredPrice =
+      normalizedOnlineResultPrice(
+        preferred
+      );
+
+    const alternatePrice =
+      normalizedOnlineResultPrice(
+        alternate
+      );
+
+    return {
+      ...preferred,
+
+      price:
+        preferredPrice !==
+          null
+            ? preferred.price
+            : (
+                alternatePrice !==
+                  null
+                  ? alternate.price
+                  : ""
+              ),
+
+      oldPrice:
+        preferred.oldPrice ||
+        alternate.oldPrice ||
+        "",
+
+      image:
+        preferred.image ||
+        alternate.image ||
+        "",
+
+      delivery:
+        preferred.delivery ||
+        alternate.delivery ||
+        "",
+
+      rating:
+        preferred.rating ||
+        alternate.rating ||
+        "",
+
+      reviews:
+        preferred.reviews ||
+        alternate.reviews ||
+        "",
+
+      snippet:
+        preferred.snippet ||
+        alternate.snippet ||
+        "",
+
+      url:
+        preferred.url ||
+        alternate.url ||
+        "",
+
+      productId:
+        preferred.productId ||
+        alternate.productId ||
+        "",
+
+      resultOrigin:
+        preferred.resultOrigin ||
+        alternate.resultOrigin ||
+        "",
+
+      queryRelevanceScore:
+        Math.max(
+          Number(
+            preferred.queryRelevanceScore
+          ) || 0,
+          Number(
+            alternate.queryRelevanceScore
+          ) || 0
+        ),
+
+      liveEvidenceScore:
+        Math.max(
+          Number(
+            preferred.liveEvidenceScore
+          ) || 0,
+          Number(
+            alternate.liveEvidenceScore
+          ) || 0
+        )
+    };
+  }
+
+
+  function mergeOnlineProductSearchResults(
+    resultGroups
+  ) {
     const merged =
+      [];
+
+    const urlIndex =
+      new Map();
+
+    const productIdIndex =
+      new Map();
+
+    const exactTitleIndex =
       new Map();
 
     (
@@ -10036,109 +10241,129 @@
         result => {
           if (!result?.title) return;
 
-          const key =
-            onlineProductSearchResultKey(
+          const canonicalUrl =
+            onlineProductSearchCanonicalUrl(
               result
             );
+
+          const productId =
+            String(
+              result?.productId ||
+              ""
+            ).trim();
+
+          const exactTitleKey =
+            onlineProductSearchExactTitleKey(
+              result
+            );
+
+          let existingIndex =
+            -1;
 
           if (
-            !key ||
-            key ===
-              "TITLE||"
+            canonicalUrl &&
+            urlIndex.has(
+              canonicalUrl
+            )
           ) {
-            return;
+            existingIndex =
+              urlIndex.get(
+                canonicalUrl
+              );
+
+          } else if (
+            productId &&
+            productIdIndex.has(
+              productId
+            )
+          ) {
+            existingIndex =
+              productIdIndex.get(
+                productId
+              );
+
+          } else if (
+            exactTitleKey &&
+            exactTitleIndex.has(
+              exactTitleKey
+            )
+          ) {
+            // Exact same normalized product title + retailer:
+            // keep only one card and preserve the richer evidence.
+            existingIndex =
+              exactTitleIndex.get(
+                exactTitleKey
+              );
           }
 
-          const existing =
-            merged.get(
-              key
-            );
+          if (
+            existingIndex >= 0
+          ) {
+            merged[
+              existingIndex
+            ] =
+              richerOnlineProductSearchResult(
+                merged[
+                  existingIndex
+                ],
+                result
+              );
 
-          if (!existing) {
-            merged.set(
-              key,
-              {
-                ...result
-              }
-            );
-            return;
+          } else {
+            existingIndex =
+              merged.length;
+
+            merged.push({
+              ...result
+            });
           }
 
-          // Preserve the first ranking position, but let a later query enrich
-          // an otherwise incomplete duplicate with a usable price/image/etc.
-          const existingPrice =
-            normalizedOnlineResultPrice(
-              existing
+          const finalResult =
+            merged[
+              existingIndex
+            ];
+
+          const finalUrl =
+            onlineProductSearchCanonicalUrl(
+              finalResult
             );
 
-          const incomingPrice =
-            normalizedOnlineResultPrice(
-              result
+          const finalProductId =
+            String(
+              finalResult?.productId ||
+              ""
+            ).trim();
+
+          const finalTitleKey =
+            onlineProductSearchExactTitleKey(
+              finalResult
             );
 
-          merged.set(
-            key,
-            {
-              ...existing,
+          if (finalUrl) {
+            urlIndex.set(
+              finalUrl,
+              existingIndex
+            );
+          }
 
-              price:
-                existingPrice !== null
-                  ? existing.price
-                  : (
-                      incomingPrice !== null
-                        ? result.price
-                        : existing.price
-                    ),
+          if (finalProductId) {
+            productIdIndex.set(
+              finalProductId,
+              existingIndex
+            );
+          }
 
-              oldPrice:
-                existing.oldPrice ||
-                result.oldPrice ||
-                "",
-
-              image:
-                existing.image ||
-                result.image ||
-                "",
-
-              delivery:
-                existing.delivery ||
-                result.delivery ||
-                "",
-
-              rating:
-                existing.rating ||
-                result.rating ||
-                "",
-
-              reviews:
-                existing.reviews ||
-                result.reviews ||
-                "",
-
-              snippet:
-                existing.snippet ||
-                result.snippet ||
-                "",
-
-              url:
-                existing.url ||
-                result.url ||
-                "",
-
-              productId:
-                existing.productId ||
-                result.productId ||
-                ""
-            }
-          );
+          if (finalTitleKey) {
+            exactTitleIndex.set(
+              finalTitleKey,
+              existingIndex
+            );
+          }
         }
       );
 
-    return Array.from(
-      merged.values()
-    );
+    return merged;
   }
-
 
   function mapOnlineProductSearchResponseProducts(
     data,
@@ -10152,16 +10377,31 @@
         : [];
 
     const retailerProducts =
-      returnedProducts.filter(
-        product =>
-          onlineProductResultMatchesSelectedRetailer(
-            product
-          )
-      );
+      returnedProducts
+        .map(
+          product => ({
+            product,
+            verification:
+              onlineProductLiveVerification(
+                product
+              )
+          })
+        )
+        .filter(
+          entry =>
+            entry.verification.verified
+        );
 
     return retailerProducts
       .map(
-        product => ({
+        entry => {
+          const product =
+            entry.product;
+
+          const verification =
+            entry.verification;
+
+          return ({
           title:
             String(
               product?.name ||
@@ -10262,9 +10502,15 @@
 
           sourceId:
             onlineProductSearchSource?.id ||
-            ""
-        })
-      )
+            "",
+
+          liveEvidenceScore:
+            verification.score,
+
+          liveEvidenceReason:
+            verification.reason
+        });
+      })
       .filter(
         result =>
           result.title
@@ -10436,32 +10682,289 @@
       : "Price unavailable";
   }
 
-  function onlineProductResultMatchesSelectedRetailer(product) {
-    if (!onlineProductSearchSource || !product) return false;
-
-    if (product.retailerMatch === true) {
-      return true;
+  function onlineProductUrlMatchesSelectedRetailer(
+    value
+  ) {
+    if (
+      !onlineProductSearchSource
+    ) {
+      return false;
     }
 
-    const candidates = [];
-    const add = value => {
-      const normalized = normalizeRetailerSourceMatchText(value);
-      if (normalized) candidates.push(normalized);
+    const raw =
+      String(
+        value || ""
+      ).trim();
 
-      const websiteKey = normalizedWebsiteKey(value);
-      if (websiteKey) {
-        const domainNormalized = normalizeRetailerSourceMatchText(websiteKey);
-        if (domainNormalized) candidates.push(domainNormalized);
-      }
-    };
+    if (!raw) {
+      return false;
+    }
 
-    add(product.source);
-    add(product.url);
+    let host =
+      "";
+
+    try {
+      host =
+        new URL(
+          raw
+        )
+          .hostname
+          .toLowerCase()
+          .replace(
+            /^www\./,
+            ""
+          );
+
+    } catch (_) {
+      return false;
+    }
+
+    const domains =
+      new Set();
+
+    const addDomain =
+      value => {
+        const key =
+          normalizedWebsiteKey(
+            value
+          );
+
+        if (
+          key &&
+          key.includes(
+            "."
+          )
+        ) {
+          domains.add(
+            key
+              .toLowerCase()
+              .replace(
+                /^www\./,
+                ""
+              )
+          );
+        }
+      };
+
+    (
+      onlineProductSearchSource.domains ||
+      []
+    ).forEach(
+      addDomain
+    );
+
+    addDomain(
+      onlineProductSearchSource.websiteUrl
+    );
+
+    return Array.from(
+      domains
+    ).some(
+      domain =>
+        host ===
+          domain ||
+        host.endsWith(
+          "." +
+          domain
+        )
+    );
+  }
+
+
+  function onlineProductRetailerIdentityMatches(
+    product
+  ) {
+    if (
+      !onlineProductSearchSource ||
+      !product
+    ) {
+      return false;
+    }
+
+    const candidates =
+      [];
+
+    const add =
+      value => {
+        const normalized =
+          normalizeRetailerSourceMatchText(
+            value
+          );
+
+        if (normalized) {
+          candidates.push(
+            normalized
+          );
+        }
+
+        const websiteKey =
+          normalizedWebsiteKey(
+            value
+          );
+
+        if (websiteKey) {
+          const domainNormalized =
+            normalizeRetailerSourceMatchText(
+              websiteKey
+            );
+
+          if (domainNormalized) {
+            candidates.push(
+              domainNormalized
+            );
+          }
+        }
+      };
+
+    add(
+      product.source
+    );
+
+    add(
+      product.url
+    );
 
     return sourceMatchesTripRetailer(
       onlineProductSearchSource,
-      [...new Set(candidates)]
+      [
+        ...new Set(
+          candidates
+        )
+      ]
     );
+  }
+
+
+  function onlineProductLiveVerification(
+    product
+  ) {
+    if (
+      !onlineProductSearchSource ||
+      !product
+    ) {
+      return {
+        verified:
+          false,
+        score:
+          0,
+        reason:
+          "missing search context"
+      };
+    }
+
+    const retailerIdentity =
+      onlineProductRetailerIdentityMatches(
+        product
+      );
+
+    const directRetailerUrl =
+      onlineProductUrlMatchesSelectedRetailer(
+        product.url
+      );
+
+    const positivePrice =
+      normalizedOnlineResultPrice(
+        product
+      ) !==
+        null;
+
+    const hasImage =
+      Boolean(
+        String(
+          product.image ||
+          ""
+        ).trim()
+      );
+
+    const hasProductId =
+      Boolean(
+        String(
+          product.productId ||
+          ""
+        ).trim()
+      );
+
+    const hasStructuredEvidence =
+      hasImage ||
+      hasProductId;
+
+    // Strongest proof: an actual URL on the selected retailer's domain.
+    // A genuine product page may temporarily lack a parsed price, so direct
+    // retailer-domain URLs are accepted even when price extraction failed.
+    if (
+      directRetailerUrl
+    ) {
+      return {
+        verified:
+          true,
+        score:
+          10 +
+          (
+            positivePrice
+              ? 3
+              : 0
+          ) +
+          (
+            hasStructuredEvidence
+              ? 2
+              : 0
+          ),
+        reason:
+          "direct retailer URL"
+      };
+    }
+
+    // Google Shopping/fallback results can use redirect/provider URLs instead
+    // of the retailer's own URL. For those, retailer identity alone is not
+    // enough: require a real positive price plus structured product evidence.
+    if (
+      retailerIdentity &&
+      positivePrice &&
+      hasStructuredEvidence
+    ) {
+      return {
+        verified:
+          true,
+        score:
+          7 +
+          (
+            hasImage
+              ? 1
+              : 0
+          ) +
+          (
+            hasProductId
+              ? 1
+              : 0
+          ),
+        reason:
+          "retailer + positive price + structured evidence"
+      };
+    }
+
+    return {
+      verified:
+        false,
+      score:
+        0,
+      reason:
+        retailerIdentity
+          ? (
+              positivePrice
+                ? "retailer label without structured live-listing evidence"
+                : "retailer label without a positive price or direct listing URL"
+            )
+          : "retailer identity could not be verified"
+    };
+  }
+
+
+  function onlineProductResultMatchesSelectedRetailer(
+    product
+  ) {
+    return onlineProductLiveVerification(
+      product
+    ).verified;
   }
 
   function renderOnlineProductSearchResults() {
@@ -10681,11 +11184,11 @@
       ) {
         const detail =
           originalReturnedCount
-            ? `The live service returned ${originalReturnedCount} result${originalReturnedCount === 1 ? "" : "s"}, but none could be verified as ${onlineProductSearchSource.retailerName} listings.`
+            ? `The live service returned ${originalReturnedCount} candidate result${originalReturnedCount === 1 ? "" : "s"}, but none had enough evidence to treat as a verified live ${onlineProductSearchSource.retailerName} listing.`
             : `No ${onlineProductSearchSource.retailerName} results were returned for “${query}”.`;
 
         showErrorToast(
-          "No retailer matches",
+          "No verified live products",
           detail
         );
 
