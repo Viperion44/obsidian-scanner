@@ -7704,7 +7704,7 @@
   </div>
 
   <div class="help">
-    V7 Stage 4A.1 — Obsidian export payload preview. Production remains index.html.
+    V7 Stage 4B.3 — Automatic Obsidian export queue. Production remains index.html.
   </div>
 
 </div>
@@ -8706,7 +8706,7 @@
 
 <script>
 
-  // V7 Stage 4A.1 — Obsidian export payload preview.
+  // V7 Stage 4B.3 — Automatic Obsidian export queue.
   // Keeps 3J.2q native provider pagination, 3J.2p trip-active toasts,
   // and Canonical Products search intact.
   // Adds frontend source identity + canonical online merchant homepages for
@@ -8717,6 +8717,9 @@
   // Soriana remains intentionally unchanged on its existing fallback behavior.
   const ONLINE_PRODUCT_SEARCH_WORKER_URL =
     "https://obsidian-shopping-search.viperion444.workers.dev";
+
+  const OBSIDIAN_EXPORT_GATEWAY_URL =
+    "https://obsidian-shopping-export-gateway.viperion444.workers.dev";
 
   const PRODUCT_SEARCH_SOURCE_DEFINITIONS = [
     {id:"WALMART_MX", retailerName:"Walmart México", websiteUrl:"https://www.walmart.com.mx/", domains:["walmart.com.mx"], storeKeywords:["walmart"]},
@@ -12061,7 +12064,7 @@
   let managementTrips = [];
   let managementCancelledTrips = [];
 
-  // V7 Stage 4A.1: preview only. Nothing here writes to Obsidian or Sheets.
+  // V7 Stage 4B.3: Finish Trip can securely queue the generated Obsidian Markdown through the export gateway.
   let obsidianExportPreviewTrip = null;
   let obsidianExportPreviewMarkdown = "";
   let obsidianExportPreviewFilename = "";
@@ -30308,6 +30311,36 @@
         finishIso
       );
 
+
+      let obsidianQueueResult =
+        null;
+
+      let obsidianQueueError =
+        null;
+
+      try {
+
+        const obsidianPayload =
+          buildObsidianShoppingMarkdown(
+            lastFinishedTripExport
+          );
+
+        obsidianQueueResult =
+          await enqueueObsidianExportPayload(
+            obsidianPayload
+          );
+
+      } catch (error) {
+
+        obsidianQueueError =
+          error;
+
+        console.error(
+          "Obsidian export queue failed:",
+          error
+        );
+      }
+
       /*
         The finished receipt/PDF snapshot is now self-contained. Do not leave
         the completed trip in activeTrip: primary navigation previously saw
@@ -30366,12 +30399,28 @@
 
       hideStatus();
 
-      showSuccessToast(
-        items.length ? "Trip finished" : "Zero-item trip finished",
-        items.length
-          ? "The trip was saved successfully. Review the receipt or tap Done."
-          : "The zero-item store visit was saved successfully. Review the receipt or tap Done."
-      );
+      if (
+        obsidianQueueError
+      ) {
+
+        showErrorToast(
+          items.length
+            ? "Trip saved — Obsidian export pending"
+            : "Zero-item trip saved — Obsidian export pending",
+          "The shopping trip was saved successfully, but its Obsidian export could not be queued. The Markdown preview/download remains available in Management."
+        );
+
+      } else {
+
+        showSuccessToast(
+          items.length
+            ? "Trip finished"
+            : "Zero-item trip finished",
+          obsidianQueueResult?.duplicate
+            ? "The trip was saved successfully. Its Obsidian export was already waiting in the queue."
+            : "The trip was saved successfully and its Obsidian export was queued automatically."
+        );
+      }
 
 
       button.disabled =
@@ -41834,6 +41883,102 @@
   }
 
 
+  async function enqueueObsidianExportPayload(
+    payload
+  ) {
+
+    if (
+      !accessToken
+    ) {
+      throw new Error(
+        "Google connection is not available for the Obsidian export queue."
+      );
+    }
+
+    if (
+      !payload ||
+      !payload.markdown ||
+      !payload.filename
+    ) {
+      throw new Error(
+        "The Obsidian export payload is incomplete."
+      );
+    }
+
+    const tripId =
+      String(
+        payload.trip?.tripId ||
+        ""
+      ).trim();
+
+    if (
+      !tripId
+    ) {
+      throw new Error(
+        "The finished trip does not have a Trip ID for the Obsidian export queue."
+      );
+    }
+
+    const response =
+      await fetch(
+        `${OBSIDIAN_EXPORT_GATEWAY_URL}/enqueue`,
+        {
+          method:
+            "POST",
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`,
+            "Content-Type":
+              "application/json"
+          },
+          body:
+            JSON.stringify({
+              id:
+                tripId,
+              tripId,
+              filename:
+                payload.filename,
+              markdown:
+                payload.markdown
+            })
+        }
+      );
+
+    let result =
+      null;
+
+    try {
+      result =
+        await response.json();
+    } catch (_) {
+      result =
+        null;
+    }
+
+    if (
+      !response.ok ||
+      !result?.ok
+    ) {
+      throw new Error(
+        result?.message ||
+        result?.error ||
+        `Obsidian export gateway returned HTTP ${response.status}.`
+      );
+    }
+
+    if (
+      result.queued !== true &&
+      result.duplicate !== true
+    ) {
+      throw new Error(
+        "The Obsidian export gateway did not confirm the queued trip."
+      );
+    }
+
+    return result;
+  }
+
+
   function buildObsidianShoppingMarkdown(
     rawTrip
   ) {
@@ -42144,7 +42289,7 @@
         `${frontmatter}\n\n${body}`,
       filename,
       targetPath:
-        `Shopping/Full Note/${filename}`
+        `06 Shopping/${filename}`
     };
   }
 
@@ -42235,7 +42380,7 @@
     box.innerHTML =
       '<div class="management-section-title">Obsidian Export</div>' +
       '<div class="management-row">' +
-        '<div class="management-row-name">Stage 4A.1</div>' +
+        '<div class="management-row-name">Stage 4B.3</div>' +
         '<div class="management-row-meta">Preview only. Nothing is written to Obsidian or Google Sheets.</div>' +
       '</div>' +
       '<div class="management-row">' +
