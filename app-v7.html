@@ -190,6 +190,89 @@
       resize: vertical;
     }
 
+    /* V7 Stage 4B.7 — one-tap clear control for editable inputs/textareas */
+    .input-clear-wrap {
+      position: relative;
+      display: block;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .input-clear-wrap > input,
+    .input-clear-wrap > textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding-right: 42px;
+    }
+
+    .input-clear-button {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      z-index: 3;
+      width: 28px !important;
+      min-width: 28px !important;
+      height: 28px;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0;
+      border-radius: 50%;
+      background: #3b414d !important;
+      color: #d9dde5;
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 28px;
+      text-align: center;
+      cursor: pointer;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .12s ease, background .12s ease;
+    }
+
+    .input-clear-wrap.has-value > .input-clear-button {
+      opacity: .92;
+      pointer-events: auto;
+    }
+
+    .input-clear-button:hover,
+    .input-clear-button:focus-visible {
+      background: #565e6c !important;
+      outline: 2px solid #8650c5;
+      outline-offset: 1px;
+    }
+
+    .input-clear-wrap > input[type="number"] + .input-clear-button,
+    .input-clear-wrap > input[type="date"] + .input-clear-button {
+      right: 32px;
+    }
+
+    .input-clear-wrap > input[type="search"]::-webkit-search-cancel-button {
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .start-store-row > .input-clear-wrap,
+    .online-preview-retailer-row > .input-clear-wrap,
+    .start-store-search > .input-clear-wrap {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .start-store-search > .input-clear-wrap > input {
+      margin: 0;
+      padding-top: 8px;
+      padding-bottom: 8px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .input-clear-wrap > textarea + .input-clear-button {
+      top: 8px;
+      transform: none;
+    }
+
     input:focus,
     textarea:focus,
     select:focus {
@@ -6372,7 +6455,10 @@
         </span>
       </div>
 
-      <div class="finish-summary-row">
+      <div
+        id="finish-review-shipping-row"
+        class="finish-summary-row"
+      >
         <span>Shipment / delivery</span>
         <input
           id="finish-review-shipping"
@@ -7704,7 +7790,7 @@
   </div>
 
   <div class="help">
-    V7 Stage 4B.6 — Obsidian delivery confirmation. Production remains index.html.
+    V7 Stage 4B.7 — Clearable inputs + Online-only shipment fee. Production remains index.html.
   </div>
 
 </div>
@@ -8706,7 +8792,7 @@
 
 <script>
 
-  // V7 Stage 4B.6 — Automatic Obsidian export queue + delivery confirmation.
+  // V7 Stage 4B.7 — Automatic Obsidian export queue + delivery confirmation + input polish.
   // Keeps 3J.2q native provider pagination, 3J.2p trip-active toasts,
   // and Canonical Products search intact.
   // Adds frontend source identity + canonical online merchant homepages for
@@ -12064,12 +12150,12 @@
   let managementTrips = [];
   let managementCancelledTrips = [];
 
-  // V7 Stage 4B.6: Finish Trip queues Obsidian Markdown and watches for confirmed PC delivery while the app remains open.
+  // V7 Stage 4B.7: Finish Trip queues Obsidian Markdown, watches for confirmed PC delivery, and keeps shipment fees Online-only.
   let obsidianExportPreviewTrip = null;
   let obsidianExportPreviewMarkdown = "";
   let obsidianExportPreviewFilename = "";
 
-  // V7 Stage 4B.6 — one lightweight in-app delivery-status watcher at a time.
+  // V7 Stage 4B.7 — one lightweight in-app delivery-status watcher at a time.
   let obsidianDeliveryWatchSerial = 0;
   let obsidianDeliveryWatchTimer = null;
   let managementHistoryRows = [];
@@ -27356,12 +27442,31 @@
       );
 
 
+    const shippingRow =
+      document.getElementById(
+        "finish-review-shipping-row"
+      );
+
     const shippingInput =
       document.getElementById(
         "finish-review-shipping"
       );
 
+    const shippingAllowed =
+      getActiveTripMode() ===
+      "ONLINE";
+
+    if (shippingRow) {
+      shippingRow.classList.toggle(
+        "hidden",
+        !shippingAllowed
+      );
+    }
+
     if (shippingInput) {
+      shippingInput.disabled =
+        !shippingAllowed;
+
       shippingInput.value =
         String(
           isUsableNumber(
@@ -27372,6 +27477,10 @@
               )
             : 0
         );
+
+      updateInputClearControl(
+        shippingInput
+      );
     }
 
 
@@ -28282,6 +28391,15 @@
         "No active trip",
         "There is no trip to update."
       );
+      return;
+    }
+
+    if (getActiveTripMode() !== "ONLINE") {
+      showErrorToast(
+        "Online Store only",
+        "Shipment/delivery fees are available only for Online Store trips."
+      );
+      renderFinishReview();
       return;
     }
 
@@ -43199,6 +43317,253 @@
       hideStatus();
     }
   }
+
+
+  // ------------------------------------------------------------
+  // V7 Stage 4B.7 — ONE-TAP INPUT CLEAR CONTROLS
+  // ------------------------------------------------------------
+
+  function isClearableInputElement(element) {
+    if (!element) return false;
+
+    const tag =
+      String(element.tagName || "")
+        .toUpperCase();
+
+    if (tag === "TEXTAREA") {
+      return !element.readOnly;
+    }
+
+    if (tag !== "INPUT") {
+      return false;
+    }
+
+    const type =
+      String(element.type || "text")
+        .toLowerCase();
+
+    return ![
+      "hidden",
+      "checkbox",
+      "radio",
+      "file",
+      "button",
+      "submit",
+      "reset",
+      "image",
+      "range",
+      "color"
+    ].includes(type) &&
+      !element.readOnly;
+  }
+
+
+  function updateInputClearControl(element) {
+    if (!element) return;
+
+    const wrapper =
+      element.closest(
+        ".input-clear-wrap"
+      );
+
+    if (!wrapper) return;
+
+    wrapper.classList.toggle(
+      "has-value",
+      !element.disabled &&
+      String(element.value ?? "").length > 0
+    );
+  }
+
+
+  function enhanceClearableInput(element) {
+    if (
+      !isClearableInputElement(element) ||
+      element.closest(
+        ".input-clear-wrap"
+      )
+    ) {
+      return;
+    }
+
+    const wrapper =
+      document.createElement(
+        "span"
+      );
+
+    wrapper.className =
+      "input-clear-wrap";
+
+    const parent =
+      element.parentNode;
+
+    if (!parent) return;
+
+    parent.insertBefore(
+      wrapper,
+      element
+    );
+
+    wrapper.appendChild(
+      element
+    );
+
+    const clearButton =
+      document.createElement(
+        "button"
+      );
+
+    clearButton.type =
+      "button";
+
+    clearButton.className =
+      "input-clear-button";
+
+    clearButton.textContent =
+      "×";
+
+    clearButton.setAttribute(
+      "aria-label",
+      "Clear field"
+    );
+
+    clearButton.setAttribute(
+      "title",
+      "Clear"
+    );
+
+    clearButton.addEventListener(
+      "mousedown",
+      event => {
+        event.preventDefault();
+      }
+    );
+
+    clearButton.addEventListener(
+      "click",
+      event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (element.disabled) {
+          return;
+        }
+
+        element.value =
+          "";
+
+        element.dispatchEvent(
+          new Event(
+            "input",
+            { bubbles: true }
+          )
+        );
+
+        element.dispatchEvent(
+          new Event(
+            "change",
+            { bubbles: true }
+          )
+        );
+
+        updateInputClearControl(
+          element
+        );
+
+        try {
+          element.focus({
+            preventScroll: true
+          });
+        } catch (_) {
+          element.focus();
+        }
+      }
+    );
+
+    wrapper.appendChild(
+      clearButton
+    );
+
+    element.addEventListener(
+      "input",
+      () =>
+        updateInputClearControl(
+          element
+        )
+    );
+
+    element.addEventListener(
+      "change",
+      () =>
+        updateInputClearControl(
+          element
+        )
+    );
+
+    updateInputClearControl(
+      element
+    );
+  }
+
+
+  function enhanceClearableInputs(root = document) {
+    if (!root) return;
+
+    if (
+      root.nodeType === 1 &&
+      (
+        root.matches?.("input") ||
+        root.matches?.("textarea")
+      )
+    ) {
+      enhanceClearableInput(root);
+    }
+
+    root
+      .querySelectorAll?.(
+        "input, textarea"
+      )
+      .forEach(
+        enhanceClearableInput
+      );
+  }
+
+
+  function initializeInputClearControls() {
+    enhanceClearableInputs(
+      document
+    );
+
+    const observer =
+      new MutationObserver(
+        mutations => {
+          mutations.forEach(
+            mutation => {
+              mutation.addedNodes.forEach(
+                node => {
+                  if (node.nodeType === 1) {
+                    enhanceClearableInputs(
+                      node
+                    );
+                  }
+                }
+              );
+            }
+          );
+        }
+      );
+
+    observer.observe(
+      document.body,
+      {
+        childList: true,
+        subtree: true
+      }
+    );
+  }
+
+
+  initializeInputClearControls();
 
 
   function escapeHtml(
