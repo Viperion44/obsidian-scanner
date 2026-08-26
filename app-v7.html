@@ -190,7 +190,7 @@
       resize: vertical;
     }
 
-    /* V7 Stage 4B.8 — store-row layout fix; clear controls preserved */
+    /* V7 Stage 4B.9 — store controls use non-overlapping grid layout */
     .input-clear-wrap {
       position: relative;
       display: block;
@@ -3456,16 +3456,32 @@
     }
 
     .start-store-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 8px;
+      width: 100%;
+      min-width: 0;
     }
 
-    .start-store-row input {
-      margin: 0;
-      flex: 1 1 auto;
-      width: auto;
+    .start-store-row > .input-clear-wrap {
+      grid-column: 1;
+      width: 100%;
       min-width: 0;
+      max-width: none;
+    }
+
+    .start-store-row > .input-clear-wrap > input {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    .start-store-row > .start-store-toggle,
+    .start-store-row > .start-store-map-inline {
+      grid-column: 2;
     }
 
     .start-store-toggle {
@@ -7796,7 +7812,7 @@
   </div>
 
   <div class="help">
-    V7 Stage 4B.8 — Clearable inputs + Online-only shipment fee. Production remains index.html.
+    V7 Stage 4B.9 — Clearable inputs + Online-only shipment fee. Production remains index.html.
   </div>
 
 </div>
@@ -8798,7 +8814,7 @@
 
 <script>
 
-  // V7 Stage 4B.8 — Automatic Obsidian export queue + delivery confirmation + input polish.
+  // V7 Stage 4B.9 — Automatic Obsidian export queue + delivery confirmation + input polish.
   // Keeps 3J.2q native provider pagination, 3J.2p trip-active toasts,
   // and Canonical Products search intact.
   // Adds frontend source identity + canonical online merchant homepages for
@@ -12156,12 +12172,12 @@
   let managementTrips = [];
   let managementCancelledTrips = [];
 
-  // V7 Stage 4B.8: Finish Trip queues Obsidian Markdown, watches for confirmed PC delivery, and keeps shipment fees Online-only.
+  // V7 Stage 4B.9: Finish Trip queues Obsidian Markdown, watches for confirmed PC delivery, and keeps shipment fees Online-only.
   let obsidianExportPreviewTrip = null;
   let obsidianExportPreviewMarkdown = "";
   let obsidianExportPreviewFilename = "";
 
-  // V7 Stage 4B.8 — one lightweight in-app delivery-status watcher at a time.
+  // V7 Stage 4B.9 — one lightweight in-app delivery-status watcher at a time.
   let obsidianDeliveryWatchSerial = 0;
   let obsidianDeliveryWatchTimer = null;
   let managementHistoryRows = [];
@@ -43326,7 +43342,7 @@
 
 
   // ------------------------------------------------------------
-  // V7 Stage 4B.8 — ONE-TAP INPUT CLEAR CONTROLS (PRESERVED)
+  // V7 Stage 4B.9 — ONE-TAP INPUT CLEAR CONTROLS (PRESERVED)
   // ------------------------------------------------------------
 
   function isClearableInputElement(element) {
