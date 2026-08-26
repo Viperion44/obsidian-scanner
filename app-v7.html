@@ -7704,7 +7704,7 @@
   </div>
 
   <div class="help">
-    V7 Stage 4B.3 — Automatic Obsidian export queue. Production remains index.html.
+    V7 Stage 4B.6 — Obsidian delivery confirmation. Production remains index.html.
   </div>
 
 </div>
@@ -8706,7 +8706,7 @@
 
 <script>
 
-  // V7 Stage 4B.3 — Automatic Obsidian export queue.
+  // V7 Stage 4B.6 — Automatic Obsidian export queue + delivery confirmation.
   // Keeps 3J.2q native provider pagination, 3J.2p trip-active toasts,
   // and Canonical Products search intact.
   // Adds frontend source identity + canonical online merchant homepages for
@@ -12064,10 +12064,14 @@
   let managementTrips = [];
   let managementCancelledTrips = [];
 
-  // V7 Stage 4B.3: Finish Trip can securely queue the generated Obsidian Markdown through the export gateway.
+  // V7 Stage 4B.6: Finish Trip queues Obsidian Markdown and watches for confirmed PC delivery while the app remains open.
   let obsidianExportPreviewTrip = null;
   let obsidianExportPreviewMarkdown = "";
   let obsidianExportPreviewFilename = "";
+
+  // V7 Stage 4B.6 — one lightweight in-app delivery-status watcher at a time.
+  let obsidianDeliveryWatchSerial = 0;
+  let obsidianDeliveryWatchTimer = null;
   let managementHistoryRows = [];
   let managementPaymentMethods = [];
   let managementStores = [];
@@ -30330,6 +30334,10 @@
             obsidianPayload
           );
 
+        startObsidianDeliveryStatusWatch(
+          obsidianPayload
+        );
+
       } catch (error) {
 
         obsidianQueueError =
@@ -41976,6 +41984,224 @@
     }
 
     return result;
+  }
+
+
+  async function getObsidianDeliveryStatus(
+    tripId
+  ) {
+
+    if (
+      !accessToken
+    ) {
+      throw new Error(
+        "Google connection is not available for Obsidian delivery confirmation."
+      );
+    }
+
+    const id =
+      String(
+        tripId ||
+        ""
+      ).trim();
+
+    if (
+      !id
+    ) {
+      throw new Error(
+        "Trip ID is missing for Obsidian delivery confirmation."
+      );
+    }
+
+    const response =
+      await fetch(
+        `${OBSIDIAN_EXPORT_GATEWAY_URL}/status/${encodeURIComponent(id)}`,
+        {
+          method:
+            "GET",
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`
+          }
+        }
+      );
+
+    let result =
+      null;
+
+    try {
+      result =
+        await response.json();
+    } catch (_) {
+      result =
+        null;
+    }
+
+    if (
+      !response.ok ||
+      !result?.ok
+    ) {
+      const error =
+        new Error(
+          result?.message ||
+          result?.error ||
+          `Obsidian delivery-status gateway returned HTTP ${response.status}.`
+        );
+
+      error.httpStatus =
+        response.status;
+
+      throw error;
+    }
+
+    return result;
+  }
+
+
+  function stopObsidianDeliveryStatusWatch() {
+
+    obsidianDeliveryWatchSerial +=
+      1;
+
+    if (
+      obsidianDeliveryWatchTimer
+    ) {
+      clearTimeout(
+        obsidianDeliveryWatchTimer
+      );
+
+      obsidianDeliveryWatchTimer =
+        null;
+    }
+  }
+
+
+  function startObsidianDeliveryStatusWatch(
+    payload
+  ) {
+
+    const tripId =
+      String(
+        payload?.trip?.tripId ||
+        ""
+      ).trim();
+
+    if (
+      !tripId
+    ) {
+      return;
+    }
+
+    stopObsidianDeliveryStatusWatch();
+
+    const watchSerial =
+      obsidianDeliveryWatchSerial;
+
+    const startedAt =
+      Date.now();
+
+    const maximumWatchMs =
+      8 * 60 * 1000;
+
+    const pollIntervalMs =
+      12 * 1000;
+
+    const store =
+      String(
+        payload?.trip?.store ||
+        "Shopping"
+      ).trim() ||
+      "Shopping";
+
+    const check =
+      async () => {
+
+        if (
+          watchSerial !==
+          obsidianDeliveryWatchSerial
+        ) {
+          return;
+        }
+
+        try {
+
+          const status =
+            await getObsidianDeliveryStatus(
+              tripId
+            );
+
+          if (
+            watchSerial !==
+            obsidianDeliveryWatchSerial
+          ) {
+            return;
+          }
+
+          if (
+            status?.state ===
+            "written_to_obsidian"
+          ) {
+
+            obsidianDeliveryWatchTimer =
+              null;
+
+            showSuccessToast(
+              "Obsidian confirmed",
+              `${store} trip has been successfully loaded into Obsidian on your PC.`
+            );
+
+            return;
+          }
+
+        } catch (error) {
+
+          console.warn(
+            "Obsidian delivery confirmation check failed:",
+            error
+          );
+
+          if (
+            Number(error?.httpStatus) ===
+              401 ||
+            Number(error?.httpStatus) ===
+              403
+          ) {
+            obsidianDeliveryWatchTimer =
+              null;
+
+            return;
+          }
+        }
+
+        if (
+          Date.now() -
+          startedAt >=
+          maximumWatchMs
+        ) {
+          obsidianDeliveryWatchTimer =
+            null;
+
+          console.info(
+            "Obsidian delivery confirmation watch ended without a receipt. The queued export remains independent of this in-app watcher."
+          );
+
+          return;
+        }
+
+        obsidianDeliveryWatchTimer =
+          setTimeout(
+            check,
+            pollIntervalMs
+          );
+      };
+
+    // Give the desktop bridge/status receipt path a short head start so the
+    // normal Trip finished toast remains visible first.
+    obsidianDeliveryWatchTimer =
+      setTimeout(
+        check,
+        6000
+      );
   }
 
 
