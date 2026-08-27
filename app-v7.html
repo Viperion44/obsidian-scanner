@@ -190,7 +190,7 @@
       resize: vertical;
     }
 
-    /* V7 Stage 4B.10 — Remote Store row uses MAP as its only right-side control */
+    /* V7 Stage 4B.12 — Remote Store row uses MAP as its only right-side control */
     .input-clear-wrap {
       position: relative;
       display: block;
@@ -7812,7 +7812,7 @@
   </div>
 
   <div class="help">
-    V7 Stage 4B.10 — Clearable inputs + Online-only shipment fee. Production remains index.html.
+    V7 Stage 4B.12 — Clearable inputs + Online-only shipment fee. Production remains index.html.
   </div>
 
 </div>
@@ -8814,7 +8814,7 @@
 
 <script>
 
-  // V7 Stage 4B.10 — Automatic Obsidian export queue + delivery confirmation + input polish.
+  // V7 Stage 4B.12 — Automatic Obsidian export queue + delivery confirmation + input polish.
   // Keeps 3J.2q native provider pagination, 3J.2p trip-active toasts,
   // and Canonical Products search intact.
   // Adds frontend source identity + canonical online merchant homepages for
@@ -8828,6 +8828,13 @@
 
   const OBSIDIAN_EXPORT_GATEWAY_URL =
     "https://obsidian-shopping-export-gateway.viperion444.workers.dev";
+
+  // V7 Stage 4B.12 — Web Push subscription registration.
+  const OBSIDIAN_PUSH_SERVICE_WORKER_URL =
+    "./obsidian-push-sw.js";
+
+  let obsidianPushPermissionPromise = null;
+  let obsidianPushRegistrationPromise = null;
 
   const PRODUCT_SEARCH_SOURCE_DEFINITIONS = [
     {id:"WALMART_MX", retailerName:"Walmart México", websiteUrl:"https://www.walmart.com.mx/", domains:["walmart.com.mx"], storeKeywords:["walmart"]},
@@ -12172,12 +12179,12 @@
   let managementTrips = [];
   let managementCancelledTrips = [];
 
-  // V7 Stage 4B.10: Finish Trip queues Obsidian Markdown, watches for confirmed PC delivery, and keeps shipment fees Online-only.
+  // V7 Stage 4B.12: Finish Trip queues Obsidian Markdown, watches for confirmed PC delivery, and keeps shipment fees Online-only.
   let obsidianExportPreviewTrip = null;
   let obsidianExportPreviewMarkdown = "";
   let obsidianExportPreviewFilename = "";
 
-  // V7 Stage 4B.10 — one lightweight in-app delivery-status watcher at a time.
+  // V7 Stage 4B.12 — one lightweight in-app delivery-status watcher at a time.
   let obsidianDeliveryWatchSerial = 0;
   let obsidianDeliveryWatchTimer = null;
   let managementHistoryRows = [];
@@ -12542,7 +12549,240 @@
   }
 
 
+  function primeObsidianPushPermission() {
+
+    if (
+      !("Notification" in window) ||
+      !("serviceWorker" in navigator) ||
+      !("PushManager" in window)
+    ) {
+      return;
+    }
+
+    if (Notification.permission === "granted") {
+      obsidianPushPermissionPromise =
+        Promise.resolve("granted");
+      return;
+    }
+
+    if (Notification.permission === "denied") {
+      obsidianPushPermissionPromise =
+        Promise.resolve("denied");
+      return;
+    }
+
+    try {
+      obsidianPushPermissionPromise =
+        Notification.requestPermission();
+    } catch (error) {
+      console.warn(
+        "Notification permission request could not start:",
+        error
+      );
+    }
+  }
+
+
+  function base64UrlToUint8Array(
+    value
+  ) {
+
+    const normalized =
+      String(value || "")
+        .trim()
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
+
+    const padding =
+      "=".repeat(
+        (4 - normalized.length % 4) % 4
+      );
+
+    const binary =
+      atob(normalized + padding);
+
+    const bytes =
+      new Uint8Array(binary.length);
+
+    for (
+      let index = 0;
+      index < binary.length;
+      index++
+    ) {
+      bytes[index] =
+        binary.charCodeAt(index);
+    }
+
+    return bytes;
+  }
+
+
+  async function getObsidianPushServiceWorkerRegistration() {
+
+    if (
+      obsidianPushRegistrationPromise
+    ) {
+      return obsidianPushRegistrationPromise;
+    }
+
+    obsidianPushRegistrationPromise =
+      navigator.serviceWorker.register(
+        OBSIDIAN_PUSH_SERVICE_WORKER_URL,
+        {
+          scope: "./"
+        }
+      );
+
+    try {
+      return await obsidianPushRegistrationPromise;
+    } catch (error) {
+      obsidianPushRegistrationPromise = null;
+      throw error;
+    }
+  }
+
+
+  async function registerObsidianPushSubscription() {
+
+    if (
+      !accessToken ||
+      !("Notification" in window) ||
+      !("serviceWorker" in navigator) ||
+      !("PushManager" in window)
+    ) {
+      return null;
+    }
+
+    let permission =
+      Notification.permission;
+
+    if (
+      obsidianPushPermissionPromise
+    ) {
+      try {
+        permission =
+          await obsidianPushPermissionPromise;
+      } catch (error) {
+        console.warn(
+          "Notification permission request failed:",
+          error
+        );
+      }
+    }
+
+    if (
+      permission !== "granted"
+    ) {
+      console.info(
+        "Obsidian push notifications are not enabled on this device."
+      );
+      return null;
+    }
+
+    const registration =
+      await getObsidianPushServiceWorkerRegistration();
+
+    let subscription =
+      await registration.pushManager
+        .getSubscription();
+
+    if (!subscription) {
+
+      const keyResponse =
+        await fetch(
+          `${OBSIDIAN_EXPORT_GATEWAY_URL}/push/public-key`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json"
+            }
+          }
+        );
+
+      const keyPayload =
+        await keyResponse.json()
+          .catch(function() {
+            return {};
+          });
+
+      if (
+        !keyResponse.ok ||
+        !keyPayload?.ok ||
+        !keyPayload?.publicKey
+      ) {
+        throw new Error(
+          keyPayload?.message ||
+          keyPayload?.error ||
+          "Could not load the push public key."
+        );
+      }
+
+      subscription =
+        await registration.pushManager
+          .subscribe({
+            userVisibleOnly: true,
+            applicationServerKey:
+              base64UrlToUint8Array(
+                keyPayload.publicKey
+              )
+          });
+    }
+
+    const subscribeResponse =
+      await fetch(
+        `${OBSIDIAN_EXPORT_GATEWAY_URL}/push/subscribe`,
+        {
+          method: "POST",
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`,
+            "Content-Type":
+              "application/json",
+            Accept:
+              "application/json"
+          },
+          body:
+            JSON.stringify({
+              subscription:
+                subscription.toJSON()
+            })
+        }
+      );
+
+    const subscribePayload =
+      await subscribeResponse.json()
+        .catch(function() {
+          return {};
+        });
+
+    if (
+      !subscribeResponse.ok ||
+      !subscribePayload?.ok ||
+      !subscribePayload?.subscribed
+    ) {
+      throw new Error(
+        subscribePayload?.message ||
+        subscribePayload?.error ||
+        "Could not register this device for push notifications."
+      );
+    }
+
+    console.info(
+      "Obsidian push subscription registered:",
+      subscribePayload.id
+    );
+
+    return subscribePayload;
+  }
+
+
   function connectGoogle() {
+
+    // V7 Stage 4B.12:
+    // Ask for notification permission from the user's explicit CONNECT tap.
+    // The actual authenticated subscription is registered after Google returns
+    // the access token.
+    primeObsidianPushPermission();
 
     if (!tokenClient) {
 
@@ -12624,6 +12864,16 @@
         "none";
 
       showHome();
+
+      // V7 Stage 4B.12 — registration is best-effort and must never block
+      // normal shopping if notifications are unsupported or denied.
+      registerObsidianPushSubscription()
+        .catch(function(error) {
+          console.warn(
+            "Obsidian push subscription registration skipped:",
+            error
+          );
+        });
 
       if (
         openTripCandidate
@@ -43350,7 +43600,7 @@
 
 
   // ------------------------------------------------------------
-  // V7 Stage 4B.10 — ONE-TAP INPUT CLEAR CONTROLS (PRESERVED)
+  // V7 Stage 4B.12 — ONE-TAP INPUT CLEAR CONTROLS (PRESERVED)
   // ------------------------------------------------------------
 
   function isClearableInputElement(element) {
